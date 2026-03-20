@@ -9,24 +9,17 @@ const cors = require('cors');
 
 const app = express();
 
+// 🔧 MIDDLEWARES
 app.use(express.json());
 app.use(cors());
+app.use(express.static('public'));
 
 // 🧠 STATUS DO SISTEMA
-app.get("/", (req, res) => {
-  res.send(`
-    <h1>🚀 Money Automático API</h1>
-    <p>Status: ONLINE ✅</p>
-    <p>Banco: CONECTADO 🔗</p>
-    <hr/>
-    <h3>Rotas disponíveis:</h3>
-    <ul>
-      <li>POST /register</li>
-      <li>POST /login</li>
-      <li>POST /campanha</li>
-      <li>POST /upload</li>
-    </ul>
-  `);
+app.get("/api/status", (req, res) => {
+  res.json({
+    status: "online",
+    message: "🚀 Money Automático rodando"
+  });
 });
 
 // 🔗 CONEXÃO BANCO
@@ -42,11 +35,12 @@ if (!process.env.MONGO_URL) {
 const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
   senha: { type: String, required: true },
+  admin: { type: Boolean, default: false }, // 👑 ADMIN
   ativo: { type: Boolean, default: true },
   mensagens: { type: Array, default: [] },
   delay_min: { type: Number, default: 10 },
   delay_max: { type: Number, default: 30 }
-});
+}, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
 
@@ -92,6 +86,10 @@ app.post('/login', async (req, res) => {
       return res.status(404).json({ erro: "Usuário não encontrado" });
     }
 
+    if (!user.ativo) {
+      return res.status(403).json({ erro: "Usuário desativado" });
+    }
+
     const ok = await bcrypt.compare(senha, user.senha);
     if (!ok) {
       return res.status(401).json({ erro: "Senha inválida" });
@@ -103,7 +101,10 @@ app.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ token });
+    res.json({
+      token,
+      admin: user.admin
+    });
 
   } catch (e) {
     console.log("❌ ERRO LOGIN:", e);
@@ -111,7 +112,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// 🔐 MIDDLEWARE
+// 🔐 MIDDLEWARE AUTH
 function auth(req, res, next) {
   const token = req.headers.authorization;
 
@@ -128,7 +129,17 @@ function auth(req, res, next) {
   }
 }
 
-// 📤 CAMPANHA PROFISSIONAL
+// 🔐 MIDDLEWARE ADMIN
+function adminOnly(req, res, next) {
+  User.findById(req.user_id).then(user => {
+    if (!user || !user.admin) {
+      return res.status(403).json({ erro: "Acesso restrito ao administrador" });
+    }
+    next();
+  });
+}
+
+// 📤 CAMPANHA (MOTOR REAL)
 app.post('/campanha', auth, async (req, res) => {
   try {
     const { numeros, mensagem } = req.body;
@@ -141,7 +152,7 @@ app.post('/campanha', auth, async (req, res) => {
       return res.status(400).json({ erro: "Informe a mensagem" });
     }
 
-    console.log("🚀 Campanha iniciada");
+    console.log("🚀 Campanha iniciada por:", req.user_id);
 
     const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -179,6 +190,12 @@ const upload = multer({ storage });
 
 app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ url: `/uploads/${req.file.filename}` });
+});
+
+// 👑 ADMIN - LISTAR USUÁRIOS
+app.get('/admin/users', auth, adminOnly, async (req, res) => {
+  const users = await User.find().select('-senha');
+  res.json(users);
 });
 
 // 🚀 START
