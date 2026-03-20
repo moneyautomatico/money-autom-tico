@@ -12,17 +12,25 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// 🔗 CONEXÃO BANCO
-mongoose.connect(process.env.MONGO_URL)
-.then(() => console.log("✅ Banco conectado"))
-.catch(err => console.log(err));
+// 🧪 ROTA TESTE (IMPORTANTE)
+app.get("/", (req, res) => {
+  res.send("API ONLINE 🚀");
+});
+
+// 🔗 CONEXÃO BANCO (SEGURA)
+if (process.env.MONGO_URL) {
+  mongoose.connect(process.env.MONGO_URL)
+    .then(() => console.log("✅ Banco conectado"))
+    .catch(err => console.log(err));
+} else {
+  console.log("⚠️ MONGO_URL não configurado");
+}
 
 // 👤 MODEL USER
 const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   senha: String,
   ativo: { type: Boolean, default: true },
-
   mensagens: Array,
   delay_min: Number,
   delay_max: Number
@@ -74,7 +82,7 @@ app.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || "segredo",
       { expiresIn: '7d' }
     );
 
@@ -94,7 +102,7 @@ function auth(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "segredo");
     req.user_id = decoded.id;
     next();
   } catch {
@@ -102,7 +110,7 @@ function auth(req, res, next) {
   }
 }
 
-// 📤 CAMPANHA (simples)
+// 📤 CAMPANHA
 app.post('/campanha', auth, async (req, res) => {
   const { numeros } = req.body;
 
@@ -127,7 +135,9 @@ app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-// 🚀 START
-app.listen(3000, () => {
-  console.log("🚀 Money Automático rodando");
+// 🚀 START (CORRIGIDO PARA RAILWAY)
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("🚀 Money Automático rodando na porta " + PORT);
 });
