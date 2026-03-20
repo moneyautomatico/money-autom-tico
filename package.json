@@ -1,9 +1,10 @@
 {
   "name": "money-automatico",
   "version": "1.0.0",
-  "main": "servidor.js",
+  "description": "API Money Automático",
+  "main": "server.js",
   "scripts": {
-    "start": "node servidor.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.0",
