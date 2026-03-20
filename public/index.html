@@ -2,17 +2,44 @@
 <html>
 <head>
   <title>Money Automático</title>
+
   <style>
-    body { font-family: Arial; background: #0f172a; color: white; text-align: center; }
-    input, button { padding: 10px; margin: 5px; border-radius: 5px; border: none; }
-    button { background: #22c55e; color: white; cursor: pointer; }
-    .box { margin-top: 40px; }
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      background: #22c55e;
+      color: white;
+      cursor: pointer;
+    }
+
+    .box {
+      margin-top: 30px;
+      padding: 20px;
+      border: 1px solid #1e293b;
+      display: inline-block;
+      border-radius: 10px;
+    }
   </style>
+
 </head>
+
 <body>
 
 <h1>🚀 Money Automático</h1>
 
+<!-- 🔐 LOGIN -->
 <div class="box">
   <h3>Login</h3>
   <input id="email" placeholder="Email"><br>
@@ -20,6 +47,15 @@
   <button onclick="login()">Entrar</button>
 </div>
 
+<!-- 🆕 REGISTRO -->
+<div class="box">
+  <h3>Criar Conta</h3>
+  <input id="email_reg" placeholder="Email"><br>
+  <input id="senha_reg" type="password" placeholder="Senha"><br>
+  <button onclick="register()">Cadastrar</button>
+</div>
+
+<!-- 📤 DISPARO -->
 <div class="box">
   <h3>Disparo</h3>
   <input id="numeros" placeholder="Números (separados por vírgula)"><br>
@@ -27,16 +63,19 @@
   <button onclick="enviar()">Disparar</button>
 </div>
 
-<div id="adminPanel" style="display:none; margin-top:40px;">
+<!-- 👑 ADMIN -->
+<div id="adminPanel" class="box" style="display:none;">
   <h2>👑 Painel Admin</h2>
   <button onclick="carregarUsuarios()">Ver usuários</button>
   <ul id="listaUsuarios"></ul>
 </div>
 
 <script>
+
 let token = "";
 let isAdmin = false;
 
+// 🔐 LOGIN
 async function login() {
   const email = document.getElementById("email").value;
   const senha = document.getElementById("senha").value;
@@ -57,15 +96,40 @@ async function login() {
   token = data.token;
   isAdmin = data.admin;
 
+  alert("Login realizado!");
+
   if (isAdmin) {
     document.getElementById("adminPanel").style.display = "block";
-    alert("👑 Admin logado");
-  } else {
-    alert("Usuário logado");
   }
 }
 
+// 🆕 REGISTER
+async function register() {
+  const email = document.getElementById("email_reg").value;
+  const senha = document.getElementById("senha_reg").value;
+
+  const res = await fetch("/register", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ email, senha })
+  });
+
+  const data = await res.json();
+
+  if (data.erro) {
+    alert(data.erro);
+  } else {
+    alert("Conta criada com sucesso!");
+  }
+}
+
+// 📤 DISPARO
 async function enviar() {
+  if (!token) {
+    alert("Faça login primeiro!");
+    return;
+  }
+
   const numeros = document.getElementById("numeros").value.split(",");
   const mensagem = document.getElementById("mensagem").value;
 
@@ -80,9 +144,10 @@ async function enviar() {
 
   const data = await res.json();
 
-  alert(JSON.stringify(data));
+  alert(data.msg || JSON.stringify(data));
 }
 
+// 👑 ADMIN
 async function carregarUsuarios() {
   const res = await fetch("/admin/users", {
     headers: {
@@ -101,6 +166,7 @@ async function carregarUsuarios() {
     lista.appendChild(li);
   });
 }
+
 </script>
 
 </body>
