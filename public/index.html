@@ -2,7 +2,106 @@
 <html>
 <head>
   <title>Money Automático</title>
+  <style>
+    body { font-family: Arial; background: #0f172a; color: white; text-align: center; }
+    input, button { padding: 10px; margin: 5px; border-radius: 5px; border: none; }
+    button { background: #22c55e; color: white; cursor: pointer; }
+    .box { margin-top: 40px; }
+  </style>
 </head>
 <body>
 
-<h1>🚀 Painel Money Automático</h1>
+<h1>🚀 Money Automático</h1>
+
+<div class="box">
+  <h3>Login</h3>
+  <input id="email" placeholder="Email"><br>
+  <input id="senha" type="password" placeholder="Senha"><br>
+  <button onclick="login()">Entrar</button>
+</div>
+
+<div class="box">
+  <h3>Disparo</h3>
+  <input id="numeros" placeholder="Números (separados por vírgula)"><br>
+  <input id="mensagem" placeholder="Mensagem"><br>
+  <button onclick="enviar()">Disparar</button>
+</div>
+
+<div id="adminPanel" style="display:none; margin-top:40px;">
+  <h2>👑 Painel Admin</h2>
+  <button onclick="carregarUsuarios()">Ver usuários</button>
+  <ul id="listaUsuarios"></ul>
+</div>
+
+<script>
+let token = "";
+let isAdmin = false;
+
+async function login() {
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ email, senha })
+  });
+
+  const data = await res.json();
+
+  if (!data.token) {
+    alert(data.erro || "Erro no login");
+    return;
+  }
+
+  token = data.token;
+  isAdmin = data.admin;
+
+  if (isAdmin) {
+    document.getElementById("adminPanel").style.display = "block";
+    alert("👑 Admin logado");
+  } else {
+    alert("Usuário logado");
+  }
+}
+
+async function enviar() {
+  const numeros = document.getElementById("numeros").value.split(",");
+  const mensagem = document.getElementById("mensagem").value;
+
+  const res = await fetch("/campanha", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": token
+    },
+    body: JSON.stringify({ numeros, mensagem })
+  });
+
+  const data = await res.json();
+
+  alert(JSON.stringify(data));
+}
+
+async function carregarUsuarios() {
+  const res = await fetch("/admin/users", {
+    headers: {
+      "Authorization": token
+    }
+  });
+
+  const data = await res.json();
+
+  const lista = document.getElementById("listaUsuarios");
+  lista.innerHTML = "";
+
+  data.forEach(user => {
+    const li = document.createElement("li");
+    li.innerText = user.email + (user.admin ? " 👑" : "");
+    lista.appendChild(li);
+  });
+}
+</script>
+
+</body>
+</html>
