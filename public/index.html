@@ -32,42 +32,49 @@
       border-radius: 10px;
     }
   </style>
-
 </head>
 
 <body>
 
 <h1>🚀 Money Automático</h1>
 
-<!-- 🔐 LOGIN -->
-<div class="box">
-  <h3>Login</h3>
-  <input id="email" placeholder="Email"><br>
-  <input id="senha" type="password" placeholder="Senha"><br>
-  <button onclick="login()">Entrar</button>
+<!-- 🔐 ÁREA PÚBLICA -->
+<div id="authArea">
+
+  <div class="box">
+    <h3>Login</h3>
+    <input id="email" placeholder="Email"><br>
+    <input id="senha" type="password" placeholder="Senha"><br>
+    <button onclick="login()">Entrar</button>
+  </div>
+
+  <div class="box">
+    <h3>Criar Conta</h3>
+    <input id="email_reg" placeholder="Email"><br>
+    <input id="senha_reg" type="password" placeholder="Senha"><br>
+    <button onclick="register()">Cadastrar</button>
+  </div>
+
 </div>
 
-<!-- 🆕 REGISTRO -->
-<div class="box">
-  <h3>Criar Conta</h3>
-  <input id="email_reg" placeholder="Email"><br>
-  <input id="senha_reg" type="password" placeholder="Senha"><br>
-  <button onclick="register()">Cadastrar</button>
-</div>
+<!-- 🔓 ÁREA LOGADA -->
+<div id="appArea" style="display:none;">
 
-<!-- 📤 DISPARO -->
-<div class="box">
-  <h3>Disparo</h3>
-  <input id="numeros" placeholder="Números (separados por vírgula)"><br>
-  <input id="mensagem" placeholder="Mensagem"><br>
-  <button onclick="enviar()">Disparar</button>
-</div>
+  <div class="box">
+    <h3>📤 Disparo</h3>
+    <input id="numeros" placeholder="Números (separados por vírgula)"><br>
+    <input id="mensagem" placeholder="Mensagem"><br>
+    <button onclick="enviar()">Disparar</button>
+  </div>
 
-<!-- 👑 ADMIN -->
-<div id="adminPanel" class="box" style="display:none;">
-  <h2>👑 Painel Admin</h2>
-  <button onclick="carregarUsuarios()">Ver usuários</button>
-  <ul id="listaUsuarios"></ul>
+  <div id="adminPanel" class="box" style="display:none;">
+    <h3>👑 Admin</h3>
+    <button onclick="carregarUsuarios()">Ver usuários</button>
+    <ul id="listaUsuarios"></ul>
+  </div>
+
+  <button onclick="logout()">Sair</button>
+
 </div>
 
 <script>
@@ -96,11 +103,7 @@ async function login() {
   token = data.token;
   isAdmin = data.admin;
 
-  alert("Login realizado!");
-
-  if (isAdmin) {
-    document.getElementById("adminPanel").style.display = "block";
-  }
+  entrarSistema();
 }
 
 // 🆕 REGISTER
@@ -116,20 +119,27 @@ async function register() {
 
   const data = await res.json();
 
-  if (data.erro) {
-    alert(data.erro);
-  } else {
-    alert("Conta criada com sucesso!");
+  alert(data.msg || data.erro);
+}
+
+// 🔓 ENTRAR NO SISTEMA
+function entrarSistema() {
+  document.getElementById("authArea").style.display = "none";
+  document.getElementById("appArea").style.display = "block";
+
+  if (isAdmin) {
+    document.getElementById("adminPanel").style.display = "block";
   }
+}
+
+// 🚪 LOGOUT
+function logout() {
+  token = "";
+  location.reload();
 }
 
 // 📤 DISPARO
 async function enviar() {
-  if (!token) {
-    alert("Faça login primeiro!");
-    return;
-  }
-
   const numeros = document.getElementById("numeros").value.split(",");
   const mensagem = document.getElementById("mensagem").value;
 
