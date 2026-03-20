@@ -12,15 +12,9 @@ const app = express();
 // 🔧 MIDDLEWARES
 app.use(express.json());
 app.use(cors());
-app.use(express.static('public'));
 
-// 🧠 STATUS DO SISTEMA
-app.get("/api/status", (req, res) => {
-  res.json({
-    status: "online",
-    message: "🚀 Money Automático rodando"
-  });
-});
+// 🔥 SERVIR PAINEL (IMPORTANTE)
+app.use(express.static('public'));
 
 // 🔗 CONEXÃO BANCO
 if (!process.env.MONGO_URL) {
@@ -35,7 +29,7 @@ if (!process.env.MONGO_URL) {
 const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
   senha: { type: String, required: true },
-  admin: { type: Boolean, default: false }, // 👑 ADMIN
+  admin: { type: Boolean, default: false },
   ativo: { type: Boolean, default: true },
   mensagens: { type: Array, default: [] },
   delay_min: { type: Number, default: 10 },
@@ -112,7 +106,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// 🔐 MIDDLEWARE AUTH
+// 🔐 AUTH
 function auth(req, res, next) {
   const token = req.headers.authorization;
 
@@ -124,22 +118,21 @@ function auth(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "segredo");
     req.user_id = decoded.id;
     next();
-  } catch (e) {
+  } catch {
     return res.status(401).json({ erro: "Token inválido" });
   }
 }
 
-// 🔐 MIDDLEWARE ADMIN
-function adminOnly(req, res, next) {
-  User.findById(req.user_id).then(user => {
-    if (!user || !user.admin) {
-      return res.status(403).json({ erro: "Acesso restrito ao administrador" });
-    }
-    next();
-  });
+// 🔐 ADMIN
+async function adminOnly(req, res, next) {
+  const user = await User.findById(req.user_id);
+  if (!user || !user.admin) {
+    return res.status(403).json({ erro: "Acesso restrito ao admin" });
+  }
+  next();
 }
 
-// 📤 CAMPANHA (MOTOR REAL)
+// 📤 CAMPANHA
 app.post('/campanha', auth, async (req, res) => {
   try {
     const { numeros, mensagem } = req.body;
@@ -152,32 +145,35 @@ app.post('/campanha', auth, async (req, res) => {
       return res.status(400).json({ erro: "Informe a mensagem" });
     }
 
-    console.log("🚀 Campanha iniciada por:", req.user_id);
+    console.log("🚀 Campanha iniciada");
 
     const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
     (async () => {
       for (let numero of numeros) {
-
         console.log(`📤 Enviando para ${numero}: ${mensagem}`);
 
         const tempo = Math.floor(Math.random() * 5000) + 5000;
-
         console.log(`⏱️ Delay: ${tempo / 1000}s`);
 
         await delay(tempo);
       }
 
       console.log("✅ Campanha finalizada");
-
     })();
 
-    res.json({ ok: true, msg: "Campanha em execução" });
+    res.json({ ok: true });
 
   } catch (e) {
     console.log("❌ ERRO CAMPANHA:", e);
     res.status(500).json({ erro: e.message });
   }
+});
+
+// 👑 ADMIN - LISTAR USUÁRIOS
+app.get('/admin/users', auth, adminOnly, async (req, res) => {
+  const users = await User.find().select('-senha');
+  res.json(users);
 });
 
 // 📂 UPLOAD
@@ -190,12 +186,6 @@ const upload = multer({ storage });
 
 app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ url: `/uploads/${req.file.filename}` });
-});
-
-// 👑 ADMIN - LISTAR USUÁRIOS
-app.get('/admin/users', auth, adminOnly, async (req, res) => {
-  const users = await User.find().select('-senha');
-  res.json(users);
 });
 
 // 🚀 START
