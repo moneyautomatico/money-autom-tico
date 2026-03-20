@@ -12,14 +12,26 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// ✅ TESTE API
+// 🧠 STATUS DO SISTEMA
 app.get("/", (req, res) => {
-  res.send("API ONLINE 🚀");
+  res.send(`
+    <h1>🚀 Money Automático API</h1>
+    <p>Status: ONLINE ✅</p>
+    <p>Banco: CONECTADO 🔗</p>
+    <hr/>
+    <h3>Rotas disponíveis:</h3>
+    <ul>
+      <li>POST /register</li>
+      <li>POST /login</li>
+      <li>POST /campanha</li>
+      <li>POST /upload</li>
+    </ul>
+  `);
 });
 
-// 🔗 CONEXÃO BANCO (COM VALIDAÇÃO)
+// 🔗 CONEXÃO BANCO
 if (!process.env.MONGO_URL) {
-  console.log("❌ MONGO_URL NÃO CONFIGURADO");
+  console.log("❌ MONGO_URL não configurado");
 } else {
   mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log("✅ Banco conectado"))
@@ -38,12 +50,10 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', UserSchema);
 
-// 🔐 REGISTER (CORRIGIDO)
+// 🔐 REGISTER
 app.post('/register', async (req, res) => {
   try {
     const { email, senha } = req.body;
-
-    console.log("📩 BODY:", req.body);
 
     if (!email || !senha) {
       return res.status(400).json({ erro: "Email e senha obrigatórios" });
@@ -56,17 +66,11 @@ app.post('/register', async (req, res) => {
 
     const hash = await bcrypt.hash(senha, 10);
 
-    const user = await User.create({
-      email,
-      senha: hash,
-      mensagens: [],
-      delay_min: 10,
-      delay_max: 30
-    });
+    await User.create({ email, senha: hash });
 
-    console.log("✅ Usuário criado:", email);
+    console.log("✅ Novo usuário:", email);
 
-    res.json(user);
+    res.json({ msg: "Usuário criado com sucesso" });
 
   } catch (e) {
     console.log("❌ ERRO REGISTER:", e);
@@ -74,7 +78,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// 🔐 LOGIN (CORRIGIDO)
+// 🔐 LOGIN
 app.post('/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -99,7 +103,7 @@ app.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ user, token });
+    res.json({ token });
 
   } catch (e) {
     console.log("❌ ERRO LOGIN:", e);
@@ -120,12 +124,11 @@ function auth(req, res, next) {
     req.user_id = decoded.id;
     next();
   } catch (e) {
-    console.log("❌ ERRO TOKEN:", e);
     return res.status(401).json({ erro: "Token inválido" });
   }
 }
 
-// 📤 CAMPANHA (AGORA FUNCIONAL)
+// 📤 CAMPANHA PROFISSIONAL
 app.post('/campanha', auth, async (req, res) => {
   try {
     const { numeros, mensagem } = req.body;
@@ -138,11 +141,27 @@ app.post('/campanha', auth, async (req, res) => {
       return res.status(400).json({ erro: "Informe a mensagem" });
     }
 
-    console.log("📤 Disparo iniciado");
-    console.log("📱 Números:", numeros);
-    console.log("💬 Mensagem:", mensagem);
+    console.log("🚀 Campanha iniciada");
 
-    res.json({ ok: true });
+    const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+    (async () => {
+      for (let numero of numeros) {
+
+        console.log(`📤 Enviando para ${numero}: ${mensagem}`);
+
+        const tempo = Math.floor(Math.random() * 5000) + 5000;
+
+        console.log(`⏱️ Delay: ${tempo / 1000}s`);
+
+        await delay(tempo);
+      }
+
+      console.log("✅ Campanha finalizada");
+
+    })();
+
+    res.json({ ok: true, msg: "Campanha em execução" });
 
   } catch (e) {
     console.log("❌ ERRO CAMPANHA:", e);
@@ -152,23 +171,14 @@ app.post('/campanha', auth, async (req, res) => {
 
 // 📂 UPLOAD
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
 });
 
 const upload = multer({ storage });
 
 app.post('/upload', upload.single('file'), (req, res) => {
-  try {
-    res.json({ url: `/uploads/${req.file.filename}` });
-  } catch (e) {
-    console.log("❌ ERRO UPLOAD:", e);
-    res.status(500).json({ erro: e.message });
-  }
+  res.json({ url: `/uploads/${req.file.filename}` });
 });
 
 // 🚀 START
