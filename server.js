@@ -15,28 +15,21 @@ const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyaut
 
 // ==================== MODELO DE USUÁRIO ====================
 const UserSchema = new mongoose.Schema({
-    email: String,
+    email: { type: String, required: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     ia: { type: String, default: "" }
 });
 const User = mongoose.model("User", UserSchema);
 
-// ==================== CONEXÃO MONGODB + AUTO-CREATE ====================
+// ==================== CONEXÃO MONGODB + RESET USUÁRIO ====================
 mongoose.connect(MONGO_URI)
 .then(async () => {
     console.log("✅ MongoDB conectado");
-
-    const adminEmail = "Presidente.business@hotmail.com";
+    const adminEmail = "presidente.business@hotmail.com";
     const adminPass = "123456"; 
 
-    // Tenta deletar se existir algo errado e cria do zero
     await User.deleteOne({ email: adminEmail }); 
-    await User.create({ 
-        email: adminEmail, 
-        password: adminPass, 
-        ia: "IA Ativa" 
-    });
-
+    await User.create({ email: adminEmail, password: adminPass, ia: "IA Ativa" });
     console.log("🚀 USUÁRIO MESTRE RESETADO E CRIADO: " + adminEmail);
 })
 .catch(err => console.log("❌ Erro MongoDB:", err));
@@ -65,14 +58,24 @@ function auth(req, res, next) {
     } catch { res.status(401).json({ error: "Token inválido" }); }
 }
 
-// ==================== ROTAS API ====================
+// ==================== ROTA DE LOGIN CORRIGIDA ====================
 app.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email, password });
-    if (!user) return res.status(400).json({ error: "Usuário ou senha incorretos" });
-    
-    const token = jwt.sign({ id: user._id }, JWT_SECRET);
-    res.json({ token, userId: user._id });
+    try {
+        // Garantindo que pegamos os dados independente se o HTML enviar 'senha' ou 'password'
+        const email = (req.body.email || "").toLowerCase().trim();
+        const password = (req.body.password || req.body.senha || "").toString().trim();
+
+        const user = await User.findOne({ email, password });
+        
+        if (!user) {
+            return res.status(400).json({ error: "Usuário ou senha incorretos" });
+        }
+        
+        const token = jwt.sign({ id: user._id }, JWT_SECRET);
+        res.json({ token, userId: user._id });
+    } catch (err) {
+        res.status(500).json({ error: "Erro no servidor" });
+    }
 });
 
 app.get("/status-whatsapp", auth, (req, res) => res.json({ status: qrCodeAtual }));
