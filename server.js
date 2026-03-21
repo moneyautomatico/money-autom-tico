@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const path = require('path'); // ✅ CORRETO AQUI
+const path = require('path'); 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 
 const app = express();
@@ -11,7 +11,6 @@ app.use(cors());
 
 // ==================== CONFIG ====================
 const JWT_SECRET = "money_automatico_2026";
-
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
 // ==================== MONGODB ====================
@@ -28,9 +27,12 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", UserSchema);
 
-// ==================== WHATSAPP ====================
+// ==================== WHATSAPP (VERSÃO ESTÁVEL) ====================
+let qrCodeAtual = ""; // Variável para armazenar o QR Code e enviar para o Admin
+
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    // LocalAuth com dataPath garante que a sessão não caia ao reiniciar o servidor
+    authStrategy: new LocalAuth({ dataPath: './sessions' }), 
     puppeteer: {
         headless: true,
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
@@ -44,17 +46,19 @@ const client = new Client({
     }
 });
 
-client.on('qr', () => {
-    console.log('📱 Escaneie o QR Code no terminal');
+client.on('qr', (qr) => {
+    qrCodeAtual = qr; // Salva o QR para o Frontend buscar via API
+    console.log('📱 QR Code gerado. Disponível no painel admin.');
 });
 
 client.on('ready', () => {
+    qrCodeAtual = "CONECTADO";
     console.log('✅ WhatsApp conectado!');
 });
 
 client.initialize();
 
-// ==================== AUTH ====================
+// ==================== AUTH MIDDLEWARE ====================
 function auth(req, res, next) {
     const token = req.headers.authorization;
 
@@ -69,24 +73,32 @@ function auth(req, res, next) {
     }
 }
 
-// ==================== ROTAS ====================
+// ==================== ROTAS DE API ====================
 
 // LOGIN
 app.post("/login", async (req, res) => {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email, password });
 
-    const user = await User.findOne({ email, password });
+        if (!user) {
+            return res.status(400).json({ error: "Erro no login" });
+        }
 
-    if (!user) {
-        return res.status(400).json({ error: "Erro no login" });
+        const token = jwt.sign({ id: user._id }, JWT_SECRET);
+
+        res.json({
+            token,
+            userId: user._id
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Erro interno no servidor" });
     }
+});
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET);
-
-    res.json({
-        token,
-        userId: user._id
-    });
+// STATUS WHATSAPP (Para o admin.html verificar conexão)
+app.get("/status-whatsapp", auth, (req, res) => {
+    res.json({ status: qrCodeAtual });
 });
 
 // PEGAR DADOS DO USUÁRIO
@@ -98,9 +110,7 @@ app.get("/user", auth, async (req, res) => {
 // SALVAR IA
 app.post("/salvar-ia", auth, async (req, res) => {
     const { texto } = req.body;
-
     await User.findByIdAndUpdate(req.userId, { ia: texto });
-
     res.json({ ok: true });
 });
 
@@ -110,7 +120,7 @@ app.get("/carregar-ia", auth, async (req, res) => {
     res.json({ texto: user.ia || "" });
 });
 
-// DISPARO WHATSAPP (MANTIDO COMO VOCÊ JÁ USAVA)
+// DISPARO WHATSAPP
 app.post("/disparo", auth, async (req, res) => {
     const { numeros, mensagem } = req.body;
 
@@ -131,16 +141,16 @@ app.post("/disparo", auth, async (req, res) => {
 
     } catch (err) {
         console.log(err);
-        res.status(500).json({ error: "Erro ao enviar mensagens" });
+        res.status(500).json({ error: "Erro ao enviar mensagens. Verifique se o WhatsApp está conectado." });
     }
 });
 
-// ==================== FRONTEND (CORREÇÃO DO ERRO) ====================
+// ==================== FRONTEND (ESTÁTICO) ====================
 
-// servir arquivos da pasta public
+// Servir arquivos da pasta public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// rota principal (corrige "Cannot GET /")
+// Rota principal para evitar "Cannot GET /"
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -149,5 +159,5 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log("🚀 Servidor rodando na porta " + PORT);
+    console.log("🚀 Servidor de Alta Performance rodando na porta " + PORT);
 });
