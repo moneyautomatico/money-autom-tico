@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const path = require('path'); // ✅ CORRETO AQUI
 const { Client, LocalAuth } = require('whatsapp-web.js');
 
 const app = express();
@@ -11,7 +12,6 @@ app.use(cors());
 // ==================== CONFIG ====================
 const JWT_SECRET = "money_automatico_2026";
 
-// 🔥 SUA STRING DO BANCO (já corrigida)
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
 // ==================== MONGODB ====================
@@ -44,7 +44,7 @@ const client = new Client({
     }
 });
 
-client.on('qr', (qr) => {
+client.on('qr', () => {
     console.log('📱 Escaneie o QR Code no terminal');
 });
 
@@ -110,7 +110,7 @@ app.get("/carregar-ia", auth, async (req, res) => {
     res.json({ texto: user.ia || "" });
 });
 
-// DISPARO WHATSAPP
+// DISPARO WHATSAPP (MANTIDO COMO VOCÊ JÁ USAVA)
 app.post("/disparo", auth, async (req, res) => {
     const { numeros, mensagem } = req.body;
 
@@ -128,10 +128,21 @@ app.post("/disparo", auth, async (req, res) => {
         }
 
         res.json({ ok: true });
+
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: "Erro ao enviar mensagens" });
     }
+});
+
+// ==================== FRONTEND (CORREÇÃO DO ERRO) ====================
+
+// servir arquivos da pasta public
+app.use(express.static(path.join(__dirname, 'public')));
+
+// rota principal (corrige "Cannot GET /")
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ==================== SERVIDOR ====================
