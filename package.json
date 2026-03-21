@@ -1,9 +1,11 @@
 {
   "name": "money-automatico",
   "version": "1.0.0",
+  "description": "Sistema de automação e disparos WhatsApp",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "nodemon server.js",
     "postinstall": "npx puppeteer browsers install chrome"
   },
   "dependencies": {
@@ -11,8 +13,12 @@
     "mongoose": "^8.0.0",
     "cors": "^2.8.5",
     "jsonwebtoken": "^9.0.0",
-    "puppeteer": "^22.0.0",
-    "whatsapp-web.js": "^1.23.0",
-    "qrcode-terminal": "^0.12.0"
+    "puppeteer": "^22.6.0",
+    "whatsapp-web.js": "latest",
+    "qrcode-terminal": "^0.12.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }
