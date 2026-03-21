@@ -4,7 +4,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 
-// 🔥 WHATSAPP
+// WHATSAPP
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
@@ -12,22 +12,22 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// 🔐 ENV
+// ENV
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || "segredo";
 
-// 🔗 CONEXÃO COM BANCO ANTIGO (SEM ALTERAR NADA)
+// CONEXÃO BANCO (mantém antigo)
 mongoose.connect(MONGO_URI)
-.then(() => console.log("✅ MongoDB conectado (antigo mantido)"))
-.catch(err => console.log("❌ Erro Mongo:", err));
+.then(() => console.log("✅ MongoDB conectado"))
+.catch(err => console.log(err));
 
-// 📦 MODELO (compatível com o que já existe)
+// MODEL (força coleção antiga)
 const User = mongoose.model('User', new mongoose.Schema({
     email: String,
     password: String
-}, { collection: 'users' })); // 🔥 força usar coleção antiga
+}, { collection: 'users' }));
 
-// 🔐 LOGIN
+// LOGIN
 app.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -46,12 +46,11 @@ app.post('/login', async (req, res) => {
         });
 
     } catch (err) {
-        console.log(err);
         res.status(500).json({ erro: "Erro no login" });
     }
 });
 
-// 🔐 MIDDLEWARE
+// AUTH
 function auth(req, res, next) {
     const token = req.headers.authorization;
 
@@ -66,72 +65,60 @@ function auth(req, res, next) {
     }
 }
 
-//////////////////////////////////////////////////////////////////
-// 🔥 WHATSAPP (RENDER COMPATÍVEL)
-//////////////////////////////////////////////////////////////////
-
+// WHATSAPP
 let client;
-let isReady = false;
+let ready = false;
 
-async function iniciarWhatsApp() {
-    try {
-        client = new Client({
-            authStrategy: new LocalAuth({
-                dataPath: './session' // evita perder sessão
-            }),
-            puppeteer: {
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu'
-                ]
-            }
-        });
+async function startWhatsApp() {
+    client = new Client({
+        authStrategy: new LocalAuth({
+            dataPath: './session'
+        }),
+        puppeteer: {
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage'
+            ]
+        }
+    });
 
-        client.on('qr', qr => {
-            console.log('📱 ESCANEIE O QR CODE:');
-            qrcode.generate(qr, { small: true });
-        });
+    client.on('qr', qr => {
+        console.log('📱 ESCANEIE O QR CODE:');
+        qrcode.generate(qr, { small: true });
+    });
 
-        client.on('ready', () => {
-            console.log('✅ WhatsApp conectado!');
-            isReady = true;
-        });
+    client.on('ready', () => {
+        console.log('✅ WhatsApp pronto!');
+        ready = true;
+    });
 
-        client.on('disconnected', () => {
-            console.log('⚠️ WhatsApp desconectado');
-            isReady = false;
-        });
+    client.on('disconnected', () => {
+        console.log('❌ WhatsApp desconectado');
+        ready = false;
+    });
 
-        await client.initialize();
-
-    } catch (err) {
-        console.log("❌ Erro WhatsApp:", err);
-    }
+    await client.initialize();
 }
 
-iniciarWhatsApp();
+startWhatsApp();
 
-//////////////////////////////////////////////////////////////////
-// 📤 DISPARO
-//////////////////////////////////////////////////////////////////
-
+// DISPARO
 app.post('/enviar', auth, async (req, res) => {
-    const { numeros, mensagem } = req.body;
-
-    if (!isReady) {
-        return res.status(500).json({ erro: "WhatsApp não conectado ainda" });
+    if (!ready) {
+        return res.status(500).json({ erro: "WhatsApp não conectado" });
     }
 
     try {
+        const { numeros, mensagem } = req.body;
+
         const lista = numeros.split(',');
 
         for (let numero of lista) {
             numero = numero.trim();
 
             if (!numero.includes('@c.us')) {
-                numero = numero + '@c.us';
+                numero += '@c.us';
             }
 
             await client.sendMessage(numero, mensagem);
@@ -140,53 +127,38 @@ app.post('/enviar', auth, async (req, res) => {
         res.json({ sucesso: true });
 
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ erro: "Erro ao enviar" });
+        res.status(500).json({ erro: "Erro envio" });
     }
 });
 
-//////////////////////////////////////////////////////////////////
-// 🤖 IA (mantida simples como estava)
-//////////////////////////////////////////////////////////////////
-
-let IA_TEXTO = "";
+// IA
+let IA = "";
 
 app.post('/salvar-ia', auth, (req, res) => {
-    IA_TEXTO = req.body.texto;
+    IA = req.body.texto;
     res.json({ ok: true });
 });
 
 app.get('/carregar-ia', auth, (req, res) => {
-    res.json({ texto: IA_TEXTO });
+    res.json({ texto: IA });
 });
 
-//////////////////////////////////////////////////////////////////
-// 🤖 AUTO RESPOSTA
-//////////////////////////////////////////////////////////////////
-
+// AUTO RESPOSTA
 setTimeout(() => {
     if (!client) return;
 
-    client.on('message', async msg => {
-        if (IA_TEXTO) {
-            msg.reply(IA_TEXTO);
-        }
+    client.on('message', msg => {
+        if (IA) msg.reply(IA);
     });
 
 }, 15000);
 
-//////////////////////////////////////////////////////////////////
-// 🌐 FRONTEND
-//////////////////////////////////////////////////////////////////
-
+// FRONT
 app.use(express.static(path.join(__dirname, 'public')));
 
-//////////////////////////////////////////////////////////////////
-// 🚀 START
-//////////////////////////////////////////////////////////////////
-
+// START
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log("🚀 Rodando na porta", PORT);
 });
