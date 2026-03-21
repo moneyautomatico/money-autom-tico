@@ -26,15 +26,18 @@ mongoose.connect(MONGO_URI)
 .then(async () => {
     console.log("✅ MongoDB conectado");
 
-    // CRIAÇÃO AUTOMÁTICA DO SEU USUÁRIO (Para evitar erro de login)
     const adminEmail = "Presidente.business@hotmail.com";
-    const adminPass = "123456"; // Altere aqui se desejar outra senha
+    const adminPass = "123456"; 
 
-    const existe = await User.findOne({ email: adminEmail });
-    if (!existe) {
-        await User.create({ email: adminEmail, password: adminPass, ia: "IA Ativa" });
-        console.log("👤 USUÁRIO MESTRE CRIADO: " + adminEmail);
-    }
+    // Tenta deletar se existir algo errado e cria do zero
+    await User.deleteOne({ email: adminEmail }); 
+    await User.create({ 
+        email: adminEmail, 
+        password: adminPass, 
+        ia: "IA Ativa" 
+    });
+
+    console.log("🚀 USUÁRIO MESTRE RESETADO E CRIADO: " + adminEmail);
 })
 .catch(err => console.log("❌ Erro MongoDB:", err));
 
