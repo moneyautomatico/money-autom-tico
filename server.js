@@ -12,18 +12,12 @@ const app = express();
 // 🔧 MIDDLEWARES
 app.use(express.json());
 app.use(cors());
-
-// 🔥 SERVIR PAINEL (IMPORTANTE)
 app.use(express.static('public'));
 
-// 🔗 CONEXÃO BANCO
-if (!process.env.MONGO_URL) {
-  console.log("❌ MONGO_URL não configurado");
-} else {
-  mongoose.connect(process.env.MONGO_URL)
-    .then(() => console.log("✅ Banco conectado"))
-    .catch(err => console.log("❌ ERRO MONGO:", err));
-}
+// 🔗 BANCO
+mongoose.connect(process.env.MONGO_URL)
+  .then(() => console.log("✅ Banco conectado"))
+  .catch(err => console.log("❌ ERRO MONGO:", err));
 
 // 👤 MODEL
 const UserSchema = new mongoose.Schema({
@@ -32,11 +26,36 @@ const UserSchema = new mongoose.Schema({
   admin: { type: Boolean, default: false },
   ativo: { type: Boolean, default: true },
   mensagens: { type: Array, default: [] },
-  delay_min: { type: Number, default: 10 },
-  delay_max: { type: Number, default: 30 }
+  ia_treinamento: { type: String, default: "" },
+  delay_min: { type: Number, default: 5 },
+  delay_max: { type: Number, default: 15 }
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
+
+// 🔐 AUTH
+function auth(req, res, next) {
+  const token = req.headers.authorization;
+
+  if (!token) return res.status(401).json({ erro: "Sem token" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "segredo");
+    req.user_id = decoded.id;
+    next();
+  } catch {
+    res.status(401).json({ erro: "Token inválido" });
+  }
+}
+
+// 👑 ADMIN
+async function adminOnly(req, res, next) {
+  const user = await User.findById(req.user_id);
+  if (!user || !user.admin) {
+    return res.status(403).json({ erro: "Acesso restrito" });
+  }
+  next();
+}
 
 // 🔐 REGISTER
 app.post('/register', async (req, res) => {
@@ -44,25 +63,21 @@ app.post('/register', async (req, res) => {
     const { email, senha } = req.body;
 
     if (!email || !senha) {
-      return res.status(400).json({ erro: "Email e senha obrigatórios" });
+      return res.status(400).json({ erro: "Dados obrigatórios" });
     }
 
     const existe = await User.findOne({ email });
-    if (existe) {
-      return res.status(400).json({ erro: "Email já cadastrado" });
-    }
+    if (existe) return res.status(400).json({ erro: "Email já existe" });
 
     const hash = await bcrypt.hash(senha, 10);
 
     await User.create({ email, senha: hash });
 
-    console.log("✅ Novo usuário:", email);
-
-    res.json({ msg: "Usuário criado com sucesso" });
+    res.json({ msg: "Conta criada com sucesso" });
 
   } catch (e) {
-    console.log("❌ ERRO REGISTER:", e);
-    res.status(500).json({ erro: e.message });
+    console.log(e);
+    res.status(500).json({ erro: "Erro no registro" });
   }
 });
 
@@ -71,23 +86,11 @@ app.post('/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
 
-    if (!email || !senha) {
-      return res.status(400).json({ erro: "Email e senha obrigatórios" });
-    }
-
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ erro: "Usuário não encontrado" });
-    }
-
-    if (!user.ativo) {
-      return res.status(403).json({ erro: "Usuário desativado" });
-    }
+    if (!user) return res.status(404).json({ erro: "Usuário não encontrado" });
 
     const ok = await bcrypt.compare(senha, user.senha);
-    if (!ok) {
-      return res.status(401).json({ erro: "Senha inválida" });
-    }
+    if (!ok) return res.status(401).json({ erro: "Senha inválida" });
 
     const token = jwt.sign(
       { id: user._id },
@@ -95,102 +98,56 @@ app.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({
-      token,
-      admin: user.admin
-    });
+    res.json({ token, admin: user.admin });
 
   } catch (e) {
-    console.log("❌ ERRO LOGIN:", e);
-    res.status(500).json({ erro: e.message });
+    res.status(500).json({ erro: "Erro no login" });
   }
 });
 
-// 🔐 AUTH
-function auth(req, res, next) {
-  const token = req.headers.authorization;
+// 🤖 SALVAR IA
+app.post('/ia/salvar', auth, async (req, res) => {
+  const { texto } = req.body;
 
-  if (!token) {
-    return res.status(401).json({ erro: "Sem token" });
-  }
+  await User.findByIdAndUpdate(req.user_id, {
+    ia_treinamento: texto
+  });
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "segredo");
-    req.user_id = decoded.id;
-    next();
-  } catch {
-    return res.status(401).json({ erro: "Token inválido" });
-  }
-}
+  res.json({ msg: "IA salva" });
+});
 
-// 🔐 ADMIN
-async function adminOnly(req, res, next) {
+// 🤖 BUSCAR IA
+app.get('/ia', auth, async (req, res) => {
   const user = await User.findById(req.user_id);
-  if (!user || !user.admin) {
-    return res.status(403).json({ erro: "Acesso restrito ao admin" });
-  }
-  next();
-}
+  res.json({ texto: user.ia_treinamento });
+});
 
 // 📤 CAMPANHA
 app.post('/campanha', auth, async (req, res) => {
-  try {
-    const { numeros, mensagem } = req.body;
+  const { numeros, mensagem } = req.body;
 
-    if (!numeros || numeros.length === 0) {
-      return res.status(400).json({ erro: "Informe os números" });
-    }
-
-    if (!mensagem) {
-      return res.status(400).json({ erro: "Informe a mensagem" });
-    }
-
-    console.log("🚀 Campanha iniciada");
-
-    const delay = (ms) => new Promise(r => setTimeout(r, ms));
-
-    (async () => {
-      for (let numero of numeros) {
-        console.log(`📤 Enviando para ${numero}: ${mensagem}`);
-
-        const tempo = Math.floor(Math.random() * 5000) + 5000;
-        console.log(`⏱️ Delay: ${tempo / 1000}s`);
-
-        await delay(tempo);
-      }
-
-      console.log("✅ Campanha finalizada");
-    })();
-
-    res.json({ ok: true });
-
-  } catch (e) {
-    console.log("❌ ERRO CAMPANHA:", e);
-    res.status(500).json({ erro: e.message });
+  if (!numeros || !mensagem) {
+    return res.status(400).json({ erro: "Dados inválidos" });
   }
+
+  console.log("🚀 Iniciando campanha...");
+
+  numeros.forEach(n => {
+    console.log("Enviando para:", n);
+  });
+
+  res.json({ msg: "Campanha iniciada" });
 });
 
-// 👑 ADMIN - LISTAR USUÁRIOS
+// 👑 ADMIN USERS
 app.get('/admin/users', auth, adminOnly, async (req, res) => {
   const users = await User.find().select('-senha');
   res.json(users);
 });
 
-// 📂 UPLOAD
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
-});
-
-const upload = multer({ storage });
-
-app.post('/upload', upload.single('file'), (req, res) => {
-  res.json({ url: `/uploads/${req.file.filename}` });
-});
-
 // 🚀 START
 const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 Money Automático rodando na porta " + PORT);
+app.listen(PORT, () => {
+  console.log("🚀 Servidor rodando na porta " + PORT);
 });
