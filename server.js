@@ -2,163 +2,141 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const path = require('path');
-
-// WHATSAPP
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// ENV
-const MONGO_URI = process.env.MONGO_URI;
-const JWT_SECRET = process.env.JWT_SECRET || "segredo";
+// ==================== CONFIG ====================
+const JWT_SECRET = "money_automatico_2026";
 
-// CONEXÃO BANCO (mantém antigo)
+// 🔥 SUA STRING DO BANCO (já corrigida)
+const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
+
+// ==================== MONGODB ====================
 mongoose.connect(MONGO_URI)
 .then(() => console.log("✅ MongoDB conectado"))
-.catch(err => console.log(err));
+.catch(err => console.log("❌ Erro MongoDB:", err));
 
-// MODEL (força coleção antiga)
-const User = mongoose.model('User', new mongoose.Schema({
+// ==================== MODELS ====================
+const UserSchema = new mongoose.Schema({
     email: String,
-    password: String
-}, { collection: 'users' }));
+    password: String,
+    ia: String
+});
 
-// LOGIN
-app.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
+const User = mongoose.model("User", UserSchema);
 
-        const user = await User.findOne({ email, password });
-
-        if (!user) {
-            return res.status(401).json({ erro: "Usuário inválido" });
-        }
-
-        const token = jwt.sign({ id: user._id }, JWT_SECRET);
-
-        res.json({
-            token,
-            userId: user._id.toString()
-        });
-
-    } catch (err) {
-        res.status(500).json({ erro: "Erro no login" });
+// ==================== WHATSAPP ====================
+const client = new Client({
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+        headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-software-rasterizer'
+        ]
     }
 });
 
-// AUTH
+client.on('qr', (qr) => {
+    console.log('📱 Escaneie o QR Code no terminal');
+});
+
+client.on('ready', () => {
+    console.log('✅ WhatsApp conectado!');
+});
+
+client.initialize();
+
+// ==================== AUTH ====================
 function auth(req, res, next) {
     const token = req.headers.authorization;
 
-    if (!token) return res.status(401).json({ erro: "Sem token" });
+    if (!token) return res.status(401).json({ error: "Sem token" });
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.userId = decoded.id;
         next();
     } catch {
-        res.status(401).json({ erro: "Token inválido" });
+        res.status(401).json({ error: "Token inválido" });
     }
 }
 
-// WHATSAPP
-let client;
-let ready = false;
+// ==================== ROTAS ====================
 
-async function startWhatsApp() {
-    client = new Client({
-        authStrategy: new LocalAuth({
-            dataPath: './session'
-        }),
-        puppeteer: {
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage'
-            ]
-        }
-    });
+// LOGIN
+app.post("/login", async (req, res) => {
+    const { email, password } = req.body;
 
-    client.on('qr', qr => {
-        console.log('📱 ESCANEIE O QR CODE:');
-        qrcode.generate(qr, { small: true });
-    });
+    const user = await User.findOne({ email, password });
 
-    client.on('ready', () => {
-        console.log('✅ WhatsApp pronto!');
-        ready = true;
-    });
-
-    client.on('disconnected', () => {
-        console.log('❌ WhatsApp desconectado');
-        ready = false;
-    });
-
-    await client.initialize();
-}
-
-startWhatsApp();
-
-// DISPARO
-app.post('/enviar', auth, async (req, res) => {
-    if (!ready) {
-        return res.status(500).json({ erro: "WhatsApp não conectado" });
+    if (!user) {
+        return res.status(400).json({ error: "Erro no login" });
     }
 
-    try {
-        const { numeros, mensagem } = req.body;
+    const token = jwt.sign({ id: user._id }, JWT_SECRET);
 
-        const lista = numeros.split(',');
-
-        for (let numero of lista) {
-            numero = numero.trim();
-
-            if (!numero.includes('@c.us')) {
-                numero += '@c.us';
-            }
-
-            await client.sendMessage(numero, mensagem);
-        }
-
-        res.json({ sucesso: true });
-
-    } catch (err) {
-        res.status(500).json({ erro: "Erro envio" });
-    }
+    res.json({
+        token,
+        userId: user._id
+    });
 });
 
-// IA
-let IA = "";
+// PEGAR DADOS DO USUÁRIO
+app.get("/user", auth, async (req, res) => {
+    const user = await User.findById(req.userId);
+    res.json(user);
+});
 
-app.post('/salvar-ia', auth, (req, res) => {
-    IA = req.body.texto;
+// SALVAR IA
+app.post("/salvar-ia", auth, async (req, res) => {
+    const { texto } = req.body;
+
+    await User.findByIdAndUpdate(req.userId, { ia: texto });
+
     res.json({ ok: true });
 });
 
-app.get('/carregar-ia', auth, (req, res) => {
-    res.json({ texto: IA });
+// CARREGAR IA
+app.get("/carregar-ia", auth, async (req, res) => {
+    const user = await User.findById(req.userId);
+    res.json({ texto: user.ia || "" });
 });
 
-// AUTO RESPOSTA
-setTimeout(() => {
-    if (!client) return;
+// DISPARO WHATSAPP
+app.post("/disparo", auth, async (req, res) => {
+    const { numeros, mensagem } = req.body;
 
-    client.on('message', msg => {
-        if (IA) msg.reply(IA);
-    });
+    try {
+        const lista = numeros.split(',');
 
-}, 15000);
+        for (let numero of lista) {
+            let num = numero.trim();
 
-// FRONT
-app.use(express.static(path.join(__dirname, 'public')));
+            if (!num.includes("@c.us")) {
+                num = num + "@c.us";
+            }
 
-// START
+            await client.sendMessage(num, mensagem);
+        }
+
+        res.json({ ok: true });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: "Erro ao enviar mensagens" });
+    }
+});
+
+// ==================== SERVIDOR ====================
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log("🚀 Rodando na porta", PORT);
+    console.log("🚀 Servidor rodando na porta " + PORT);
 });
