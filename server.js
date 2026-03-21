@@ -16,30 +16,39 @@ app.use(cors());
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || "segredo";
 
-// 🔗 CONEXÃO COM MONGO
+// 🔗 CONEXÃO COM BANCO ANTIGO (SEM ALTERAR NADA)
 mongoose.connect(MONGO_URI)
-.then(() => console.log("✅ MongoDB conectado"))
-.catch(err => console.log(err));
+.then(() => console.log("✅ MongoDB conectado (antigo mantido)"))
+.catch(err => console.log("❌ Erro Mongo:", err));
 
-// 📦 MODELO USUÁRIO
-const User = mongoose.model('User', {
+// 📦 MODELO (compatível com o que já existe)
+const User = mongoose.model('User', new mongoose.Schema({
     email: String,
     password: String
-});
+}, { collection: 'users' })); // 🔥 força usar coleção antiga
 
 // 🔐 LOGIN
 app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-    const user = await User.findOne({ email, password });
+        const user = await User.findOne({ email, password });
 
-    if (!user) {
-        return res.status(401).json({ erro: "Usuário inválido" });
+        if (!user) {
+            return res.status(401).json({ erro: "Usuário inválido" });
+        }
+
+        const token = jwt.sign({ id: user._id }, JWT_SECRET);
+
+        res.json({
+            token,
+            userId: user._id.toString()
+        });
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ erro: "Erro no login" });
     }
-
-    const token = jwt.sign({ id: user._id }, JWT_SECRET);
-
-    res.json({ token, userId: user._id });
 });
 
 // 🔐 MIDDLEWARE
@@ -57,37 +66,62 @@ function auth(req, res, next) {
     }
 }
 
-// 🔥 WHATSAPP CONFIG
+//////////////////////////////////////////////////////////////////
+// 🔥 WHATSAPP (RENDER COMPATÍVEL)
+//////////////////////////////////////////////////////////////////
+
 let client;
+let isReady = false;
 
-function iniciarWhatsApp() {
-    client = new Client({
-        authStrategy: new LocalAuth(),
-        puppeteer: {
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        }
-    });
+async function iniciarWhatsApp() {
+    try {
+        client = new Client({
+            authStrategy: new LocalAuth({
+                dataPath: './session' // evita perder sessão
+            }),
+            puppeteer: {
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu'
+                ]
+            }
+        });
 
-    client.on('qr', qr => {
-        console.log('📱 ESCANEIE O QR CODE:');
-        qrcode.generate(qr, { small: true });
-    });
+        client.on('qr', qr => {
+            console.log('📱 ESCANEIE O QR CODE:');
+            qrcode.generate(qr, { small: true });
+        });
 
-    client.on('ready', () => {
-        console.log('✅ WhatsApp conectado!');
-    });
+        client.on('ready', () => {
+            console.log('✅ WhatsApp conectado!');
+            isReady = true;
+        });
 
-    client.initialize();
+        client.on('disconnected', () => {
+            console.log('⚠️ WhatsApp desconectado');
+            isReady = false;
+        });
+
+        await client.initialize();
+
+    } catch (err) {
+        console.log("❌ Erro WhatsApp:", err);
+    }
 }
 
 iniciarWhatsApp();
 
+//////////////////////////////////////////////////////////////////
 // 📤 DISPARO
+//////////////////////////////////////////////////////////////////
+
 app.post('/enviar', auth, async (req, res) => {
     const { numeros, mensagem } = req.body;
 
-    if (!client) {
-        return res.status(500).json({ erro: "WhatsApp não conectado" });
+    if (!isReady) {
+        return res.status(500).json({ erro: "WhatsApp não conectado ainda" });
     }
 
     try {
@@ -104,13 +138,17 @@ app.post('/enviar', auth, async (req, res) => {
         }
 
         res.json({ sucesso: true });
+
     } catch (err) {
         console.log(err);
         res.status(500).json({ erro: "Erro ao enviar" });
     }
 });
 
-// 🤖 SALVAR IA
+//////////////////////////////////////////////////////////////////
+// 🤖 IA (mantida simples como estava)
+//////////////////////////////////////////////////////////////////
+
 let IA_TEXTO = "";
 
 app.post('/salvar-ia', auth, (req, res) => {
@@ -118,13 +156,15 @@ app.post('/salvar-ia', auth, (req, res) => {
     res.json({ ok: true });
 });
 
-// 🤖 CARREGAR IA
 app.get('/carregar-ia', auth, (req, res) => {
     res.json({ texto: IA_TEXTO });
 });
 
-// 📡 RESPOSTA AUTOMÁTICA
-function iniciarIA() {
+//////////////////////////////////////////////////////////////////
+// 🤖 AUTO RESPOSTA
+//////////////////////////////////////////////////////////////////
+
+setTimeout(() => {
     if (!client) return;
 
     client.on('message', async msg => {
@@ -132,16 +172,21 @@ function iniciarIA() {
             msg.reply(IA_TEXTO);
         }
     });
-}
 
-// ⏱️ GARANTE QUE IA INICIA
-setTimeout(iniciarIA, 10000);
+}, 15000);
 
-// 🌐 SERVIR FRONTEND
+//////////////////////////////////////////////////////////////////
+// 🌐 FRONTEND
+//////////////////////////////////////////////////////////////////
+
 app.use(express.static(path.join(__dirname, 'public')));
 
+//////////////////////////////////////////////////////////////////
 // 🚀 START
+//////////////////////////////////////////////////////////////////
+
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
