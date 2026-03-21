@@ -1,154 +1,22 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Automático - Painel de Controle</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        body { background:#0f172a; color:white; font-family: 'Segoe UI', sans-serif; margin:0; padding:20px; }
-        .container { max-width: 1000px; margin: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .box { background:#1e293b; padding:25px; border-radius:15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #334155; }
-        h1 { grid-column: 1 / -1; color: #22c55e; margin-bottom: 10px; }
-        h3 { margin-top: 0; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #16a34a; transform: translateY(-2px); }
-        #qrcode { background: white; padding: 10px; display: inline-block; margin-top: 10px; border-radius: 10px; }
-        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
-        .status-off { background: #ef4444; }
-        .status-on { background: #22c55e; }
-        .full-width { grid-column: 1 / -1; }
-        #log { background: #000; color: #00ff00; padding: 10px; height: 100px; overflow-y: auto; font-family: monospace; font-size: 12px; border-radius: 5px; margin-top: 10px; }
-    </style>
-</head>
-<body>
-
-    <div id="loginBox" style="text-align: center; margin-top: 100px;">
-        <div class="box" style="display: inline-block; width: 350px;">
-            <h2>🚀 Acessar Sistema</h2>
-            <input id="email" placeholder="Seu E-mail">
-            <input id="senha" type="password" placeholder="Sua Senha">
-            <button onclick="login()">Entrar no Painel</button>
-        </div>
+<div id="loginBox" style="text-align: center; margin-top: 100px;">
+    <div class="box" style="display: inline-block; width: 350px;">
+        <h2>🚀 Money Automático</h2>
+        <input id="email" placeholder="E-mail">
+        <input id="senha" type="password" placeholder="Senha">
+        <button onclick="login()">Entrar</button>
+        <button onclick="register()" style="background:#3b82f6; margin-top:10px;">Criar Nova Conta</button>
     </div>
+</div>
 
-    <div id="painel" class="container" style="display:none;">
-        <h1>🚀 Painel de Controle</h1>
-
-        <div class="box">
-            <h3>📱 Conexão WhatsApp</h3>
-            <div id="statusLabel" class="status-badge status-off">Verificando...</div>
-            <div id="qrContainer" style="display: none;">
-                <p style="font-size: 13px;">Escaneie para conectar:</p>
-                <div id="qrcode"></div>
-            </div>
-            <div id="checkMsg" style="display: none;">
-                <p>✅ WhatsApp está conectado e pronto!</p>
-            </div>
-            <div id="log">Aguardando sistema...</div>
-        </div>
-
-        <div class="box">
-            <h3>📤 Envio em Massa</h3>
-            <textarea id="numeros" rows="3" placeholder="Números separados por vírgula (Ex: 551199999999, 551188888888)"></textarea>
-            <textarea id="msg" rows="3" placeholder="Mensagem do disparo"></textarea>
-            <button onclick="disparar()">🚀 Iniciar Disparos</button>
-        </div>
-
-        <div class="box full-width">
-            <h3>🤖 Configuração da IA (Resposta Automática)</h3>
-            <p style="font-size: 13px; color: #94a3b8;">Esta mensagem será enviada automaticamente para qualquer pessoa que te chamar.</p>
-            <textarea id="txtIA" rows="2" placeholder="Ex: Olá! Sou o assistente virtual. Como posso te ajudar?"></textarea>
-            <button onclick="salvarIA()" style="background: #3b82f6;">Salvar Configuração</button>
-        </div>
-
-        <button onclick="logout()" style="background:#ef4444; width: 150px; margin-bottom: 50px;">Sair do Sistema</button>
-    </div>
-
-    <script>
-        let qrcodeGerado = null;
-
-        async function login() {
-            const res = await fetch("/login", {
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body: JSON.stringify({ email: email.value, password: senha.value })
-            });
-            const data = await res.json();
-            if(data.token) {
-                localStorage.setItem("token", data.token);
-                location.reload();
-            } else { alert("Erro: " + data.error); }
-        }
-
-        function logout() { localStorage.clear(); location.reload(); }
-
-        async function checkStatus() {
-            const token = localStorage.getItem("token");
-            if(!token) return;
-
-            try {
-                const res = await fetch("/status-whatsapp", { headers:{"Authorization":token}});
-                const data = await res.json();
-                const label = document.getElementById("statusLabel");
-                const log = document.getElementById("log");
-
-                if(data.status === "CONECTADO") {
-                    label.innerText = "CONECTADO";
-                    label.className = "status-badge status-on";
-                    document.getElementById("qrContainer").style.display = "none";
-                    document.getElementById("checkMsg").style.display = "block";
-                } else if(data.status && data.status.length > 50) {
-                    label.innerText = "AGUARDANDO QR CODE";
-                    label.className = "status-badge status-off";
-                    document.getElementById("qrContainer").style.display = "block";
-                    document.getElementById("checkMsg").style.display = "none";
-                    
-                    document.getElementById("qrcode").innerHTML = "";
-                    new QRCode(document.getElementById("qrcode"), { text: data.status, width: 150, height: 150 });
-                }
-            } catch (e) { console.log("Erro ao checar status"); }
-        }
-
-        window.onload = async () => {
-            const token = localStorage.getItem("token");
-            if(token) {
-                document.getElementById("loginBox").style.display="none";
-                document.getElementById("painel").style.display="grid";
-                
-                // Carrega texto da IA
-                const res = await fetch("/carregar-ia", { headers:{"Authorization":token}});
-                const data = await res.json();
-                document.getElementById("txtIA").value = data.texto;
-
-                // Checa status a cada 5 segundos
-                checkStatus();
-                setInterval(checkStatus, 5000);
-            }
-        };
-
-        async function disparar() {
-            const btn = event.target;
-            btn.innerText = "Enviando...";
-            const res = await fetch("/disparo", {
-                method:"POST",
-                headers:{"Content-Type":"application/json", "Authorization":localStorage.getItem("token")},
-                body: JSON.stringify({ numeros: numeros.value, mensagem: msg.value })
-            });
-            const data = await res.json();
-            btn.innerText = "🚀 Iniciar Disparos";
-            alert(data.ok ? "Disparos concluídos!" : "Erro no envio");
-        }
-
-        async function salvarIA() {
-            await fetch("/salvar-ia", {
-                method:"POST",
-                headers:{"Content-Type":"application/json", "Authorization":localStorage.getItem("token")},
-                body: JSON.stringify({ texto: txtIA.value })
-            });
-            alert("Configuração da IA Salva!");
-        }
-    </script>
-</body>
-</html>
+<script>
+async function register() {
+    const res = await fetch("/register", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ email: email.value, password: senha.value })
+    });
+    const data = await res.json();
+    alert(data.msg || data.error);
+}
+// Mantenha o restante das funções de login e painel que já enviamos
+</script>
