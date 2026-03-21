@@ -1,133 +1,177 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-<title>Money Automático</title>
-
-<style>
-body { background:#0f172a; color:white; font-family:Arial; text-align:center; }
-.box { margin-top:20px; padding:20px; border:1px solid #1e293b; border-radius:10px; display:inline-block; }
-input { padding:10px; margin:5px; border-radius:5px; border:none; width:250px; }
-button { padding:10px; margin:5px; border-radius:5px; border:none; background:#22c55e; color:white; }
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Automático - Dashboard</title>
+    <style>
+        body { background:#0f172a; color:white; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align:center; padding: 20px; }
+        .box { margin-top:20px; padding:25px; border:1px solid #1e293b; border-radius:12px; display:inline-block; background: #1e293b; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); width: 320px; vertical-align: top; margin-inline: 10px; }
+        input { padding:12px; margin:8px 0; border-radius:6px; border:1px solid #334155; width:100%; box-sizing: border-box; background: #0f172a; color: white; }
+        button { padding:12px; margin:10px 5px; border-radius:6px; border:none; background:#22c55e; color:white; font-weight: bold; cursor: pointer; transition: background 0.3s; width: 100%; }
+        button:hover { background: #16a34a; }
+        .btn-secondary { background: #334155; }
+        .btn-logout { background: #ef4444; width: auto; padding: 10px 25px; margin-top: 30px; }
+        h3 { margin-top: 0; color: #38bdf8; }
+    </style>
 </head>
 
 <body>
 
-<h1>🚀 Money Automático</h1>
+    <h1>🚀 Money Automático</h1>
 
-<div id="loginBox">
-<div class="box">
-<h3>Login</h3>
-<input id="email" placeholder="Email"><br>
-<input id="senha" type="password" placeholder="Senha"><br>
-<button onclick="login()">Entrar</button>
-</div>
-</div>
+    <div id="loginBox">
+        <div class="box">
+            <h3>Acessar Conta</h3>
+            <input id="emailInput" placeholder="Seu E-mail">
+            <input id="senhaInput" type="password" placeholder="Sua Senha">
+            <button onclick="login()">Entrar no Sistema</button>
+        </div>
+    </div>
 
-<div id="painel" style="display:none;">
-<h3 id="userId"></h3>
+    <div id="painel" style="display:none;">
+        <p id="userDisplay" style="color: #94a3b8;"></p>
 
-<div class="box">
-<h3>📤 Disparo</h3>
-<input id="numeros" placeholder="55819999,55818888"><br>
-<input id="mensagem" placeholder="Mensagem"><br>
-<button onclick="disparar()">Disparar</button>
-</div>
+        <div class="box">
+            <h3>📤 Disparo em Massa</h3>
+            <p style="font-size: 12px; color: #94a3b8;">Separe os números por vírgula</p>
+            <input id="numeros" placeholder="Ex: 5511999999999, 5511888888888">
+            <input id="mensagem" placeholder="Sua mensagem aqui">
+            <button onclick="disparar()">Iniciar Envios</button>
+        </div>
 
-<div class="box">
-<h3>🤖 IA</h3>
-<input id="textoIA"><br>
-<button onclick="salvarIA()">Salvar</button>
-<button onclick="carregarIA()">Carregar</button>
-</div>
+        <div class="box">
+            <h3>🤖 Configuração IA</h3>
+            <input id="textoIA" placeholder="Comando ou texto da IA">
+            <button onclick="salvarIA()">Salvar Configuração</button>
+            <button class="btn-secondary" onclick="carregarIA()">Recarregar</button>
+        </div>
 
-<button onclick="logout()">Sair</button>
-</div>
+        <br>
+        <button class="btn-logout" onclick="logout()">Sair do Sistema</button>
+    </div>
 
-<script>
+    <script>
+        // Função de Login
+        async function login() {
+            const email = document.getElementById("emailInput").value;
+            const password = document.getElementById("senhaInput").value;
 
-async function login() {
-  const res = await fetch("/login", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      email: email.value,
-      password: senha.value
-    })
-  });
+            try {
+                const res = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
 
-  const data = await res.json();
+                const data = await res.json();
 
-  if (!data.token || !data.userId) {
-    alert("Erro no login");
-    return;
-  }
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
 
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("userId", data.userId);
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("userId", data.userId);
 
-  loginBox.style.display="none";
-  painel.style.display="block";
-  userId.innerText="Seu ID: "+data.userId;
-}
+                mostrarPainel(data.userId);
+                carregarIA(); // Carrega automaticamente a IA ao logar
 
-window.onload = () => {
-  const token = localStorage.getItem("token");
-  const id = localStorage.getItem("userId");
+            } catch (err) {
+                alert("Erro ao conectar com o servidor.");
+            }
+        }
 
-  if (token && id && id !== "null") {
-    loginBox.style.display="none";
-    painel.style.display="block";
-    userId.innerText="Seu ID: "+id;
-  }
-};
+        // Função para mostrar o painel e esconder o login
+        void function mostrarPainel(id) {
+            document.getElementById("loginBox").style.display = "none";
+            document.getElementById("painel").style.display = "block";
+            document.getElementById("userDisplay").innerText = "ID do Operador: " + id;
+        }
 
-async function disparar() {
-  const res = await fetch("/enviar", {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":localStorage.getItem("token")
-    },
-    body: JSON.stringify({
-      numeros: numeros.value,
-      mensagem: mensagem.value
-    })
-  });
+        // Verifica sessão ao carregar a página
+        window.onload = () => {
+            const token = localStorage.getItem("token");
+            const id = localStorage.getItem("userId");
 
-  const data = await res.json();
-  alert(data.sucesso ? "Enviado!" : "Erro");
-}
+            if (token && id && id !== "null") {
+                document.getElementById("loginBox").style.display = "none";
+                document.getElementById("painel").style.display = "block";
+                document.getElementById("userDisplay").innerText = "ID do Operador: " + id;
+                carregarIA();
+            }
+        };
 
-async function salvarIA() {
-  await fetch("/salvar-ia", {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":localStorage.getItem("token")
-    },
-    body: JSON.stringify({ texto: textoIA.value })
-  });
+        // Função de Disparo (Sincronizada com a rota /disparo)
+        async function disparar() {
+            const token = localStorage.getItem("token");
+            try {
+                const res = await fetch("/disparo", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": token
+                    },
+                    body: JSON.stringify({
+                        numeros: document.getElementById("numeros").value,
+                        mensagem: document.getElementById("mensagem").value
+                    })
+                });
 
-  alert("Salvo!");
-}
+                const data = await res.json();
+                if (data.ok) {
+                    alert("✅ Disparos concluídos com sucesso!");
+                } else {
+                    alert("❌ Erro: " + (data.error || "Falha no envio"));
+                }
+            } catch (err) {
+                alert("Erro ao processar disparo.");
+            }
+        }
 
-async function carregarIA() {
-  const res = await fetch("/carregar-ia", {
-    headers:{ "Authorization":localStorage.getItem("token") }
-  });
+        // Funções de IA
+        async function salvarIA() {
+            const token = localStorage.getItem("token");
+            const texto = document.getElementById("textoIA").value;
 
-  const data = await res.json();
-  textoIA.value = data.texto;
-}
+            try {
+                const res = await fetch("/salvar-ia", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": token
+                    },
+                    body: JSON.stringify({ texto })
+                });
 
-function logout() {
-  localStorage.clear();
-  location.reload();
-}
+                const data = await res.json();
+                if (data.ok) alert("✅ Configuração da IA salva!");
+            } catch (err) {
+                alert("Erro ao salvar.");
+            }
+        }
 
-</script>
+        async function carregarIA() {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            try {
+                const res = await fetch("/carregar-ia", {
+                    headers: { "Authorization": token }
+                });
+
+                const data = await res.json();
+                document.getElementById("textoIA").value = data.texto || "";
+            } catch (err) {
+                console.error("Erro ao carregar IA");
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+    </script>
 
 </body>
 </html>
