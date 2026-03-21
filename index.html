@@ -1,107 +1,69 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Automático | Login</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #334155; width: 100%; max-width: 350px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-outline { background: transparent; border: 1px solid #334155; margin-top: 10px; }
-        #dash { display: none; width: 90%; max-width: 800px; }
-    </style>
-</head>
-<body>
+<div id="adminPanel" style="display: none;" class="card">
+    <h2 style="color: #fbbf24;">👑 Painel Master (Administrador)</h2>
+    <p>Lista de todos os usuários do sistema:</p>
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+        <thead>
+            <tr style="border-bottom: 1px solid #334155;">
+                <th>E-mail</th>
+                <th>Status Whats</th>
+                <th>Msg Enviadas</th>
+                <th>IA Configurada</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="userTable">
+            </tbody>
+    </table>
+</div>
 
-    <div id="authArea" class="card">
-        <h2 style="color: var(--primary)">🚀 Money Automático</h2>
-        <p style="font-size: 14px; color: #94a3b8">Entre ou crie sua conta agora</p>
-        <input id="email" type="email" placeholder="E-mail">
-        <input id="senha" type="password" placeholder="Senha">
-        <button onclick="auth('login')">Entrar no Painel</button>
-        <button onclick="auth('register')" class="btn-outline">Criar Novo Usuário</button>
-    </div>
+<script>
+// No seu script de login, adicione:
+async function auth(tipo) {
+    // ... fetch normal ...
+    if(data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role); // Salva se é admin
+        location.reload();
+    }
+}
 
-    <div id="dash">
-        <div class="card" style="max-width: none;">
-            <div style="display:flex; justify-content: space-between;">
-                <h3>Painel de Controle</h3>
-                <button onclick="logout()" style="width: auto; background: #ef4444; padding: 5px 15px;">Sair</button>
-            </div>
-            <hr style="border-color: #334155;">
-            <div id="status">Status: Verificando...</div>
-            <div id="qrcode" style="background:white; padding:10px; display:none; margin: 20px auto; width: 150px;"></div>
-            
-            <h4>Configurar IA</h4>
-            <textarea id="txtIA" style="width:100%; background:#0f172a; color:white; border-radius:8px; padding:10px;"></textarea>
-            <button onclick="salvarIA()">Salvar Mensagem</button>
+async function loadAdminData() {
+    if(localStorage.getItem("role") !== "admin") return;
+    document.getElementById("adminPanel").style.display = "block";
+    
+    const res = await fetch("/admin/users", { headers: {"Authorization": localStorage.getItem("token")}});
+    const users = await res.json();
+    const table = document.getElementById("userTable");
+    table.innerHTML = "";
 
-            <h4>Disparos</h4>
-            <input id="nums" placeholder="Números separados por vírgula">
-            <textarea id="msg" style="width:100%; background:#0f172a; color:white; border-radius:8px; padding:10px;"></textarea>
-            <button onclick="enviar()">Iniciar Disparos</button>
-        </div>
-    </div>
+    users.forEach(u => {
+        table.innerHTML += `
+            <tr style="border-bottom: 1px solid #334155;">
+                <td>${u.email}</td>
+                <td style="color: ${u.status === 'CONECTADO' ? '#22c55e' : '#ef4444'}">${u.status}</td>
+                <td>${u.totalEnviados}</td>
+                <td>${u.ia.substring(0,20)}...</td>
+                <td><button onclick="editUser('${u._id}', '${u.email}', '${u.ia}')" style="padding:4px; font-size:10px;">Editar</button></td>
+            </tr>
+        `;
+    });
+}
 
-    <script>
-        async function auth(tipo) {
-            const res = await fetch(`/${tipo}`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ email: email.value, password: senha.value })
-            });
-            const data = await res.json();
-            if(data.token) {
-                localStorage.setItem("token", data.token);
-                location.reload();
-            } else { alert(data.msg || data.error); }
-        }
+async function editUser(id, email, ia) {
+    const novoEmail = prompt("Novo e-mail:", email);
+    const novaIA = prompt("Nova frase da IA:", ia);
+    if(novoEmail && novaIA) {
+        await fetch("/admin/edit-user", {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "Authorization": localStorage.getItem("token")},
+            body: JSON.stringify({ id, email: novoEmail, ia: novaIA })
+        });
+        loadAdminData();
+    }
+}
 
-        function logout() { localStorage.clear(); location.reload(); }
-
-        async function carregar() {
-            const token = localStorage.getItem("token");
-            if(!token) return;
-            document.getElementById("authArea").style.display = "none";
-            document.getElementById("dash").style.display = "block";
-
-            // Status WhatsApp
-            setInterval(async () => {
-                const r = await fetch("/status-whatsapp", { headers: {"Authorization": token}});
-                const d = await r.json();
-                const st = document.getElementById("status");
-                const qr = document.getElementById("qrcode");
-                if(d.status === "CONECTADO") {
-                    st.innerHTML = "✅ WhatsApp Conectado";
-                    qr.style.display = "none";
-                } else if(d.status.length > 50) {
-                    st.innerHTML = "⚠️ Escaneie o QR Code abaixo:";
-                    qr.style.display = "block";
-                    qr.innerHTML = "";
-                    new QRCode(qr, { text: d.status, width: 150, height: 150 });
-                }
-            }, 5000);
-
-            // Carregar IA
-            const rIA = await fetch("/user-data", { headers: {"Authorization": token}});
-            const dIA = await rIA.json();
-            document.getElementById("txtIA").value = dIA.ia;
-        }
-
-        async function salvarIA() {
-            await fetch("/salvar-ia", {
-                method: "POST",
-                headers: {"Content-Type": "application/json", "Authorization": localStorage.getItem("token")},
-                body: JSON.stringify({ texto: txtIA.value })
-            });
-            alert("IA Atualizada!");
-        }
-
-        window.onload = carregar;
-    </script>
-</body>
-</html>
+// Chame loadAdminData() dentro do seu window.onload
+if(localStorage.getItem("token")) {
+    loadAdminData();
+}
+</script>
