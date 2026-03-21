@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin - Money Automático</title>
+</head>
+<body style="background:#0f172a;color:white;text-align:center;">
+
+<h1>👑 Painel Administrativo</h1>
+
+<input id="email" placeholder="Email"><br>
+<input id="senha" type="password" placeholder="Senha"><br>
+<button onclick="login()">Entrar</button>
+
+<div id="painel" style="display:none;">
+  <h3>Usuários</h3>
+  <button onclick="carregarUsuarios()">Carregar</button>
+  <ul id="lista"></ul>
+</div>
+
+<script>
+
+let token = "";
+
+async function login() {
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      email: email.value,
+      senha: senha.value
+    })
+  });
+
+  const data = await res.json();
+
+  if (!data.admin) {
+    return alert("Acesso apenas para admin");
+  }
+
+  token = data.token;
+  painel.style.display = "block";
+}
+
+async function carregarUsuarios() {
+  const res = await fetch("/admin/users", {
+    headers: { "Authorization": token }
+  });
+
+  const data = await res.json();
+
+  lista.innerHTML = "";
+
+  data.forEach(u => {
+    lista.innerHTML += `<li>${u.email}</li>`;
+  });
+}
+
+</script>
+
+</body>
+</html>
