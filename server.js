@@ -23,24 +23,23 @@ const User = mongoose.model("User", UserSchema);
 mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Multi-User Ativo"));
 
 // ==================== GERENCIADOR DE INSTÂNCIAS ====================
-const clientes = {}; // Guarda os objetos do WhatsApp de cada usuário { userId: client }
-const qrcodes = {}; // Guarda o QR Code atual de cada usuário { userId: qr }
+const clientes = {}; 
+const qrcodes = {}; 
 
 async function inicializarWhatsapp(userId) {
-    if (clientes[userId]) return; // Já está rodando
+    if (clientes[userId]) return; 
 
     const client = new Client({
         authStrategy: new LocalAuth({ clientId: userId, dataPath: './sessions' }),
         puppeteer: {
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--single-process']
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--single-process', '--disable-gpu']
         }
     });
 
     client.on('qr', (qr) => { qrcodes[userId] = qr; });
-    client.on('ready', () => { qrcodes[userId] = "CONECTADO"; console.log(`✅ User ${userId} conectado!`); });
+    client.on('ready', () => { qrcodes[userId] = "CONECTADO"; console.log(`✅ Usuário ${userId} conectado!`); });
 
-    // IA Individual: Cada um responde com sua própria frase
     client.on('message', async msg => {
         if (msg.fromMe) return;
         const user = await User.findById(userId);
@@ -53,19 +52,19 @@ async function inicializarWhatsapp(userId) {
 
 // ==================== ROTAS DE ACESSO ====================
 
-// CADASTRO (Novo!)
 app.post("/register", async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const email = (req.body.email || "").toLowerCase().trim();
+        const password = (req.body.password || "").toString().trim();
+        
         const userExist = await User.findOne({ email });
         if(userExist) return res.status(400).json({ error: "E-mail já cadastrado" });
 
-        const newUser = await User.create({ email, password });
+        await User.create({ email, password });
         res.json({ ok: true, msg: "Conta criada com sucesso!" });
     } catch (err) { res.status(500).json({ error: "Erro ao criar conta" }); }
 });
 
-// LOGIN
 app.post("/login", async (req, res) => {
     const email = (req.body.email || "").toLowerCase().trim();
     const password = (req.body.password || "").toString().trim();
@@ -74,14 +73,10 @@ app.post("/login", async (req, res) => {
     if (!user) return res.status(400).json({ error: "Dados incorretos" });
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET);
-    
-    // Assim que loga, o servidor tenta ligar o "motor" do WhatsApp desse usuário
     inicializarWhatsapp(user._id.toString());
-
     res.json({ token, userId: user._id });
 });
 
-// MIDDLEWARE
 function auth(req, res, next) {
     const token = req.headers.authorization;
     try {
@@ -91,7 +86,6 @@ function auth(req, res, next) {
     } catch { res.status(401).json({ error: "Sessão expirada" }); }
 }
 
-// STATUS E DISPAROS INDIVIDUAIS
 app.get("/status-whatsapp", auth, (req, res) => {
     res.json({ status: qrcodes[req.userId] || "INICIANDO" });
 });
