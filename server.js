@@ -3,11 +3,21 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const path = require("path");
+
 require("dotenv").config();
 
 const app = express();
+
 app.use(express.json());
 app.use(cors());
+
+// 🔥 SERVIR FRONTEND (CORRIGE O "Cannot GET /")
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 // 🔗 CONEXÃO COM MONGO
 mongoose.connect(process.env.MONGO_URI)
@@ -43,11 +53,10 @@ app.post("/login", async (req, res) => {
       process.env.JWT_SECRET
     );
 
-    // 🔥 AQUI ESTÁ A CORREÇÃO PRINCIPAL
     res.json({
       token,
       admin: user.admin,
-      user_id: user._id
+      user_id: user._id // 🔥 CORREÇÃO
     });
 
   } catch (err) {
@@ -74,7 +83,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// 🔐 MIDDLEWARE
+// 🔐 MIDDLEWARE AUTH
 function auth(req, res, next) {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ erro: "Sem token" });
@@ -87,6 +96,15 @@ function auth(req, res, next) {
     res.status(401).json({ erro: "Token inválido" });
   }
 }
+
+// 📤 CAMPANHA (DISPARO)
+app.post("/campanha", auth, async (req, res) => {
+  const { numeros, mensagem } = req.body;
+
+  console.log("📤 Disparo:", numeros, mensagem);
+
+  res.json({ msg: "Disparo recebido (simulação)" });
+});
 
 // 🤖 SALVAR IA
 app.post("/ia/salvar", auth, async (req, res) => {
@@ -107,7 +125,7 @@ app.get("/ia", auth, async (req, res) => {
   res.json({ texto: ia?.texto || "" });
 });
 
-// 🤖 RESPONDER IA
+// 🤖 RESPONDER IA (BOT USA ISSO)
 app.post("/ia/responder", async (req, res) => {
   const { mensagem, user_id } = req.body;
 
@@ -134,6 +152,7 @@ app.get("/admin/users", auth, async (req, res) => {
 
 // 🚀 START
 const PORT = process.env.PORT || 8080;
+
 app.listen(PORT, () => {
   console.log("🚀 Servidor rodando na porta " + PORT);
 });
