@@ -3,71 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Automático | Dashboard</title>
+    <title>Money Automático</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; }
-        .app-container { width: 100%; max-width: 900px; padding: 20px; }
-        .card { background: var(--card); border-radius: 16px; padding: 24px; border: 1px solid #334155; margin-bottom: 20px; }
-        input, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 15px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: 700; cursor: pointer; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        th, td { padding: 10px; border-bottom: 1px solid #334155; text-align: left; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid #334155; margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 6px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
+        .btn-reg { background: #3b82f6; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 8px; border-bottom: 1px solid #334155; text-align: left; }
     </style>
 </head>
 <body>
-    <div class="app-container">
+    <div style="width: 100%; max-width: 800px; padding: 20px;">
         
-        <div id="authScreen" class="card" style="max-width: 400px; margin: 100px auto;">
+        <div id="authArea" class="card" style="max-width: 350px; margin: 50px auto;">
             <h2 style="text-align: center; color: var(--primary)">🚀 Money Automático</h2>
-            <input id="email" type="email" placeholder="Seu E-mail">
-            <input id="pass" type="password" placeholder="Sua Senha">
-            <button onclick="auth('login')">Entrar no Painel</button>
-            <button onclick="auth('register')" style="background: #3b82f6; margin-top: 10px;">Criar Novo Usuário</button>
+            <input id="email" type="email" placeholder="E-mail">
+            <input id="pass" type="password" placeholder="Senha">
+            <button onclick="auth('login')">Entrar</button>
+            <button onclick="auth('register')" class="btn-reg">Criar Nova Conta</button>
         </div>
 
-        <div id="dashScreen" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>💰 Meu Robô</h2>
-                <button onclick="logout()" style="width: auto; background: #ef4444;">Sair</button>
+        <div id="dashArea" style="display: none;">
+            <div class="card">
+                <h3>📱 Status: <span id="stxt">Verificando...</span></h3>
+                <div id="qrcode" style="background: white; padding: 10px; width: 150px; margin: 10px auto; display: none;"></div>
             </div>
 
-            <div class="grid">
-                <div class="card">
-                    <h3>📱 Conexão WhatsApp</h3>
-                    <div id="statusBadge">Verificando...</div>
-                    <div id="qrcode" style="background: white; padding: 10px; margin: 15px auto; width: 150px; display: none;"></div>
-                </div>
-                <div class="card">
-                    <h3>🤖 Minha IA</h3>
-                    <textarea id="iaText" rows="3"></textarea>
-                    <button onclick="saveIA()">Salvar Configuração</button>
-                </div>
-            </div>
-
-            <div id="adminPanel" class="card" style="display: none; border: 2px solid #fbbf24;">
-                <h2 style="color: #fbbf24;">👑 Painel Master (Administrador)</h2>
+            <div id="adminPanel" class="card" style="display: none; border-color: #fbbf24;">
+                <h3 style="color: #fbbf24;">👑 Painel Master</h3>
                 <table>
-                    <thead>
-                        <tr>
-                            <th>E-mail</th>
-                            <th>Status</th>
-                            <th>Envios</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="userTable"></tbody>
+                    <thead><tr><th>Usuário</th><th>Status</th><th>Envios</th></tr></thead>
+                    <tbody id="userList"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
-        const getToken = () => localStorage.getItem("token");
-
         async function auth(tipo) {
             const res = await fetch(`/${tipo}`, {
                 method: 'POST',
@@ -75,3 +51,48 @@
                 body: JSON.stringify({ email: email.value, password: pass.value })
             });
             const data = await res.json();
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("role", data.role);
+                location.reload();
+            } else { alert(data.error || "Erro"); }
+        }
+
+        async function loadAdmin() {
+            if (localStorage.getItem("role") !== "admin") return;
+            document.getElementById("adminPanel").style.display = "block";
+            const res = await fetch("/admin/users", { headers: { "Authorization": localStorage.getItem("token") } });
+            const users = await res.json();
+            document.getElementById("userList").innerHTML = users.map(u => `
+                <tr><td>${u.email}</td><td>${u.status}</td><td>${u.totalEnviados}</td></tr>
+            `).join('');
+        }
+
+        async function sync() {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+            document.getElementById("authArea").style.display = "none";
+            document.getElementById("dashArea").style.display = "block";
+
+            const res = await fetch("/status-whatsapp", { headers: { "Authorization": token } });
+            const data = await res.json();
+            const qr = document.getElementById("qrcode");
+            if (data.status === "CONECTADO") {
+                document.getElementById("stxt").innerText = "Conectado";
+                qr.style.display = "none";
+            } else if (data.status.length > 50) {
+                document.getElementById("stxt").innerText = "Escaneie o QR";
+                qr.style.display = "block";
+                qr.innerHTML = "";
+                new QRCode(qr, { text: data.status, width: 150, height: 150 });
+            }
+        }
+
+        if (localStorage.getItem("token")) {
+            sync();
+            loadAdmin();
+            setInterval(sync, 10000);
+        }
+    </script>
+</body>
+</html>
