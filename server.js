@@ -21,20 +21,28 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", UserSchema);
 
-// ==================== CONEXÃO MONGODB + AUTO-RESET ====================
+// ==================== CONEXÃO MONGODB + NOVO USUÁRIO MESTRE ====================
 mongoose.connect(MONGO_URI)
 .then(async () => {
     console.log("✅ MongoDB conectado");
-    const adminEmail = "presidente.business@hotmail.com";
+    
+    // Configuração do seu novo usuário
+    const adminEmail = "tiagoscosta.business@gmail.com";
     const adminPass = "123456"; 
 
+    // Reset de segurança para garantir que o acesso funcione sempre
     await User.deleteOne({ email: adminEmail }); 
-    await User.create({ email: adminEmail, password: adminPass, ia: "IA Ativa: Como posso te ajudar?" });
-    console.log("🚀 USUÁRIO MESTRE CRIADO: " + adminEmail);
+    await User.create({ 
+        email: adminEmail, 
+        password: adminPass, 
+        ia: "IA Ativa: Olá! Como posso te ajudar hoje?" 
+    });
+    
+    console.log("🚀 USUÁRIO MESTRE ATUALIZADO: " + adminEmail);
 })
 .catch(err => console.log("❌ Erro MongoDB:", err));
 
-// ==================== MOTOR WHATSAPP (ULTRA-LEVE PARA RAILWAY) ====================
+// ==================== MOTOR WHATSAPP (OTIMIZADO RAILWAY) ====================
 let qrCodeAtual = ""; 
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './sessions' }), 
@@ -48,37 +56,35 @@ const client = new Client({
             '--no-first-run',
             '--no-zygote',
             '--single-process', 
-            '--disable-gpu',
-            '--proxy-server="direct://"',
-            '--proxy-bypass-list=*'
+            '--disable-gpu'
         ]
     }
 });
 
 client.on('qr', (qr) => { 
     qrCodeAtual = qr; 
-    console.log("📱 QR Code disponível no painel admin.");
+    console.log("📱 Novo QR Code gerado para o painel.");
 });
 
 client.on('ready', () => { 
     qrCodeAtual = "CONECTADO"; 
-    console.log('✅ WhatsApp Conectado com Sucesso!'); 
+    console.log('✅ WhatsApp Conectado!'); 
 });
 
-// Resposta Automática
+// Lógica de Resposta Automática (IA)
 client.on('message', async msg => {
     if (msg.fromMe) return; 
     try {
-        const user = await User.findOne({ email: "presidente.business@hotmail.com" });
+        const user = await User.findOne({ email: "tiagoscosta.business@gmail.com" });
         if (user && user.ia) {
             await msg.reply(user.ia);
         }
     } catch (err) {
-        console.error("Erro na resposta automática:", err);
+        console.log("Erro na resposta automática:", err);
     }
 });
 
-client.initialize().catch(err => console.error("Falha ao iniciar WhatsApp:", err));
+client.initialize().catch(err => console.log("Erro ao iniciar WhatsApp:", err));
 
 // ==================== MIDDLEWARE AUTH ====================
 function auth(req, res, next) {
@@ -87,19 +93,22 @@ function auth(req, res, next) {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.userId = decoded.id;
         next();
-    } catch { res.status(401).json({ error: "Acesso negado" }); }
+    } catch { res.status(401).json({ error: "Token inválido" }); }
 }
 
 // ==================== ROTAS API ====================
 app.post("/login", async (req, res) => {
-    const email = (req.body.email || "").toLowerCase().trim();
-    const password = (req.body.password || req.body.senha || "").toString().trim();
-    const user = await User.findOne({ email, password });
-    
-    if (!user) return res.status(400).json({ error: "Dados incorretos" });
-    
-    const token = jwt.sign({ id: user._id }, JWT_SECRET);
-    res.json({ token, userId: user._id });
+    try {
+        const email = (req.body.email || "").toLowerCase().trim();
+        const password = (req.body.password || req.body.senha || "").toString().trim();
+        
+        const user = await User.findOne({ email, password });
+        
+        if (!user) return res.status(400).json({ error: "Usuário ou senha incorretos" });
+        
+        const token = jwt.sign({ id: user._id }, JWT_SECRET);
+        res.json({ token, userId: user._id });
+    } catch (err) { res.status(500).json({ error: "Erro no servidor" }); }
 });
 
 app.get("/status-whatsapp", auth, (req, res) => res.json({ status: qrCodeAtual }));
@@ -124,16 +133,14 @@ app.post("/disparo", auth, async (req, res) => {
             await client.sendMessage(num, mensagem);
         }
         res.json({ ok: true });
-    } catch (err) { res.status(500).json({ error: "Falha no envio" }); }
+    } catch (err) { res.status(500).json({ error: "Erro no envio" }); }
 });
 
-// ==================== SERVIR ARQUIVOS ====================
+// ==================== FRONTEND ====================
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.resolve(__dirname, 'index.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
-// Porta Dinâmica Railway
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor Ativo na porta ${PORT}`);
+    console.log(`🚀 Money Automático rodando na porta ${PORT}`);
 });
