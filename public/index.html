@@ -1,90 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Money Automático</title>
+<title>Money Automático</title>
 
-  <style>
-    body {
-      background: #0f172a;
-      color: white;
-      font-family: Arial;
-      text-align: center;
-    }
+<style>
+body { background:#0f172a; color:white; font-family:Arial; text-align:center; }
+.box { margin-top:20px; padding:20px; border:1px solid #1e293b; border-radius:10px; display:inline-block; }
+input { padding:10px; margin:5px; border-radius:5px; border:none; width:250px; }
+button { padding:10px; margin:5px; border-radius:5px; border:none; background:#22c55e; color:white; }
+</style>
 
-    .box {
-      margin-top: 20px;
-      padding: 20px;
-      border: 1px solid #1e293b;
-      border-radius: 10px;
-      display: inline-block;
-    }
-
-    input {
-      padding: 10px;
-      margin: 5px;
-      border-radius: 5px;
-      border: none;
-      width: 250px;
-    }
-
-    button {
-      padding: 10px;
-      margin: 5px;
-      border-radius: 5px;
-      border: none;
-      background: #22c55e;
-      color: white;
-      cursor: pointer;
-    }
-  </style>
 </head>
 
 <body>
 
 <h1>🚀 Money Automático</h1>
 
-<!-- LOGIN -->
 <div id="loginBox">
-  <div class="box">
-    <h3>Login</h3>
-    <input id="email" placeholder="Email"><br>
-    <input id="senha" type="password" placeholder="Senha"><br>
-    <button onclick="login()">Entrar</button>
-  </div>
+<div class="box">
+<h3>Login</h3>
+<input id="email" placeholder="Email"><br>
+<input id="senha" type="password" placeholder="Senha"><br>
+<button onclick="login()">Entrar</button>
+</div>
 </div>
 
-<!-- PAINEL -->
 <div id="painel" style="display:none;">
-  
-  <h3 id="userId"></h3>
+<h3 id="userId"></h3>
 
-  <!-- DISPARO -->
-  <div class="box">
-    <h3>📤 Disparo WhatsApp</h3>
-    <input id="numeros" placeholder="Ex: 558199999999,558188888888"><br>
-    <input id="mensagem" placeholder="Mensagem"><br>
-    <button onclick="disparar()">Disparar</button>
-  </div>
+<div class="box">
+<h3>📤 Disparo</h3>
+<input id="numeros" placeholder="55819999,55818888"><br>
+<input id="mensagem" placeholder="Mensagem"><br>
+<button onclick="disparar()">Disparar</button>
+</div>
 
-  <!-- IA -->
-  <div class="box">
-    <h3>🤖 IA</h3>
-    <input id="textoIA" placeholder="Resposta automática"><br>
-    <button onclick="salvarIA()">Salvar IA</button>
-    <button onclick="carregarIA()">Carregar IA</button>
-  </div>
+<div class="box">
+<h3>🤖 IA</h3>
+<input id="textoIA"><br>
+<button onclick="salvarIA()">Salvar</button>
+<button onclick="carregarIA()">Carregar</button>
+</div>
 
-  <button onclick="logout()">Sair</button>
-
+<button onclick="logout()">Sair</button>
 </div>
 
 <script>
 
-// 🔐 LOGIN
 async function login() {
   const res = await fetch("/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({
       email: email.value,
       password: senha.value
@@ -93,84 +59,69 @@ async function login() {
 
   const data = await res.json();
 
-  if (!data.token) {
-    alert(data.erro);
+  if (!data.token || !data.userId) {
+    alert("Erro no login");
     return;
   }
 
   localStorage.setItem("token", data.token);
   localStorage.setItem("userId", data.userId);
 
-  loginBox.style.display = "none";
-  painel.style.display = "block";
-
-  userId.innerText = "Seu ID: " + data.userId;
+  loginBox.style.display="none";
+  painel.style.display="block";
+  userId.innerText="Seu ID: "+data.userId;
 }
 
-// 🔄 AUTO LOGIN
 window.onload = () => {
   const token = localStorage.getItem("token");
-  const userIdLocal = localStorage.getItem("userId");
+  const id = localStorage.getItem("userId");
 
-  if (token) {
-    loginBox.style.display = "none";
-    painel.style.display = "block";
-    userId.innerText = "Seu ID: " + userIdLocal;
+  if (token && id && id !== "null") {
+    loginBox.style.display="none";
+    painel.style.display="block";
+    userId.innerText="Seu ID: "+id;
   }
 };
 
-// 📤 DISPARO WHATSAPP
 async function disparar() {
-  const numeros = document.getElementById('numeros').value;
-  const mensagem = document.getElementById('mensagem').value;
-
-  const res = await fetch('/enviar', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': localStorage.getItem('token')
-    },
-    body: JSON.stringify({ numeros, mensagem })
-  });
-
-  const data = await res.json();
-
-  if (data.sucesso) {
-    alert("Disparo realizado!");
-  } else {
-    alert("Erro ao enviar");
-  }
-}
-
-// 🤖 SALVAR IA
-async function salvarIA() {
-  await fetch("/salvar-ia", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": localStorage.getItem("token")
+  const res = await fetch("/enviar", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":localStorage.getItem("token")
     },
     body: JSON.stringify({
-      texto: textoIA.value
+      numeros: numeros.value,
+      mensagem: mensagem.value
     })
   });
 
-  alert("IA salva!");
+  const data = await res.json();
+  alert(data.sucesso ? "Enviado!" : "Erro");
 }
 
-// 🤖 CARREGAR IA
+async function salvarIA() {
+  await fetch("/salvar-ia", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":localStorage.getItem("token")
+    },
+    body: JSON.stringify({ texto: textoIA.value })
+  });
+
+  alert("Salvo!");
+}
+
 async function carregarIA() {
   const res = await fetch("/carregar-ia", {
-    headers: {
-      "Authorization": localStorage.getItem("token")
-    }
+    headers:{ "Authorization":localStorage.getItem("token") }
   });
 
   const data = await res.json();
   textoIA.value = data.texto;
 }
 
-// 🚪 LOGOUT
 function logout() {
   localStorage.clear();
   location.reload();
