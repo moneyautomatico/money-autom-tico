@@ -9,22 +9,25 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const JWT_SECRET = "money_automatico_multi_2026";
+const JWT_SECRET = "money_automatico_super_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
-// ==================== SCHEMA MULTI-USUÁRIO ====================
+// Database Schema
 const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
-    ia: { type: String, default: "Olá! Como posso ajudar?" }
+    ia: { type: String, default: "Olá! Como posso te ajudar?" },
+    totalEnviados: { type: Number, default: 0 }
 });
 const User = mongoose.model("User", UserSchema);
 
-mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Multi-User Ativo"));
+mongoose.connect(MONGO_URI).then(() => console.log("✅ DB Multi-User Conectado"));
 
-// ==================== GERENCIADOR DE INSTÂNCIAS ====================
 const clientes = {}; 
 const qrcodes = {}; 
+
+// Função para simular atraso humano
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function inicializarWhatsapp(userId) {
     if (clientes[userId]) return; 
@@ -38,56 +41,60 @@ async function inicializarWhatsapp(userId) {
     });
 
     client.on('qr', (qr) => { qrcodes[userId] = qr; });
-    client.on('ready', () => { qrcodes[userId] = "CONECTADO"; console.log(`✅ Usuário ${userId} conectado!`); });
+    client.on('ready', () => { qrcodes[userId] = "CONECTADO"; });
+    client.on('disconnected', () => { qrcodes[userId] = ""; delete clientes[userId]; });
 
+    // IA Humanizada: Digitando... + Delay
     client.on('message', async msg => {
         if (msg.fromMe) return;
         const user = await User.findById(userId);
-        if (user && user.ia) await msg.reply(user.ia);
+        if (user && user.ia) {
+            const chat = await msg.getChat();
+            await chat.sendStateTyping(); // Mostra "Digitando..."
+            await sleep(3000); // Espera 3 segundos
+            await msg.reply(user.ia);
+            await User.findByIdAndUpdate(userId, { $inc: { totalEnviados: 1 } });
+        }
     });
 
     clientes[userId] = client;
-    client.initialize().catch(err => console.log("Erro no client:", userId));
+    client.initialize().catch(() => {});
 }
 
-// ==================== ROTAS DE ACESSO ====================
-
+// Rotas de Autenticação
 app.post("/register", async (req, res) => {
     try {
-        const email = (req.body.email || "").toLowerCase().trim();
-        const password = (req.body.password || "").toString().trim();
-        
-        const userExist = await User.findOne({ email });
-        if(userExist) return res.status(400).json({ error: "E-mail já cadastrado" });
-
+        const { email, password } = req.body;
+        if(await User.findOne({ email })) return res.status(400).json({ error: "E-mail já existe" });
         await User.create({ email, password });
-        res.json({ ok: true, msg: "Conta criada com sucesso!" });
-    } catch (err) { res.status(500).json({ error: "Erro ao criar conta" }); }
+        res.json({ ok: true, msg: "Conta criada! Faça login." });
+    } catch { res.status(500).json({ error: "Erro no cadastro" }); }
 });
 
 app.post("/login", async (req, res) => {
-    const email = (req.body.email || "").toLowerCase().trim();
-    const password = (req.body.password || "").toString().trim();
-    const user = await User.findOne({ email, password });
-
+    const { email, password } = req.body;
+    const user = await User.findOne({ email: email?.toLowerCase().trim(), password });
     if (!user) return res.status(400).json({ error: "Dados incorretos" });
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET);
     inicializarWhatsapp(user._id.toString());
-    res.json({ token, userId: user._id });
+    res.json({ token, user: { email: user.email, total: user.totalEnviados } });
 });
 
 function auth(req, res, next) {
     const token = req.headers.authorization;
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.userId = decoded.id;
+        req.userId = jwt.verify(token, JWT_SECRET).id;
         next();
     } catch { res.status(401).json({ error: "Sessão expirada" }); }
 }
 
-app.get("/status-whatsapp", auth, (req, res) => {
-    res.json({ status: qrcodes[req.userId] || "INICIANDO" });
+// Endpoints do Painel
+app.get("/status-whatsapp", auth, (req, res) => res.json({ status: qrcodes[req.userId] || "INICIANDO" }));
+
+app.get("/user-data", auth, async (req, res) => {
+    const user = await User.findById(req.userId);
+    res.json({ ia: user.ia, total: user.totalEnviados });
 });
 
 app.post("/salvar-ia", auth, async (req, res) => {
@@ -95,29 +102,27 @@ app.post("/salvar-ia", auth, async (req, res) => {
     res.json({ ok: true });
 });
 
-app.get("/carregar-ia", auth, async (req, res) => {
-    const user = await User.findById(req.userId);
-    res.json({ texto: user.ia || "" });
-});
-
 app.post("/disparo", auth, async (req, res) => {
     const { numeros, mensagem } = req.body;
     const client = clientes[req.userId];
-    if(!client) return res.status(400).json({ error: "WhatsApp não iniciado" });
+    if(!client || qrcodes[req.userId] !== "CONECTADO") return res.status(400).json({ error: "WhatsApp Desconectado" });
 
-    try {
-        const lista = numeros.split(',');
-        for (let n of lista) {
-            let num = n.trim();
-            if (!num.includes("@c.us")) num += "@c.us";
-            await client.sendMessage(num, mensagem);
-        }
-        res.json({ ok: true });
-    } catch { res.status(500).json({ error: "Erro no envio" }); }
+    const lista = numeros.split(',').map(n => n.trim());
+    res.json({ ok: true, msg: `Iniciando envio para ${lista.length} contatos.` });
+
+    // Loop de disparo com intervalo de segurança (Anti-Ban)
+    for (let num of lista) {
+        try {
+            const finalNum = num.includes("@c.us") ? num : `${num}@c.us`;
+            await client.sendMessage(finalNum, mensagem);
+            await User.findByIdAndUpdate(req.userId, { $inc: { totalEnviados: 1 } });
+            await sleep(4000); // 4 segundos entre cada mensagem
+        } catch (e) { console.log("Erro no envio individual"); }
+    }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/', (req, res) => res.sendFile(path.resolve(__dirname, 'index.html')));
+app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'index.html')));
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Multi-User rodando na porta ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Sistema rodando na porta ${PORT}`));
