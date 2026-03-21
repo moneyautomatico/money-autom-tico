@@ -12,17 +12,17 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// 🔥 SERVIR FRONTEND (CORRIGE O "Cannot GET /")
+// 🔥 SERVIR FRONTEND
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// 🔗 CONEXÃO COM MONGO
+// 🔗 CONEXÃO COM MONGO (SEU BANCO REAL)
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("✅ MongoDB conectado"))
-.catch(err => console.log(err));
+  .then(() => console.log("✅ MongoDB conectado"))
+  .catch(err => console.log("❌ Erro Mongo:", err));
 
 // 👤 MODEL USER
 const User = mongoose.model("User", {
@@ -48,15 +48,12 @@ app.post("/login", async (req, res) => {
     const valid = await bcrypt.compare(senha, user.senha);
     if (!valid) return res.json({ erro: "Senha inválida" });
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET
-    );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
 
     res.json({
       token,
-      admin: user.admin,
-      user_id: user._id // 🔥 CORREÇÃO
+      user_id: user._id,
+      admin: user.admin
     });
 
   } catch (err) {
@@ -78,12 +75,12 @@ app.post("/register", async (req, res) => {
 
     res.json({ msg: "Usuário criado!" });
 
-  } catch (err) {
+  } catch {
     res.json({ erro: "Erro ao registrar" });
   }
 });
 
-// 🔐 MIDDLEWARE AUTH
+// 🔐 AUTH
 function auth(req, res, next) {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ erro: "Sem token" });
@@ -97,16 +94,12 @@ function auth(req, res, next) {
   }
 }
 
-// 📤 CAMPANHA (DISPARO)
+// 📤 DISPARO
 app.post("/campanha", auth, async (req, res) => {
-  const { numeros, mensagem } = req.body;
-
-  console.log("📤 Disparo:", numeros, mensagem);
-
-  res.json({ msg: "Disparo recebido (simulação)" });
+  res.json({ msg: "Disparo recebido" });
 });
 
-// 🤖 SALVAR IA
+// 🤖 IA SALVAR
 app.post("/ia/salvar", auth, async (req, res) => {
   const { texto } = req.body;
 
@@ -119,33 +112,20 @@ app.post("/ia/salvar", auth, async (req, res) => {
   res.json({ msg: "IA salva!" });
 });
 
-// 🤖 BUSCAR IA
+// 🤖 IA BUSCAR
 app.get("/ia", auth, async (req, res) => {
   const ia = await IA.findOne({ user_id: req.userId });
   res.json({ texto: ia?.texto || "" });
 });
 
-// 🤖 RESPONDER IA (BOT USA ISSO)
-app.post("/ia/responder", async (req, res) => {
-  const { mensagem, user_id } = req.body;
-
-  const ia = await IA.findOne({ user_id });
-
-  let resposta = "Não entendi.";
-
-  if (ia && ia.texto) {
-    if (mensagem.toLowerCase().includes("oi")) {
-      resposta = "Olá! Como posso ajudar?";
-    } else {
-      resposta = ia.texto;
-    }
-  }
-
-  res.json({ resposta });
-});
-
 // 👑 ADMIN
 app.get("/admin/users", auth, async (req, res) => {
+  const users = await User.find();
+  res.json(users);
+});
+
+// 🔍 TESTE BANCO
+app.get("/teste-db", async (req, res) => {
   const users = await User.find();
   res.json(users);
 });
