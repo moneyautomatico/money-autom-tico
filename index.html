@@ -7,36 +7,38 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; }
-        .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid #334155; margin-bottom: 20px; }
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border-radius: 6px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
-        .btn-reg { background: #3b82f6; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th, td { padding: 8px; border-bottom: 1px solid #334155; text-align: left; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; min-height: 100vh; margin: 0; }
+        .container { width: 100%; max-width: 500px; padding: 20px; text-align: center; }
+        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-alt { background: #3b82f6; }
+        #adminArea { display: none; border: 2px solid #fbbf24; text-align: left; }
+        table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 8px; border-bottom: 1px solid #444; }
     </style>
 </head>
 <body>
-    <div style="width: 100%; max-width: 800px; padding: 20px;">
-        
-        <div id="authArea" class="card" style="max-width: 350px; margin: 50px auto;">
-            <h2 style="text-align: center; color: var(--primary)">🚀 Money Automático</h2>
+    <div class="container">
+        <div id="loginBox" class="card">
+            <h2 style="color: var(--primary)">🚀 Money Automático</h2>
             <input id="email" type="email" placeholder="E-mail">
             <input id="pass" type="password" placeholder="Senha">
-            <button onclick="auth('login')">Entrar</button>
-            <button onclick="auth('register')" class="btn-reg">Criar Nova Conta</button>
+            <button onclick="handleAuth('login')">Entrar</button>
+            <button onclick="handleAuth('register')" class="btn-alt">Criar Conta Grátis</button>
         </div>
 
-        <div id="dashArea" style="display: none;">
+        <div id="mainDash" style="display: none;">
             <div class="card">
-                <h3>📱 Status: <span id="stxt">Verificando...</span></h3>
-                <div id="qrcode" style="background: white; padding: 10px; width: 150px; margin: 10px auto; display: none;"></div>
+                <h3>Status: <span id="statusTxt">Carregando...</span></h3>
+                <div id="qrcode" style="background:white; padding:10px; margin:15px auto; width:150px; display:none;"></div>
+                <button onclick="localStorage.clear(); location.reload();" style="background:#ef4444; width:auto; padding:5px 15px;">Sair</button>
             </div>
 
-            <div id="adminPanel" class="card" style="display: none; border-color: #fbbf24;">
-                <h3 style="color: #fbbf24;">👑 Painel Master</h3>
+            <div id="adminArea" class="card">
+                <h3 style="color:#fbbf24">👑 Painel Master</h3>
                 <table>
-                    <thead><tr><th>Usuário</th><th>Status</th><th>Envios</th></tr></thead>
+                    <thead><tr><th>E-mail</th><th>Whats</th><th>Envios</th></tr></thead>
                     <tbody id="userList"></tbody>
                 </table>
             </div>
@@ -44,7 +46,7 @@
     </div>
 
     <script>
-        async function auth(tipo) {
+        async function handleAuth(tipo) {
             const res = await fetch(`/${tipo}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -55,43 +57,43 @@
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("role", data.role);
                 location.reload();
-            } else { alert(data.error || "Erro"); }
+            } else { alert(data.error || "Erro ao processar"); }
         }
 
-        async function loadAdmin() {
-            if (localStorage.getItem("role") !== "admin") return;
-            document.getElementById("adminPanel").style.display = "block";
-            const res = await fetch("/admin/users", { headers: { "Authorization": localStorage.getItem("token") } });
-            const users = await res.json();
-            document.getElementById("userList").innerHTML = users.map(u => `
-                <tr><td>${u.email}</td><td>${u.status}</td><td>${u.totalEnviados}</td></tr>
-            `).join('');
-        }
-
-        async function sync() {
+        async function loadData() {
             const token = localStorage.getItem("token");
             if (!token) return;
-            document.getElementById("authArea").style.display = "none";
-            document.getElementById("dashArea").style.display = "block";
+            document.getElementById("loginBox").style.display = "none";
+            document.getElementById("mainDash").style.display = "block";
 
-            const res = await fetch("/status-whatsapp", { headers: { "Authorization": token } });
-            const data = await res.json();
-            const qr = document.getElementById("qrcode");
-            if (data.status === "CONECTADO") {
-                document.getElementById("stxt").innerText = "Conectado";
-                qr.style.display = "none";
-            } else if (data.status.length > 50) {
-                document.getElementById("stxt").innerText = "Escaneie o QR";
-                qr.style.display = "block";
-                qr.innerHTML = "";
-                new QRCode(qr, { text: data.status, width: 150, height: 150 });
+            // Status Whats
+            const sRes = await fetch("/status-whatsapp", { headers: {"Authorization": token}});
+            const sData = await sRes.json();
+            const qrBox = document.getElementById("qrcode");
+            if(sData.status === "CONECTADO") {
+                document.getElementById("statusTxt").innerText = "✅ Conectado";
+                qrBox.style.display = "none";
+            } else if(sData.status.length > 50) {
+                document.getElementById("statusTxt").innerText = "⚠️ Escaneie o QR";
+                qrBox.style.display = "block";
+                qrBox.innerHTML = "";
+                new QRCode(qrBox, { text: sData.status, width: 150, height: 150 });
+            }
+
+            // Se for Admin
+            if(localStorage.getItem("role") === "admin") {
+                document.getElementById("adminArea").style.display = "block";
+                const uRes = await fetch("/admin/users", { headers: {"Authorization": token}});
+                const users = await uRes.json();
+                document.getElementById("userList").innerHTML = users.map(u => `
+                    <tr><td>${u.email}</td><td>${u.status}</td><td>${u.totalEnviados}</td></tr>
+                `).join('');
             }
         }
 
-        if (localStorage.getItem("token")) {
-            sync();
-            loadAdmin();
-            setInterval(sync, 10000);
+        if(localStorage.getItem("token")) {
+            loadData();
+            setInterval(loadData, 10000);
         }
     </script>
 </body>
