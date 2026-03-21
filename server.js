@@ -9,29 +9,29 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// ==================== CONFIG ====================
+// ==================== CONFIGURAÇÕES ====================
 const JWT_SECRET = "money_automatico_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
-// ==================== MONGODB ====================
+// ==================== CONEXÃO MONGODB ====================
 mongoose.connect(MONGO_URI)
-.then(() => console.log("✅ MongoDB conectado"))
-.catch(err => console.log("❌ Erro MongoDB:", err));
+.then(() => console.log("✅ MongoDB conectado com sucesso"))
+.catch(err => console.log("❌ Erro ao conectar no MongoDB:", err));
 
-// ==================== MODELS ====================
+// ==================== MODELO DE USUÁRIO ====================
 const UserSchema = new mongoose.Schema({
     email: String,
-    password: String,
-    ia: String
+    password: { type: String, required: true },
+    ia: { type: String, default: "" }
 });
 
 const User = mongoose.model("User", UserSchema);
 
-// ==================== WHATSAPP (VERSÃO ESTÁVEL) ====================
-let qrCodeAtual = ""; // Variável para armazenar o QR Code e enviar para o Admin
+// ==================== MOTOR WHATSAPP (ESTÁVEL) ====================
+let qrCodeAtual = ""; 
 
 const client = new Client({
-    // LocalAuth com dataPath garante que a sessão não caia ao reiniciar o servidor
+    // LocalAuth salva a sessão na pasta './sessions' para não deslogar ao reiniciar
     authStrategy: new LocalAuth({ dataPath: './sessions' }), 
     puppeteer: {
         headless: true,
@@ -40,124 +40,122 @@ const client = new Client({
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-software-rasterizer'
+            '--disable-gpu'
         ]
     }
 });
 
 client.on('qr', (qr) => {
-    qrCodeAtual = qr; // Salva o QR para o Frontend buscar via API
-    console.log('📱 QR Code gerado. Disponível no painel admin.');
+    qrCodeAtual = qr; 
+    console.log('📱 QR Code gerado! Acesse o painel /admin para escanear.');
 });
 
 client.on('ready', () => {
     qrCodeAtual = "CONECTADO";
-    console.log('✅ WhatsApp conectado!');
+    console.log('✅ WhatsApp pronto para disparos!');
+});
+
+client.on('disconnected', (reason) => {
+    qrCodeAtual = "";
+    console.log('❌ WhatsApp desconectado:', reason);
+    client.initialize(); // Tenta reiniciar automaticamente
 });
 
 client.initialize();
 
-// ==================== AUTH MIDDLEWARE ====================
+// ==================== MIDDLEWARE DE AUTENTICAÇÃO ====================
 function auth(req, res, next) {
     const token = req.headers.authorization;
-
-    if (!token) return res.status(401).json({ error: "Sem token" });
+    if (!token) return res.status(401).json({ error: "Acesso negado. Sem token." });
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.userId = decoded.id;
         next();
     } catch {
-        res.status(401).json({ error: "Token inválido" });
+        res.status(401).json({ error: "Token inválido ou expirado." });
     }
 }
 
 // ==================== ROTAS DE API ====================
 
-// LOGIN
+// ROTA DE LOGIN (Sincronizada com Admin e Index)
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email, password });
 
         if (!user) {
-            return res.status(400).json({ error: "Erro no login" });
+            return res.status(400).json({ error: "E-mail ou senha incorretos." });
         }
 
         const token = jwt.sign({ id: user._id }, JWT_SECRET);
-
-        res.json({
-            token,
-            userId: user._id
-        });
+        res.json({ token, userId: user._id });
     } catch (err) {
-        res.status(500).json({ error: "Erro interno no servidor" });
+        res.status(500).json({ error: "Erro interno no servidor." });
     }
 });
 
-// STATUS WHATSAPP (Para o admin.html verificar conexão)
+// STATUS DO WHATSAPP (Usado pelo admin.html)
 app.get("/status-whatsapp", auth, (req, res) => {
     res.json({ status: qrCodeAtual });
 });
 
-// PEGAR DADOS DO USUÁRIO
+// DADOS DO USUÁRIO
 app.get("/user", auth, async (req, res) => {
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.userId).select("-password");
     res.json(user);
 });
 
-// SALVAR IA
+// SALVAR E CARREGAR CONFIGURAÇÕES DE IA
 app.post("/salvar-ia", auth, async (req, res) => {
     const { texto } = req.body;
     await User.findByIdAndUpdate(req.userId, { ia: texto });
     res.json({ ok: true });
 });
 
-// CARREGAR IA
 app.get("/carregar-ia", auth, async (req, res) => {
     const user = await User.findById(req.userId);
     res.json({ texto: user.ia || "" });
 });
 
-// DISPARO WHATSAPP
+// SISTEMA DE DISPARO EM MASSA
 app.post("/disparo", auth, async (req, res) => {
     const { numeros, mensagem } = req.body;
+    if (qrCodeAtual !== "CONECTADO") {
+        return res.status(400).json({ error: "WhatsApp não está conectado." });
+    }
 
     try {
         const lista = numeros.split(',');
-
         for (let numero of lista) {
             let num = numero.trim();
-
-            if (!num.includes("@c.us")) {
-                num = num + "@c.us";
-            }
-
+            if (!num.includes("@c.us")) num += "@c.us";
             await client.sendMessage(num, mensagem);
         }
-
         res.json({ ok: true });
-
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ error: "Erro ao enviar mensagens. Verifique se o WhatsApp está conectado." });
+        res.status(500).json({ error: "Falha no disparo. Tente novamente." });
     }
 });
 
-// ==================== FRONTEND (ESTÁTICO) ====================
+// ==================== SERVIDOR DE ARQUIVOS (FRONTEND) ====================
 
-// Servir arquivos da pasta public
+// 1. Serve arquivos da pasta public (CSS, JS, Imagens, Admin.html)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota principal para evitar "Cannot GET /"
+// 2. ROTA PRINCIPAL: Serve o index.html que está na RAIZ
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.resolve(__dirname, 'index.html'));
 });
 
-// ==================== SERVIDOR ====================
-const PORT = process.env.PORT || 3000;
+// 3. ROTA ADMIN: Serve o admin.html que está em public
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
+// ==================== INICIALIZAÇÃO ====================
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log("🚀 Servidor de Alta Performance rodando na porta " + PORT);
+    console.log(`🚀 Sistema rodando em: http://localhost:${PORT}`);
 });
