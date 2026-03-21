@@ -1,39 +1,39 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Money Automático</title>
 
   <style>
     body {
-      background: #0b1a33;
+      background: #0f172a;
       color: white;
       font-family: Arial;
       text-align: center;
     }
 
     .box {
-      background: #12264d;
+      margin-top: 20px;
       padding: 20px;
+      border: 1px solid #1e293b;
       border-radius: 10px;
-      margin: 20px auto;
-      width: 300px;
+      display: inline-block;
     }
 
     input {
-      width: 90%;
       padding: 10px;
-      margin: 10px;
+      margin: 5px;
       border-radius: 5px;
       border: none;
+      width: 250px;
     }
 
     button {
-      background: #2ecc71;
-      border: none;
-      padding: 10px 20px;
-      color: white;
+      padding: 10px;
+      margin: 5px;
       border-radius: 5px;
+      border: none;
+      background: #22c55e;
+      color: white;
       cursor: pointer;
     }
   </style>
@@ -44,30 +44,34 @@
 <h1>🚀 Money Automático</h1>
 
 <!-- LOGIN -->
-<div id="loginBox" class="box">
-  <h2>Login</h2>
-  <input id="email" placeholder="Email">
-  <input id="senha" type="password" placeholder="Senha">
-  <button onclick="login()">Entrar</button>
+<div id="loginBox">
+  <div class="box">
+    <h3>Login</h3>
+    <input id="email" placeholder="Email"><br>
+    <input id="senha" type="password" placeholder="Senha"><br>
+    <button onclick="login()">Entrar</button>
+  </div>
 </div>
 
 <!-- PAINEL -->
 <div id="painel" style="display:none;">
-
+  
   <h3 id="userId"></h3>
 
+  <!-- DISPARO -->
   <div class="box">
-    <h3>📤 Disparo</h3>
-    <input id="numeros" placeholder="Números separados por vírgula">
-    <input id="mensagem" placeholder="Mensagem">
+    <h3>📤 Disparo WhatsApp</h3>
+    <input id="numeros" placeholder="Ex: 558199999999,558188888888"><br>
+    <input id="mensagem" placeholder="Mensagem"><br>
     <button onclick="disparar()">Disparar</button>
   </div>
 
+  <!-- IA -->
   <div class="box">
-    <h3>🤖 Treinar IA</h3>
-    <input id="textoIA" placeholder="Texto da IA">
-    <button onclick="salvarIA()">Salvar</button>
-    <button onclick="carregarIA()">Carregar</button>
+    <h3>🤖 IA</h3>
+    <input id="textoIA" placeholder="Resposta automática"><br>
+    <button onclick="salvarIA()">Salvar IA</button>
+    <button onclick="carregarIA()">Carregar IA</button>
   </div>
 
   <button onclick="logout()">Sair</button>
@@ -76,78 +80,79 @@
 
 <script>
 
+// 🔐 LOGIN
 async function login() {
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
-
   const res = await fetch("/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ email, senha })
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      email: email.value,
+      password: senha.value
+    })
   });
 
   const data = await res.json();
 
-  if (data.token) {
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user_id", data.user_id);
-
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("painel").style.display = "block";
-
-    document.getElementById("userId").innerText = "Seu ID: " + data.user_id;
-
-  } else {
-    alert(data.erro || "Erro no login");
+  if (!data.token) {
+    alert(data.erro);
+    return;
   }
+
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("userId", data.userId);
+
+  loginBox.style.display = "none";
+  painel.style.display = "block";
+
+  userId.innerText = "Seu ID: " + data.userId;
 }
 
-// 🔥 AUTO LOGIN
+// 🔄 AUTO LOGIN
 window.onload = () => {
   const token = localStorage.getItem("token");
-  const user_id = localStorage.getItem("user_id");
+  const userIdLocal = localStorage.getItem("userId");
 
   if (token) {
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("painel").style.display = "block";
-
-    document.getElementById("userId").innerText = "Seu ID: " + user_id;
+    loginBox.style.display = "none";
+    painel.style.display = "block";
+    userId.innerText = "Seu ID: " + userIdLocal;
   }
 };
 
-// 📤 DISPARO
+// 📤 DISPARO WHATSAPP
 async function disparar() {
-  const numeros = document.getElementById("numeros").value;
-  const mensagem = document.getElementById("mensagem").value;
+  const numeros = document.getElementById('numeros').value;
+  const mensagem = document.getElementById('mensagem').value;
 
-  const token = localStorage.getItem("token");
-
-  await fetch("/campanha", {
-    method: "POST",
+  const res = await fetch('/enviar', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      "Authorization": token
+      'Content-Type': 'application/json',
+      'Authorization': localStorage.getItem('token')
     },
     body: JSON.stringify({ numeros, mensagem })
   });
 
-  alert("Disparo enviado!");
+  const data = await res.json();
+
+  if (data.sucesso) {
+    alert("Disparo realizado!");
+  } else {
+    alert("Erro ao enviar");
+  }
 }
 
 // 🤖 SALVAR IA
 async function salvarIA() {
-  const texto = document.getElementById("textoIA").value;
-  const token = localStorage.getItem("token");
-
-  await fetch("/ia/salvar", {
+  await fetch("/salvar-ia", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": token
+      "Authorization": localStorage.getItem("token")
     },
-    body: JSON.stringify({ texto })
+    body: JSON.stringify({
+      texto: textoIA.value
+    })
   });
 
   alert("IA salva!");
@@ -155,17 +160,14 @@ async function salvarIA() {
 
 // 🤖 CARREGAR IA
 async function carregarIA() {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch("/ia", {
+  const res = await fetch("/carregar-ia", {
     headers: {
-      "Authorization": token
+      "Authorization": localStorage.getItem("token")
     }
   });
 
   const data = await res.json();
-
-  document.getElementById("textoIA").value = data.texto;
+  textoIA.value = data.texto;
 }
 
 // 🚪 LOGOUT
