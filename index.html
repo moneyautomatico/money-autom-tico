@@ -1,139 +1,60 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Automático | Dashboard Profissional</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #3b82f6; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .container { width: 100%; max-width: 500px; }
-        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; margin-bottom: 20px; text-align: center; position: relative; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .online { background: #065f46; color: #34d399; }
-        .offline { background: #7f1d1d; color: #f87171; }
-        .aviso { background: #450a0a; color: #f87171; font-size: 11px; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #7f1d1d; }
-        table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 8px; border-bottom: 1px solid #334155; text-align: left; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div id="loginBox" class="card">
-            <h2 style="color: var(--primary)">🚀 Money Automático</h2>
-            <input id="email" type="email" placeholder="E-mail">
-            <div id="regExtra" style="display: none;">
-                <input id="usuario" type="text" placeholder="Seu Nome">
-                <input id="telefone" type="text" placeholder="WhatsApp (Ex: 5511999999999)">
-            </div>
-            <input id="pass" type="password" placeholder="Senha">
-            <input id="confirmPass" type="password" placeholder="Confirme a Senha" style="display: none;">
-            <button id="btnAuth" onclick="handleAuth('login')">Entrar</button>
-            <button onclick="toggleReg()" style="background:transparent; font-size: 12px; color: #94a3b8;">Cadastrar nova conta</button>
-        </div>
-
-        <div id="dash" style="display: none;">
-            <div class="card">
-                <h3>📲 Conexão WhatsApp</h3>
-                <p id="statusTxt">Carregando...</p>
-                <div id="qrcode" style="background:white; padding:10px; display:inline-block; border-radius:10px; margin:10px auto; display:none;"></div>
-                <br><button onclick="localStorage.clear(); location.reload();" style="width: auto; padding: 5px 15px; background: #ef4444; font-size: 12px;">Sair</button>
-            </div>
-
-            <div class="card" style="border-top: 3px solid var(--accent);">
-                <div class="aviso">⚠️ <b>Dica de Segurança:</b> Use um intervalo de pelo menos 15 segundos para evitar bloqueios no seu chip.</div>
-                <h3>🚀 Disparo em Massa Inteligente</h3>
-                <textarea id="lista" placeholder="Números (vírgula ou espaço)"></textarea>
-                <textarea id="msgMassa" placeholder="Sua mensagem comercial..."></textarea>
-                <div style="display:flex; align-items:center; justify-content:space-between; font-size:12px;">
-                    Delay por envio (seg): <input id="delay" type="number" value="15" style="width:70px;">
-                </div>
-                <button id="btnDisparo" onclick="disparar()" style="background:var(--accent)">Iniciar Filtro e Envio</button>
-            </div>
-
-            <div id="admin" class="card" style="border: 2px solid #fbbf24; display: none;">
-                <h3 style="color:#fbbf24">👑 Gestão Master</h3>
-                <table>
-                    <thead><tr><th>Nome</th><th>Status</th><th>Envios</th></tr></thead>
-                    <tbody id="userList"></tbody>
-                </table>
-            </div>
-        </div>
+<div id="dash" style="display: none;">
+    <div class="card" id="cardTeste" style="border-bottom: 3px solid var(--gold); display:none;">
+        <p style="font-size: 12px; color: var(--gold); margin: 0;">⏳ SEU TESTE GRÁTIS EXPIRE EM:</p>
+        <h2 id="countdown" style="margin: 5px 0; color: #fff;">02:00:00</h2>
     </div>
+    
+    <div class="card">
+        <h3>💎 Sua Conexão</h3>
+        </div>
+</div>
 
-    <script>
-        let isReg = false;
-        function toggleReg() {
-            isReg = !isReg;
-            document.getElementById("regExtra").style.display = isReg ? "block" : "none";
-            document.getElementById("confirmPass").style.display = isReg ? "block" : "none";
-            document.getElementById("btnAuth").innerText = isReg ? "Cadastrar" : "Entrar";
-            document.getElementById("btnAuth").setAttribute("onclick", isReg ? "handleAuth('register')" : "handleAuth('login')");
-        }
+<script>
+    // FUNÇÃO PARA O CRONÔMETRO NO FRONTEND
+    function iniciarCronometro(dataCadastro) {
+        const display = document.getElementById("countdown");
+        const card = document.getElementById("cardTeste");
+        card.style.display = "block";
 
-        async function handleAuth(tipo) {
-            const body = { email: document.getElementById("email").value, password: document.getElementById("pass").value };
-            if(tipo==='register') {
-                body.usuario = document.getElementById("usuario").value;
-                body.telefone = document.getElementById("telefone").value;
-                body.confirmPassword = document.getElementById("confirmPass").value;
-            }
-            const res = await fetch(`/${tipo}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-            const data = await res.json();
-            if(data.token) { localStorage.setItem("token", data.token); localStorage.setItem("role", data.role); location.reload(); }
-            else if(data.ok) { alert("Conta criada!"); location.reload(); }
-            else alert(data.error);
-        }
+        const updateTimer = () => {
+            const agora = new Date();
+            const inicio = new Date(dataCadastro);
+            const expira = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
+            const diff = expira - agora;
 
-        async function disparar() {
-            const btn = document.getElementById("btnDisparo");
-            btn.disabled = true; btn.innerText = "Processando Lista...";
-            const res = await fetch("/enviar-massa", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token") },
-                body: JSON.stringify({
-                    lista: document.getElementById("lista").value,
-                    mensagem: document.getElementById("msgMassa").value,
-                    intervalo: document.getElementById("delay").value
-                })
-            });
-            const data = await res.json();
-            alert(data.ok ? "O sistema está filtrando os números e enviando em background!" : data.error);
-            btn.disabled = false; btn.innerText = "Iniciar Filtro e Envio";
-        }
-
-        async function update() {
-            const token = localStorage.getItem("token");
-            if(!token) return;
-            document.getElementById("loginBox").style.display = "none";
-            document.getElementById("dash").style.display = "block";
-
-            const sRes = await fetch("/status-whatsapp", { headers:{"Authorization":token} });
-            const sData = await sRes.json();
-            const qrd = document.getElementById("qrcode");
-            
-            if(sData.status === "CONECTADO") {
-                document.getElementById("statusTxt").innerHTML = '<span class="status-badge online">ONLINE</span>';
-                qrd.style.display = "none";
-            } else if(sData.status.length > 50) {
-                document.getElementById("statusTxt").innerText = "Escaneie o QR Code:";
-                qrd.style.display = "block"; qrd.innerHTML = "";
-                new QRCode(qrd, { text: sData.status, width: 140, height: 140 });
+            if (diff <= 0) {
+                display.innerText = "EXPIRADO";
+                alert("Seu teste grátis acabou! Ative sua conta agora.");
+                localStorage.clear(); location.reload();
+                return;
             }
 
-            if(localStorage.getItem("role") === "admin") {
-                document.getElementById("admin").style.display = "block";
-                const uRes = await fetch("/admin/users", { headers:{"Authorization":token} });
-                const users = await uRes.json();
-                document.getElementById("userList").innerHTML = users.map(u => `
-                    <tr><td>${u.usuario}</td><td><span class="status-badge ${u.status === 'CONECTADO' ? 'online':'offline'}">${u.status}</span></td><td>${u.totalEnviados}</td></tr>
-                `).join('');
-            }
-        }
-        if(localStorage.getItem("token")) { update(); setInterval(update, 12000); }
-    </script>
-</body>
-</html>
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            display.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        };
+
+        setInterval(updateTimer, 1000);
+        updateTimer();
+    }
+
+    // NA FUNÇÃO HANDLEAUTH, QUANDO RECEBER O LOGIN:
+    if(data.token) { 
+        localStorage.setItem("token", data.token); 
+        localStorage.setItem("expiracao", data.expiracao); // Salva a data de início
+        location.reload(); 
+    } else if(data.error === "EXPIRADO") {
+        document.getElementById("suporteLogin").style.display = "block";
+        document.getElementById("suporteLogin").innerHTML = `
+            <p style="color:#f87171">❌ Seu teste grátis de 2 horas acabou!</p>
+            <button class="btn-suporte" onclick="abrirSuporte()">Ativar Acesso Vitalício (R$ 30)</button>
+        `;
+    }
+
+    // NA FUNÇÃO UPDATE(), CHAME O CRONÔMETRO
+    const exp = localStorage.getItem("expiracao");
+    if(exp && localStorage.getItem("role") !== "admin") {
+        iniciarCronometro(exp);
+    }
+</script>
