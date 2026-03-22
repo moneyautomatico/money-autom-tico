@@ -47,9 +47,8 @@ async function initWA(userId) {
     });
 
     client.on('qr', (qr) => qrcodes[userId] = qr);
-    client.on('ready', () => { qrcodes[userId] = "CONECTADO"; console.log(`✅ Zap Pronto: ${userId}`); });
+    client.on('ready', () => { qrcodes[userId] = "CONECTADO"; });
     
-    // Auto-Resposta (IA)
     client.on('message', async msg => {
         if (msg.fromMe) return;
         const user = await User.findById(userId);
@@ -63,7 +62,7 @@ async function initWA(userId) {
     client.initialize().catch(err => console.error("❌ Erro Puppeteer:", err.message));
 }
 
-// ROTAS DE AUTENTICAÇÃO
+// ROTAS
 app.post("/register", async (req, res) => {
     try {
         const { email, usuario, telefone, password, confirmPassword } = req.body;
@@ -83,13 +82,44 @@ app.post("/login", async (req, res) => {
     res.json({ token, role: user.role });
 });
 
-// STATUS E ADMIN
 app.get("/status-whatsapp", async (req, res) => {
     try {
         const decoded = jwt.verify(req.headers.authorization, JWT_SECRET);
         res.json({ status: qrcodes[decoded.id] || "INICIANDO" });
     } catch (e) { res.status(401).send(); }
 });
+
+// DISPARO INTELIGENTE COM FILTRO
+app.post("/enviar-massa", async (req, res) => {
+    try {
+        const decoded = jwt.verify(req.headers.authorization, JWT_SECRET);
+        const { lista, mensagem, intervalo } = req.body;
+        const cliente = clientes[decoded.id];
+        
+        if (!cliente || qrcodes[decoded.id] !== "CONECTADO") return res.status(400).json({ error: "Conecte o WhatsApp!" });
+
+        const numerosBrutos = lista.split(/[\s,]+/).filter(n => n.trim().length > 8);
+        
+        // Inicia processo com filtro em background
+        processarDisparo(decoded.id, cliente, numerosBrutos, mensagem, intervalo);
+        res.json({ ok: true, total: numerosBrutos.length });
+    } catch (e) { res.status(401).send(); }
+});
+
+async function processarDisparo(userId, cliente, numeros, mensagem, intervalo) {
+    for (const num of numeros) {
+        try {
+            const numeroLimpo = num.replace(/\D/g, "");
+            const idNumber = await cliente.getNumberId(numeroLimpo); // FILTRO DE NÚMERO VÁLIDO
+
+            if (idNumber) {
+                await cliente.sendMessage(idNumber._serialized, mensagem);
+                await User.findByIdAndUpdate(userId, { $inc: { totalEnviados: 1 } });
+            }
+            await new Promise(r => setTimeout(r, intervalo * 1000));
+        } catch (err) { console.log("Erro no envio individual"); }
+    }
+}
 
 app.get("/admin/users", async (req, res) => {
     try {
@@ -99,35 +129,6 @@ app.get("/admin/users", async (req, res) => {
         res.json(users.map(u => ({ ...u._doc, status: qrcodes[u._id] || "OFFLINE" })));
     } catch (e) { res.status(401).send(); }
 });
-
-// ROTA DE DISPARO EM MASSA (NOVA)
-app.post("/enviar-massa", async (req, res) => {
-    try {
-        const decoded = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const { lista, mensagem, intervalo } = req.body;
-        const cliente = clientes[decoded.id];
-        
-        if (!cliente || qrcodes[decoded.id] !== "CONECTADO") return res.status(400).json({ error: "Conecte o WhatsApp primeiro!" });
-
-        // Divide a lista por vírgula, espaço ou quebra de linha
-        const numeros = lista.split(/[\s,]+/).filter(n => n.trim().length > 8);
-        
-        // Inicia disparos em background
-        dispararProcesso(decoded.id, cliente, numeros, mensagem, intervalo);
-        res.json({ ok: true, total: numeros.length });
-    } catch (e) { res.status(401).send(); }
-});
-
-async function dispararProcesso(userId, cliente, numeros, mensagem, intervalo) {
-    for (const num of numeros) {
-        try {
-            const limpo = num.replace(/\D/g, "") + "@c.us";
-            await cliente.sendMessage(limpo, mensagem);
-            await User.findByIdAndUpdate(userId, { $inc: { totalEnviados: 1 } });
-            await new Promise(r => setTimeout(r, intervalo * 1000));
-        } catch (err) { console.log("Erro no envio individual"); }
-    }
-}
 
 app.use(express.static(__dirname));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
