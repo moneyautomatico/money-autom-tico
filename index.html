@@ -1,219 +1,79 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner | Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --gold: #fbbf24; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 15px; }
-        .container { width: 100%; max-width: 480px; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 15px; text-align: center; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { opacity: 0.8; }
-        .timer-box { border-bottom: 3px solid var(--gold); padding: 10px; }
-        .ia-control { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 12px; border-radius: 8px; margin: 10px 0; border: 1px solid #334155; }
-        .badge { font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; }
-        table { width: 100%; font-size: 11px; margin-top: 10px; border-collapse: collapse; }
-        th, td { padding: 8px; border-bottom: 1px solid #334155; text-align: left; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div id="loginBox" class="card">
-            <h2 style="color: var(--primary)">🚀 Money Partner</h2>
-            <div id="regExtra" style="display:none">
-                <input id="usuario" type="text" placeholder="Seu Nome">
-                <input id="telefone" type="text" placeholder="WhatsApp (DDD+Número)">
-            </div>
-            <input id="email" type="email" placeholder="E-mail">
-            <input id="pass" type="password" placeholder="Senha">
-            <button id="btnMain" onclick="handleAuth()">Entrar no Sistema</button>
-            <p onclick="toggleReg()" id="toggleTxt" style="font-size:12px; color:#94a3b8; cursor:pointer; margin-top:15px;">Novo aqui? Criar conta (Teste 2h)</p>
-            
-            <div id="suporteLogin" style="display:none; margin-top:15px;">
-                <p id="msgErro" style="color:#ef4444; font-size:12px;"></p>
-                <button style="background:#25d366" onclick="abrirSuporte()">Ativar Acesso (R$ 30)</button>
-            </div>
-        </div>
-
-        <div id="dash" style="display:none">
-            <div class="card timer-box">
-                <p id="labelPlano" style="font-size: 11px; margin:0; color:var(--gold)">⏳ TEMPO RESTANTE:</p>
-                <h2 id="countdown" style="margin:5px 0">00:00:00</h2>
-            </div>
-
-            <div class="card" style="border-left: 5px solid var(--primary)">
-                <h3>🤖 Agente de IA</h3>
-                <div class="ia-control">
-                    <span>Resposta Automática:</span>
-                    <b id="statusIA" style="color: var(--primary)">LIGADA</b>
-                </div>
-                <button id="btnIA" onclick="toggleIA()" style="background:#334155; font-size:12px">Desativar Robô</button>
-            </div>
-
-            <div class="card">
-                <h3>📲 Conexão WhatsApp</h3>
-                <p id="statusWA" style="font-size:13px">Verificando...</p>
-                <div id="qrcode" style="background:white; padding:10px; display:inline-block; border-radius:10px; margin:10px auto; display:none;"></div>
-                <button onclick="logout()" style="width:auto; padding:5px 15px; background:#ef4444; font-size:10px; margin-top:10px;">Sair da Conta</button>
-            </div>
-
-            <div id="admin" class="card" style="border:2px solid var(--gold); display:none">
-                <h3 style="color:var(--gold)">👑 Painel Administrativo</h3>
-                <table>
-                    <thead><tr><th>Usuário</th><th>Status</th><th>Ação</th></tr></thead>
-                    <tbody id="userList"></tbody>
-                </table>
-            </div>
-        </div>
+<div class="card" style="border-top: 4px solid #6366f1;">
+    <h3>🎫 Central de Suporte</h3>
+    
+    <div id="formTicket">
+        <input id="tkAssunto" type="text" placeholder="Assunto (ex: Ativação Pix)">
+        <textarea id="tkMensagem" placeholder="Descreva seu problema ou envie o comprovante..."></textarea>
+        <button onclick="enviarTicket()" style="background:#6366f1">Abrir Chamado</button>
     </div>
 
-    <script>
-        let isReg = false;
-        let iaStatus = true;
+    <hr style="margin:20px 0; border:0; border-top:1px solid #334155;">
 
-        function toggleReg() {
-            isReg = !isReg;
-            document.getElementById("regExtra").style.display = isReg ? "block" : "none";
-            document.getElementById("btnMain").innerText = isReg ? "Criar Conta Partner" : "Entrar no Sistema";
-            document.getElementById("toggleTxt").innerText = isReg ? "Já tenho conta" : "Novo aqui? Criar conta (Teste 2h)";
-        }
+    <div id="listaTickets" style="text-align:left; font-size:12px;">
+        <p>Meus Chamados:</p>
+        <div id="meusTickets"></div>
+    </div>
+</div>
 
-        async function handleAuth() {
-            const body = { email: document.getElementById("email").value, password: document.getElementById("pass").value };
-            if(isReg) {
-                body.usuario = document.getElementById("usuario").value;
-                body.telefone = document.getElementById("telefone").value;
-            }
-            const res = await fetch(isReg ? '/register' : '/login', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify(body) 
-            });
-            const data = await res.json();
+<div id="adminTickets" class="card" style="border:2px solid #ef4444; display:none">
+    <h3 style="color:#ef4444">📥 Chamados Pendentes</h3>
+    <div id="adminListaTickets" style="text-align:left;"></div>
+</div>
 
-            if(data.token) {
-                localStorage.setItem("token", data.token);
-                localStorage.setItem("role", data.role);
-                localStorage.setItem("user", JSON.stringify(data.user));
-                location.reload();
-            } else if(data.error && data.error.includes("EXPIRADO")) {
-                document.getElementById("suporteLogin").style.display = "block";
-                document.getElementById("msgErro").innerText = data.error === "TESTE_EXPIRADO" ? "Seu teste de 2h acabou!" : "Seu plano expirou!";
-            } else if(data.ok) { alert("Cadastrado! Faça login."); location.reload(); }
-            else { alert(data.error || "Erro ao entrar"); }
-        }
+<script>
+async function enviarTicket() {
+    const assunto = document.getElementById("tkAssunto").value;
+    const mensagem = document.getElementById("tkMensagem").value;
+    const res = await fetch("/tickets/novo", {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'Authorization': localStorage.getItem("token")},
+        body: JSON.stringify({ assunto, mensagem })
+    });
+    if(res.ok) { alert("Ticket enviado!"); carregarTickets(); }
+}
 
-        async function toggleIA() {
-            const res = await fetch("/config/ia", {
-                method: 'POST',
-                headers: {'Content-Type':'application/json', 'Authorization': localStorage.getItem("token")},
-                body: JSON.stringify({ status: !iaStatus })
-            });
-            if(res.ok) { 
-                iaStatus = !iaStatus; 
-                renderIA();
-                // Atualiza localmente o objeto user para manter o estado ao atualizar a página
-                let u = JSON.parse(localStorage.getItem("user"));
-                u.iaAtiva = iaStatus;
-                localStorage.setItem("user", JSON.stringify(u));
-            }
-        }
+async function carregarTickets() {
+    const res = await fetch("/tickets/meus", { headers: {"Authorization": localStorage.getItem("token")} });
+    const data = await res.json();
+    document.getElementById("meusTickets").innerHTML = data.map(t => `
+        <div style="background:#0f172a; padding:10px; border-radius:8px; margin-bottom:8px; border-left: 3px solid ${t.status=='Aberto'?'#fbbf24':'#22c55e'}">
+            <b>${t.assunto}</b> <span class="badge" style="float:right">${t.status}</span><br>
+            <small>${t.mensagem}</small>
+            ${t.resposta ? `<div style="margin-top:5px; color:#22c55e;"><b>Resp:</b> ${t.resposta}</div>` : ""}
+        </div>
+    `).join('');
+}
 
-        function renderIA() {
-            const statusTxt = document.getElementById("statusIA");
-            const btn = document.getElementById("btnIA");
-            statusTxt.innerText = iaStatus ? "LIGADA" : "DESATIVADA";
-            statusTxt.style.color = iaStatus ? "var(--primary)" : "#ef4444";
-            btn.innerText = iaStatus ? "Desativar Robô" : "Ativar Robô";
-            btn.style.background = iaStatus ? "#334155" : "var(--primary)";
-        }
+// Funções exclusivas do ADMIN
+async function carregarTicketsAdmin() {
+    const res = await fetch("/admin/tickets", { headers: {"Authorization": localStorage.getItem("token")} });
+    const data = await res.json();
+    document.getElementById("adminListaTickets").innerHTML = data.map(t => `
+        <div style="background:#1e293b; padding:10px; border-radius:8px; margin-bottom:10px;">
+            <p>De: <b>${t.userName}</b> | Assunto: ${t.assunto}</p>
+            <p style="font-size:12px;">"${t.mensagem}"</p>
+            <input id="resp_${t._id}" type="text" placeholder="Escreva a resposta..." style="padding:5px;">
+            <button onclick="responderTicket('${t._id}')" style="padding:5px; font-size:10px; width:auto;">Enviar Resposta</button>
+        </div>
+    `).join('');
+}
 
-        function startTimer(user) {
-            const display = document.getElementById("countdown");
-            const label = document.getElementById("labelPlano");
-            const fim = new Date(user.ativo ? user.validade : new Date(user.dataCadastro).getTime() + 2*60*60*1000);
-            
-            label.innerText = user.ativo ? "⭐ PLANO ATIVO ATÉ:" : "⏳ SEU TESTE GRÁTIS EXPIRA EM:";
+async function responderTicket(id) {
+    const resposta = document.getElementById(`resp_${id}`).value;
+    await fetch("/admin/tickets/responder", {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'Authorization': localStorage.getItem("token")},
+        body: JSON.stringify({ id, resposta })
+    });
+    alert("Respondido!"); carregarTicketsAdmin();
+}
 
-            setInterval(() => {
-                const diff = fim - new Date();
-                if(diff <= 0) { display.innerText = "EXPIRADO"; return; }
-                const d = Math.floor(diff/86400000);
-                const h = Math.floor((diff%86400000)/3600000);
-                const m = Math.floor((diff%3600000)/60000);
-                const s = Math.floor((diff%60000)/1000);
-                display.innerText = user.ativo ? `${d}d ${h}h ${m}m` : `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-            }, 1000);
-        }
-
-        async function loadDashboard() {
-            const token = localStorage.getItem("token");
-            if(!token) return;
-            document.getElementById("loginBox").style.display = "none";
-            document.getElementById("dash").style.display = "block";
-            
-            const user = JSON.parse(localStorage.getItem("user"));
-            iaStatus = user.iaAtiva;
-            renderIA();
-            startTimer(user);
-
-            // Loop de status do WhatsApp
-            const checkStatus = async () => {
-                const res = await fetch("/status-whatsapp", { headers:{"Authorization":token} });
-                const data = await res.json();
-                const statusWA = document.getElementById("statusWA");
-                const qrd = document.getElementById("qrcode");
-
-                if(data.status === "CONECTADO") {
-                    statusWA.innerHTML = "<b style='color:var(--primary)'>✅ CONECTADO</b>";
-                    qrd.style.display = "none";
-                } else if(data.status.length > 50) {
-                    statusWA.innerText = "Escaneie o QR Code:";
-                    qrd.style.display = "block"; qrd.innerHTML = "";
-                    new QRCode(qrd, { text: data.status, width: 150, height: 150 });
-                } else {
-                    statusWA.innerText = "Iniciando servidor WhatsApp...";
-                }
-            };
-            checkStatus(); setInterval(checkStatus, 10000);
-
-            if(localStorage.getItem("role") === "admin") {
-                document.getElementById("admin").style.display = "block";
-                const uRes = await fetch("/admin/users", { headers:{"Authorization":token} });
-                const users = await uRes.json();
-                document.getElementById("userList").innerHTML = users.map(u => `
-                    <tr>
-                        <td>${u.usuario}<br><small>${u.email}</small></td>
-                        <td><span class="badge" style="background:${u.ativo?'#065f46':'#450a0a'}">${u.ativo?'Partner':'Teste'}</span></td>
-                        <td>
-                            <div style="display:flex; gap:4px;">
-                                <input type="number" id="dias_${u._id}" value="30" style="width:35px; padding:2px; margin:0; font-size:10px;">
-                                <button onclick="liberar('${u._id}')" style="padding:4px; font-size:9px; width:auto;">Ativar</button>
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-        }
-
-        async function liberar(id) {
-            const dias = document.getElementById(`dias_${id}`).value;
-            await fetch("/admin/liberar-flex", { 
-                method:'POST', 
-                headers:{'Content-Type':'application/json','Authorization':localStorage.getItem("token")}, 
-                body:JSON.stringify({id, dias}) 
-            });
-            alert("Ativado e E-mail Enviado!"); location.reload();
-        }
-
-        function logout() { localStorage.clear(); location.reload(); }
-        function abrirSuporte() { window.open("https://wa.me/5575998035985?text=Quero+ativar+meu+acesso+no+Money+Partner", "_blank"); }
-
-        if(localStorage.getItem("token")) loadDashboard();
-    </script>
-</body>
-</html>
+// Chame estas funções no seu Update() inicial
+if(localStorage.getItem("token")) {
+    carregarTickets();
+    if(localStorage.getItem("role") === "admin") {
+        document.getElementById("adminTickets").style.display = "block";
+        carregarTicketsAdmin();
+    }
+}
+</script>
