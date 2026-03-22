@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Automático | Partner VIP</title>
+    <title>Money Partner | Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --gold: #fbbf24; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .container { width: 100%; max-width: 500px; }
-        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; margin-bottom: 20px; text-align: center; }
+        :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --gold: #fbbf24; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 15px; }
+        .container { width: 100%; max-width: 480px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 15px; text-align: center; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
-        .timer-box { background: #450a0a; border: 1px solid #7f1d1d; color: #f87171; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
-        .btn-suporte { background: #25d366 !important; margin-top: 10px; }
-        table { width: 100%; font-size: 11px; margin-top: 15px; border-collapse: collapse; }
+        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { opacity: 0.8; }
+        .timer-box { border-bottom: 3px solid var(--gold); padding: 10px; }
+        .ia-control { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 12px; border-radius: 8px; margin: 10px 0; border: 1px solid #334155; }
+        .badge { font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; }
+        table { width: 100%; font-size: 11px; margin-top: 10px; border-collapse: collapse; }
         th, td { padding: 8px; border-bottom: 1px solid #334155; text-align: left; }
     </style>
 </head>
@@ -24,50 +26,45 @@
             <h2 style="color: var(--primary)">🚀 Money Partner</h2>
             <div id="regExtra" style="display:none">
                 <input id="usuario" type="text" placeholder="Seu Nome">
-                <input id="telefone" type="text" placeholder="WhatsApp">
+                <input id="telefone" type="text" placeholder="WhatsApp (DDD+Número)">
             </div>
             <input id="email" type="email" placeholder="E-mail">
             <input id="pass" type="password" placeholder="Senha">
-            <input id="confirmPass" type="password" placeholder="Confirme a Senha" style="display:none">
             <button id="btnMain" onclick="handleAuth()">Entrar no Sistema</button>
-            <p onclick="toggleReg()" id="toggleTxt" style="font-size:12px; color:#94a3b8; cursor:pointer; margin-top:15px;">Novo aqui? Teste grátis por 2 horas</p>
+            <p onclick="toggleReg()" id="toggleTxt" style="font-size:12px; color:#94a3b8; cursor:pointer; margin-top:15px;">Novo aqui? Criar conta (Teste 2h)</p>
             
-            <div id="suporteLogin" style="display:none; margin-top:20px; border-top:1px solid #334155; padding-top:20px;">
-                <p style="color:#f87171; font-size:12px">Tempo esgotado ou conta pendente!</p>
-                <button class="btn-suporte" onclick="abrirSuporte()">Ativar Acesso Vitalício (R$ 30)</button>
+            <div id="suporteLogin" style="display:none; margin-top:15px;">
+                <p id="msgErro" style="color:#ef4444; font-size:12px;"></p>
+                <button style="background:#25d366" onclick="abrirSuporte()">Ativar Acesso (R$ 30)</button>
             </div>
         </div>
 
         <div id="dash" style="display:none">
-            <div class="timer-box" id="timerDash" style="display:none">
-                ⏳ SEU TESTE GRÁTIS EXPIRA EM: <span id="clock">02:00:00</span>
+            <div class="card timer-box">
+                <p id="labelPlano" style="font-size: 11px; margin:0; color:var(--gold)">⏳ TEMPO RESTANTE:</p>
+                <h2 id="countdown" style="margin:5px 0">00:00:00</h2>
             </div>
-            
+
+            <div class="card" style="border-left: 5px solid var(--primary)">
+                <h3>🤖 Agente de IA</h3>
+                <div class="ia-control">
+                    <span>Resposta Automática:</span>
+                    <b id="statusIA" style="color: var(--primary)">LIGADA</b>
+                </div>
+                <button id="btnIA" onclick="toggleIA()" style="background:#334155; font-size:12px">Desativar Robô</button>
+            </div>
+
             <div class="card">
                 <h3>📲 Conexão WhatsApp</h3>
-                <p id="statusTxt">Iniciando...</p>
+                <p id="statusWA" style="font-size:13px">Verificando...</p>
                 <div id="qrcode" style="background:white; padding:10px; display:inline-block; border-radius:10px; margin:10px auto; display:none;"></div>
-                <button onclick="localStorage.clear(); location.reload();" style="background:#ef4444; height:30px; padding:0 10px; font-size:10px; width:auto;">Sair</button>
-            </div>
-
-            <div class="card" style="border-top:3px solid var(--gold)">
-                <h3>🔍 Buscador de Grupos</h3>
-                <input id="catBusca" type="text" placeholder="Categoria (ex: Vendas)">
-                <button onclick="buscarGrupos()" style="background:var(--gold); color:#000">Buscar Grupos na Web</button>
-                <div id="listaGrupos" style="text-align:left; font-size:12px; margin-top:10px"></div>
-            </div>
-
-            <div class="card" style="border-top:3px solid var(--primary)">
-                <h3>🚀 Disparo em Massa</h3>
-                <textarea id="lista" placeholder="Números separados por vírgula"></textarea>
-                <textarea id="msgMassa" placeholder="Mensagem..."></textarea>
-                <button onclick="disparar()">Iniciar Envios</button>
+                <button onclick="logout()" style="width:auto; padding:5px 15px; background:#ef4444; font-size:10px; margin-top:10px;">Sair da Conta</button>
             </div>
 
             <div id="admin" class="card" style="border:2px solid var(--gold); display:none">
-                <h3 style="color:var(--gold)">👑 Painel Master</h3>
-                <table id="userTable">
-                    <thead><tr><th>Nome</th><th>Acesso</th><th>Ação</th></tr></thead>
+                <h3 style="color:var(--gold)">👑 Painel Administrativo</h3>
+                <table>
+                    <thead><tr><th>Usuário</th><th>Status</th><th>Ação</th></tr></thead>
                     <tbody id="userList"></tbody>
                 </table>
             </div>
@@ -76,76 +73,113 @@
 
     <script>
         let isReg = false;
-        let userEmail = "";
+        let iaStatus = true;
 
         function toggleReg() {
             isReg = !isReg;
             document.getElementById("regExtra").style.display = isReg ? "block" : "none";
-            document.getElementById("confirmPass").style.display = isReg ? "block" : "none";
-            document.getElementById("btnMain").innerText = isReg ? "Criar Conta (Teste 2h)" : "Entrar no Sistema";
-        }
-
-        function abrirSuporte() {
-            const fone = "55119XXXXXXXX"; // <-- COLOQUE SEU WHATSAPP AQUI
-            const msg = encodeURIComponent(`Olá! Quero ativar meu acesso vitalício no Money Partner (${userEmail}).`);
-            window.open(`https://wa.me/${fone}?text=${msg}`, '_blank');
+            document.getElementById("btnMain").innerText = isReg ? "Criar Conta Partner" : "Entrar no Sistema";
+            document.getElementById("toggleTxt").innerText = isReg ? "Já tenho conta" : "Novo aqui? Criar conta (Teste 2h)";
         }
 
         async function handleAuth() {
             const body = { email: document.getElementById("email").value, password: document.getElementById("pass").value };
-            if(isReg) { 
+            if(isReg) {
                 body.usuario = document.getElementById("usuario").value;
                 body.telefone = document.getElementById("telefone").value;
-                body.confirmPassword = document.getElementById("confirmPass").value;
             }
-            const res = await fetch(isReg ? '/register' : '/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+            const res = await fetch(isReg ? '/register' : '/login', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(body) 
+            });
             const data = await res.json();
 
             if(data.token) {
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("role", data.role);
-                localStorage.setItem("exp", data.dataCadastro);
-                localStorage.setItem("ativo", data.ativo);
+                localStorage.setItem("user", JSON.stringify(data.user));
                 location.reload();
-            } else if(data.error === "EXPIRADO") {
-                userEmail = data.email;
+            } else if(data.error && data.error.includes("EXPIRADO")) {
                 document.getElementById("suporteLogin").style.display = "block";
-            } else if(data.ok) {
-                alert("Teste grátis de 2h liberado! Faça login.");
-                location.reload();
-            } else { alert(data.error); }
+                document.getElementById("msgErro").innerText = data.error === "TESTE_EXPIRADO" ? "Seu teste de 2h acabou!" : "Seu plano expirou!";
+            } else if(data.ok) { alert("Cadastrado! Faça login."); location.reload(); }
+            else { alert(data.error || "Erro ao entrar"); }
         }
 
-        function iniciarRelogio(dataStr) {
-            if (localStorage.getItem("ativo") === "true" || localStorage.getItem("role") === "admin") return;
-            document.getElementById("timerDash").style.display = "block";
-            const expira = new Date(new Date(dataStr).getTime() + 2 * 60 * 60 * 1000);
+        async function toggleIA() {
+            const res = await fetch("/config/ia", {
+                method: 'POST',
+                headers: {'Content-Type':'application/json', 'Authorization': localStorage.getItem("token")},
+                body: JSON.stringify({ status: !iaStatus })
+            });
+            if(res.ok) { 
+                iaStatus = !iaStatus; 
+                renderIA();
+                // Atualiza localmente o objeto user para manter o estado ao atualizar a página
+                let u = JSON.parse(localStorage.getItem("user"));
+                u.iaAtiva = iaStatus;
+                localStorage.setItem("user", JSON.stringify(u));
+            }
+        }
+
+        function renderIA() {
+            const statusTxt = document.getElementById("statusIA");
+            const btn = document.getElementById("btnIA");
+            statusTxt.innerText = iaStatus ? "LIGADA" : "DESATIVADA";
+            statusTxt.style.color = iaStatus ? "var(--primary)" : "#ef4444";
+            btn.innerText = iaStatus ? "Desativar Robô" : "Ativar Robô";
+            btn.style.background = iaStatus ? "#334155" : "var(--primary)";
+        }
+
+        function startTimer(user) {
+            const display = document.getElementById("countdown");
+            const label = document.getElementById("labelPlano");
+            const fim = new Date(user.ativo ? user.validade : new Date(user.dataCadastro).getTime() + 2*60*60*1000);
             
+            label.innerText = user.ativo ? "⭐ PLANO ATIVO ATÉ:" : "⏳ SEU TESTE GRÁTIS EXPIRA EM:";
+
             setInterval(() => {
-                const diff = expira - new Date();
-                if (diff <= 0) { location.reload(); return; }
-                const h = Math.floor(diff/3600000).toString().padStart(2,'0');
-                const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
-                const s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
-                document.getElementById("clock").innerText = `${h}:${m}:${s}`;
+                const diff = fim - new Date();
+                if(diff <= 0) { display.innerText = "EXPIRADO"; return; }
+                const d = Math.floor(diff/86400000);
+                const h = Math.floor((diff%86400000)/3600000);
+                const m = Math.floor((diff%3600000)/60000);
+                const s = Math.floor((diff%60000)/1000);
+                display.innerText = user.ativo ? `${d}d ${h}h ${m}m` : `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             }, 1000);
         }
 
-        async function update() {
+        async function loadDashboard() {
             const token = localStorage.getItem("token");
             if(!token) return;
             document.getElementById("loginBox").style.display = "none";
             document.getElementById("dash").style.display = "block";
-            iniciarRelogio(localStorage.getItem("exp"));
+            
+            const user = JSON.parse(localStorage.getItem("user"));
+            iaStatus = user.iaAtiva;
+            renderIA();
+            startTimer(user);
 
-            const sRes = await fetch("/status-whatsapp", { headers:{"Authorization":token} });
-            const sData = await sRes.json();
-            if(sData.status === "CONECTADO") document.getElementById("statusTxt").innerText = "✅ CONECTADO";
-            else if(sData.status.length > 50) {
+            // Loop de status do WhatsApp
+            const checkStatus = async () => {
+                const res = await fetch("/status-whatsapp", { headers:{"Authorization":token} });
+                const data = await res.json();
+                const statusWA = document.getElementById("statusWA");
                 const qrd = document.getElementById("qrcode");
-                qrd.style.display="block"; qrd.innerHTML="";
-                new QRCode(qrd, { text: sData.status, width: 130, height: 130 });
-            }
+
+                if(data.status === "CONECTADO") {
+                    statusWA.innerHTML = "<b style='color:var(--primary)'>✅ CONECTADO</b>";
+                    qrd.style.display = "none";
+                } else if(data.status.length > 50) {
+                    statusWA.innerText = "Escaneie o QR Code:";
+                    qrd.style.display = "block"; qrd.innerHTML = "";
+                    new QRCode(qrd, { text: data.status, width: 150, height: 150 });
+                } else {
+                    statusWA.innerText = "Iniciando servidor WhatsApp...";
+                }
+            };
+            checkStatus(); setInterval(checkStatus, 10000);
 
             if(localStorage.getItem("role") === "admin") {
                 document.getElementById("admin").style.display = "block";
@@ -153,31 +187,33 @@
                 const users = await uRes.json();
                 document.getElementById("userList").innerHTML = users.map(u => `
                     <tr>
-                        <td>${u.usuario}</td>
-                        <td style="color:${u.ativo?'#22c55e':'#94a3b8'}">${u.ativo?'VITALÍCIO':'TESTE'}</td>
-                        <td><button style="background:${u.ativo?'#ef4444':'#22c55e'}; padding:4px; font-size:9px;" onclick="toggleUser('${u._id}', ${u.ativo})">${u.ativo?'Bloquear':'Liberar'}</button></td>
+                        <td>${u.usuario}<br><small>${u.email}</small></td>
+                        <td><span class="badge" style="background:${u.ativo?'#065f46':'#450a0a'}">${u.ativo?'Partner':'Teste'}</span></td>
+                        <td>
+                            <div style="display:flex; gap:4px;">
+                                <input type="number" id="dias_${u._id}" value="30" style="width:35px; padding:2px; margin:0; font-size:10px;">
+                                <button onclick="liberar('${u._id}')" style="padding:4px; font-size:9px; width:auto;">Ativar</button>
+                            </div>
+                        </td>
                     </tr>
                 `).join('');
             }
         }
 
-        async function toggleUser(id, status) {
-            await fetch("/admin/toggle", { method:'POST', headers:{'Content-Type':'application/json','Authorization':localStorage.getItem("token")}, body:JSON.stringify({id, status:!status}) });
-            update();
+        async function liberar(id) {
+            const dias = document.getElementById(`dias_${id}`).value;
+            await fetch("/admin/liberar-flex", { 
+                method:'POST', 
+                headers:{'Content-Type':'application/json','Authorization':localStorage.getItem("token")}, 
+                body:JSON.stringify({id, dias}) 
+            });
+            alert("Ativado e E-mail Enviado!"); location.reload();
         }
 
-        async function buscarGrupos() {
-            const res = await fetch("/buscar-grupos", { method:'POST', headers:{'Content-Type':'application/json','Authorization':localStorage.getItem("token")}, body:JSON.stringify({categoria: document.getElementById("catBusca").value}) });
-            const data = await res.json();
-            document.getElementById("listaGrupos").innerHTML = data.grupos.map(g => `<div style="border-bottom:1px solid #334155; padding:5px;">${g.nome} <a href="${g.link}" target="_blank" style="color:var(--primary)">Entrar</a></div>`).join('');
-        }
+        function logout() { localStorage.clear(); location.reload(); }
+        function abrirSuporte() { window.open("https://wa.me/5575998035985?text=Quero+ativar+meu+acesso+no+Money+Partner", "_blank"); }
 
-        async function disparar() {
-            const res = await fetch("/enviar-massa", { method:'POST', headers:{'Content-Type':'application/json','Authorization':localStorage.getItem("token")}, body:JSON.stringify({lista: document.getElementById("lista").value, mensagem: document.getElementById("msgMassa").value}) });
-            alert("Disparos Iniciados!");
-        }
-
-        if(localStorage.getItem("token")) { update(); setInterval(update, 15000); }
+        if(localStorage.getItem("token")) loadDashboard();
     </script>
 </body>
 </html>
