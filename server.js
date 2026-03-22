@@ -11,100 +11,77 @@ app.use(cors());
 
 const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
-const ADMIN_EMAIL = "tiagoscosta.business@gmail.com";
 
-// SCHEMA COMPLETO (Todas as funções pedidas)
 const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true },
     usuario: String,
     password: { type: String, required: true },
     role: { type: String, default: "user" },
-    ativo: { type: Boolean, default: false }, // Liberação manual do Admin
-    dataCadastro: { type: Date, default: Date.now }, // Para o teste de 2h
-    validade: { type: Date }, // Para os dias (30, 60, 90)
-    iaResumo: { type: String, default: "Olá! Sou sua IA de vendas. Como posso ajudar?" }
+    ativo: { type: Boolean, default: false },
+    validade: { type: Date },
+    iaResumo: { type: String, default: "Olá! Como posso ajudar?" }
 }));
 
-mongoose.connect(MONGO_URI).then(async () => {
-    console.log("🚀 SISTEMA ONLINE - BANCO CONECTADO");
-    await User.findOneAndUpdate({ email: ADMIN_EMAIL }, { role: "admin", ativo: true });
-});
+mongoose.connect(MONGO_URI).then(() => console.log("🚀 Banco Conectado"));
 
 const qrcodes = {};
 const clientes = {};
-const logsChat = {};
 
 async function engineWA(userId) {
     if (clientes[userId]) return;
+
     const client = new Client({
         authStrategy: new LocalAuth({ clientId: userId }),
-        puppeteer: { 
-            headless: "new", 
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] 
+        puppeteer: {
+            headless: "new",
+            executablePath: process.env.CHROME_PATH || null, // ESSENCIAL PARA O RAILWAY
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+                '--disable-gpu'
+            ]
         }
     });
 
-    client.on('qr', qr => { qrcodes[userId] = qr; });
-    client.on('ready', () => { qrcodes[userId] = "READY"; });
-    
+    client.on('qr', qr => {
+        console.log("QR Code Gerado para:", userId);
+        qrcodes[userId] = qr;
+    });
+
+    client.on('ready', () => {
+        console.log("WhatsApp Pronto:", userId);
+        qrcodes[userId] = "READY";
+    });
+
     client.on('message', async msg => {
         if (msg.fromMe) return;
         const u = await User.findById(userId);
-        if (!u) return;
-
-        // LÓGICA DE ACESSO: Admin OU Ativo OU Teste de 2 horas
-        const agora = new Date();
-        const emTeste = (agora - u.dataCadastro) < (2 * 60 * 60 * 1000);
-        const planoValido = u.validade && agora < u.validade;
-
-        if (u.role === 'admin' || u.ativo || emTeste || planoValido) {
-            if (!logsChat[userId]) logsChat[userId] = [];
-            logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body, hora: agora.toLocaleTimeString() });
-            
-            msg.reply(u.iaResumo); // Responde com o treinamento salvo
-            
-            logsChat[userId].push({ de: "IA", txt: u.iaResumo, hora: agora.toLocaleTimeString() });
-            if (logsChat[userId].length > 20) logsChat[userId].shift();
-        }
+        if (u && (u.ativo || u.role === 'admin')) msg.reply(u.iaResumo);
     });
 
     clientes[userId] = client;
-    client.initialize().catch(() => {});
+    client.initialize().catch(e => console.log("Erro ao iniciar WA:", e));
 }
 
-// ROTAS DE CONTROLE
 app.post("/login", async (req, res) => {
     const u = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
-    if (!u) return res.status(401).json({ error: "Erro" });
-    engineWA(u._id.toString());
-    res.json({ token: jwt.sign({ id: u._id, role: u.role }, JWT_SECRET), user: u });
+    if (!u) return res.status(401).send();
+    engineWA(u._id.toString()); // Inicia o zap assim que loga
+    res.json({ token: jwt.sign({ id: u._id }, JWT_SECRET), user: u });
 });
 
 app.get("/sync", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json({ status: qrcodes[d.id] || "OFF", chats: logsChat[d.id] || [] });
+        res.json({ status: qrcodes[d.id] || "OFF" });
     } catch (e) { res.status(401).send(); }
-});
-
-app.post("/admin/liberar", async (req, res) => {
-    const { id, dias } = req.body;
-    const v = new Date(); v.setDate(v.getDate() + parseInt(dias));
-    await User.findByIdAndUpdate(id, { ativo: true, validade: v });
-    res.json({ ok: true });
-});
-
-app.get("/admin/users", async (req, res) => {
-    const users = await User.find({});
-    res.json(users);
-});
-
-app.post("/set-ia", async (req, res) => {
-    const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-    await User.findByIdAndUpdate(d.id, { iaResumo: req.body.txt });
-    res.json({ ok: true });
 });
 
 app.use(express.static(__dirname));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.listen(8080, '0.0.0.0');
+app.listen(process.env.PORT || 8080);
