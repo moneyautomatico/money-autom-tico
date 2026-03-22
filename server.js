@@ -30,13 +30,21 @@ const Conversas = mongoose.model("Conversas", new mongoose.Schema({
     respondidoPelaIA: Boolean
 }));
 
-mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA ONLINE"));
+// NOVA COLEÇÃO PARA DETALHES DE ENVIO
+const LogEnvio = mongoose.model("LogEnvio", new mongoose.Schema({
+    userId: String,
+    numero: String,
+    status: String,
+    data: { type: Date, default: Date.now }
+}));
+
+mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA ONLINE E BLINDADO"));
 
 const qrcodes = {};
 const clientes = {};
 const logsChat = {};
 
-// LÓGICA DE FOLLOW-UP (A cada 15 min de silêncio do cliente)
+// Follow-up 15 min (Mantido)
 setInterval(async () => {
     const limite = new Date(Date.now() - 15 * 60 * 1000);
     const pendentes = await Conversas.find({ respondidoPelaIA: true, ultimaMensagemDeles: { $lt: limite } });
@@ -63,28 +71,18 @@ async function engineWA(userId) {
     client.on('disconnected', () => { qrcodes[userId] = "OFF"; delete clientes[userId]; });
 
     client.on('message', async msg => {
-        // FILTRO DE GRUPOS ATIVADO
         if (msg.fromMe || msg.from.endsWith('@g.us')) return;
-
         const u = await User.findById(userId);
         if (!u) return;
 
-        // REGISTRO PARA FOLLOW-UP
-        await Conversas.findOneAndUpdate(
-            { userId, contato: msg.from },
-            { ultimaMensagemDeles: new Date(), respondidoPelaIA: true },
-            { upsert: true }
-        );
-
-        // LÓGICA DE APRENDIZADO REAL
-        // A IA usa a saudação + a base de conhecimento que você salvou
-        const respostaIA = `${u.iaResumo}\n\n${u.baseAprendizado}`;
-
+        await Conversas.findOneAndUpdate({ userId, contato: msg.from }, { ultimaMensagemDeles: new Date(), respondidoPelaIA: true }, { upsert: true });
+        
+        const respostaFinal = `${u.iaResumo}\n\n${u.baseAprendizado}`;
         if (!logsChat[userId]) logsChat[userId] = [];
         logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body });
 
         setTimeout(async () => {
-            try { await msg.reply(respostaIA); } catch (e) {}
+            try { await msg.reply(respostaFinal); } catch (e) {}
         }, u.delayResponda);
     });
 
@@ -92,23 +90,10 @@ async function engineWA(userId) {
     client.initialize();
 }
 
-// ROTA DE DISPARO ATIVADA
-app.post("/disparar", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const { numeros, mensagem, intervalo } = req.body;
-        const client = clientes[d.id];
-        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "Conecte o Zap primeiro!" });
-
-        const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, ''));
-        res.json({ msg: "Disparos em fila no servidor!" });
-
-        for (let num of lista) {
-            if (num.length < 10) continue;
-            await new Promise(r => setTimeout(r, intervalo * 1000));
-            try { await client.sendMessage(`${num}@c.us`, mensagem); } catch (e) {}
-        }
-    } catch (e) { res.status(401).send(); }
+// ROTAS DE AUTH (Mantidas)
+app.post("/register", async (req, res) => {
+    try { const novo = new User(req.body); await novo.save(); res.json({ ok: true }); } 
+    catch (e) { res.status(400).json({ error: "E-mail já existe" }); }
 });
 
 app.post("/login", async (req, res) => {
@@ -116,6 +101,47 @@ app.post("/login", async (req, res) => {
     if (!u) return res.status(401).send();
     engineWA(u._id.toString());
     res.json({ token: jwt.sign({ id: u._id }, JWT_SECRET), user: u });
+});
+
+app.post("/logout-wa", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        if (clientes[d.id]) { await clientes[d.id].logout(); delete clientes[d.id]; qrcodes[d.id] = "OFF"; }
+        res.json({ ok: true });
+    } catch (e) { res.status(500).send(); }
+});
+
+// DISPARADOR COM LOG DE DETALHES (Acrescentado)
+app.post("/disparar", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        const { numeros, mensagem, intervalo } = req.body;
+        const client = clientes[d.id];
+        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "Zap OFF" });
+        
+        const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, ''));
+        res.json({ msg: "Disparos iniciados!" });
+
+        for (let num of lista) {
+            if (num.length < 10) continue;
+            await new Promise(r => setTimeout(r, intervalo * 1000));
+            try { 
+                await client.sendMessage(`${num}@c.us`, mensagem);
+                await new LogEnvio({ userId: d.id, numero: num, status: "✅ Sucesso" }).save();
+            } catch (e) {
+                await new LogEnvio({ userId: d.id, numero: num, status: "❌ Erro" }).save();
+            }
+        }
+    } catch (e) { res.status(401).send(); }
+});
+
+// ROTA PARA BUSCAR DETALHES DE ENVIO
+app.get("/logs-envio", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        const logs = await LogEnvio.find({ userId: d.id }).sort({ data: -1 }).limit(50);
+        res.json(logs);
+    } catch (e) { res.status(401).send(); }
 });
 
 app.post("/save-config", async (req, res) => {
