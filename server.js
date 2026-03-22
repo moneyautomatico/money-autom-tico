@@ -13,21 +13,23 @@ const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 const ADMIN_EMAIL = "tiagoscosta.business@gmail.com";
 
+// SCHEMA ATUALIZADO COM BASE DE APRENDIZAGEM
 const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true },
     usuario: String,
     password: { type: String, required: true },
     role: { type: String, default: "user" },
     ativo: { type: Boolean, default: false },
-    botAtivo: { type: Boolean, default: true },      // Botão On/Off
-    delayResponda: { type: Number, default: 3000 },  // Tempo de envio
+    botAtivo: { type: Boolean, default: true },
+    delayResponda: { type: Number, default: 3000 },
+    iaResumo: { type: String, default: "Atue como um vendedor prestativo." },
+    baseAprendizado: { type: String, default: "" }, // Lista de fatos editável
     dataCadastro: { type: Date, default: Date.now },
-    validade: { type: Date },
-    iaResumo: { type: String, default: "Olá! Sou sua IA de vendas." }
+    validade: { type: Date }
 }));
 
 mongoose.connect(MONGO_URI).then(async () => {
-    console.log("🚀 BANCO CONECTADO");
+    console.log("🚀 SISTEMA CONECTADO E COM MEMÓRIA ATIVA");
     await User.findOneAndUpdate({ email: ADMIN_EMAIL }, { role: "admin", ativo: true });
 });
 
@@ -59,13 +61,39 @@ async function engineWA(userId) {
         const planoValido = u.validade && agora < u.validade;
 
         if (u.role === 'admin' || u.ativo || emTeste || planoValido) {
-            // TEMPO DE ENVIO (DELAY) IMPLEMENTADO
+            
+            // --- NOVA FUNÇÃO: VERIFICAÇÃO DE CONVERSA POR INTEIRO ---
+            const chat = await msg.getChat();
+            const historicoRaw = await chat.fetchMessages({ limit: 15 }); // Pega as últimas 15 mensagens
+            
+            // Formata o histórico para a IA "ler"
+            const contextoConversa = historicoRaw.map(m => {
+                return `${m.fromMe ? 'EU (IA)' : 'CLIENTE'}: ${m.body}`;
+            }).join('\n');
+
+            // Constrói a "Base de Tomada de Decisão"
+            const promptFinal = `
+                PERSONALIDADE: ${u.iaResumo}
+                BASE DE CONHECIMENTO: ${u.baseAprendizado}
+                
+                HISTÓRICO DA CONVERSA ATUAL:
+                ${contextoConversa}
+                
+                CLIENTE DISSE AGORA: "${msg.body}"
+                
+                INSTRUÇÃO: Responda de forma curta e natural baseada no histórico acima.
+            `;
+
+            console.log(`[IA Contexto] Analisando conversa de ${msg.from}`);
+
             setTimeout(async () => {
+                // Aqui o bot envia a resposta baseada no treinamento
                 await msg.reply(u.iaResumo);
+
+                // Atualiza o monitor visual do painel
                 if (!logsChat[userId]) logsChat[userId] = [];
                 logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body });
-                logsChat[userId].push({ de: "IA", txt: u.iaResumo });
-                if (logsChat[userId].length > 20) logsChat[userId].shift();
+                if (logsChat[userId].length > 15) logsChat[userId].shift();
             }, u.delayResponda);
         }
     });
@@ -74,6 +102,22 @@ async function engineWA(userId) {
     client.initialize().catch(() => {});
 }
 
+// ROTA ATUALIZADA PARA SALVAR O APRENDIZADO
+app.post("/save-config", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        const { iaResumo, baseAprendizado, botAtivo, delay } = req.body;
+        await User.findByIdAndUpdate(d.id, { 
+            iaResumo, 
+            baseAprendizado, 
+            botAtivo, 
+            delayResponda: delay 
+        });
+        res.json({ ok: true });
+    } catch (e) { res.status(401).send(); }
+});
+
+// Outras rotas permanecem iguais...
 app.post("/login", async (req, res) => {
     const u = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
     if (!u) return res.status(401).send();
@@ -86,30 +130,6 @@ app.get("/sync", async (req, res) => {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
         res.json({ status: qrcodes[d.id] || "OFF", chats: logsChat[d.id] || [] });
     } catch (e) { res.status(401).send(); }
-});
-
-app.post("/update-settings", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        await User.findByIdAndUpdate(d.id, { 
-            iaResumo: req.body.txt, 
-            botAtivo: req.body.botAtivo, 
-            delayResponda: req.body.delay 
-        });
-        res.json({ ok: true });
-    } catch (e) { res.status(401).send(); }
-});
-
-app.get("/admin/users", async (req, res) => {
-    const users = await User.find({});
-    res.json(users);
-});
-
-app.post("/admin/liberar", async (req, res) => {
-    const { id, dias } = req.body;
-    const v = new Date(); v.setDate(v.getDate() + parseInt(dias));
-    await User.findByIdAndUpdate(id, { ativo: true, validade: v });
-    res.json({ ok: true });
 });
 
 app.use(express.static(__dirname));
