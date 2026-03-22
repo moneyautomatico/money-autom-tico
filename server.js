@@ -13,9 +13,11 @@ const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 const ADMIN_EMAIL = "tiagoscosta.business@gmail.com";
 
-// SCHEMA DE USUÁRIO
+// SCHEMA DE USUÁRIO ATUALIZADO
 const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true },
+    usuario: { type: String, required: true },
+    telefone: { type: String, required: true },
     password: { type: String, required: true },
     ia: { type: String, default: "Olá! Recebi sua mensagem." },
     totalEnviados: { type: Number, default: 0 },
@@ -26,7 +28,6 @@ const User = mongoose.model("User", UserSchema);
 // CONEXÃO MONGO E ATIVAÇÃO DO ADMIN
 mongoose.connect(MONGO_URI).then(async () => {
     console.log("✅ MongoDB Conectado");
-    // Garante que o seu e-mail tenha permissão de Admin
     await User.findOneAndUpdate(
         { email: ADMIN_EMAIL.toLowerCase() }, 
         { role: "admin" }
@@ -36,39 +37,20 @@ mongoose.connect(MONGO_URI).then(async () => {
 const qrcodes = {};
 const clientes = {};
 
-// INICIALIZADOR DO WHATSAPP (CORRIGIDO SEM CAMINHO FIXO)
+// INICIALIZADOR DO WHATSAPP
 async function initWA(userId) {
     if (clientes[userId]) return;
-    
     console.log(`🤖 Iniciando Zap para: ${userId}`);
-    
     const client = new Client({
         authStrategy: new LocalAuth({ clientId: userId }),
         puppeteer: { 
             headless: "new",
-            // Removido o executablePath para evitar o erro de 'not found'
-            args: [
-                '--no-sandbox', 
-                '--disable-setuid-sandbox', 
-                '--disable-dev-shm-usage', 
-                '--disable-accelerated-2d-canvas', 
-                '--no-first-run', 
-                '--no-zygote', 
-                '--disable-gpu'
-            ] 
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] 
         }
     });
 
-    client.on('qr', (qr) => {
-        qrcodes[userId] = qr;
-        console.log(`📲 QR Code gerado para ${userId}`);
-    });
-
-    client.on('ready', () => {
-        qrcodes[userId] = "CONECTADO";
-        console.log(`✅ Zap conectado para ${userId}`);
-    });
-
+    client.on('qr', (qr) => qrcodes[userId] = qr);
+    client.on('ready', () => qrcodes[userId] = "CONECTADO");
     client.on('message', async msg => {
         if (msg.fromMe) return;
         const user = await User.findById(userId);
@@ -79,28 +61,40 @@ async function initWA(userId) {
     });
 
     clientes[userId] = client;
-    client.initialize().catch(err => console.error("❌ Erro ao abrir navegador:", err.message));
+    client.initialize().catch(err => console.error("❌ Erro Puppeteer:", err.message));
 }
 
-// ROTAS
+// ROTA DE REGISTRO COM NOVOS CAMPOS
 app.post("/register", async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, usuario, telefone, password, confirmPassword } = req.body;
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({ error: "As senhas não coincidem!" });
+        }
+
         const role = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? "admin" : "user";
-        await User.create({ email: email.toLowerCase(), password, role });
+        
+        await User.create({ 
+            email: email.toLowerCase(), 
+            usuario, 
+            telefone, 
+            password, 
+            role 
+        });
+
         res.json({ ok: true });
-    } catch (e) { res.status(400).json({ error: "E-mail já cadastrado" }); }
+    } catch (e) { 
+        res.status(400).json({ error: "E-mail já cadastrado ou dados inválidos" }); 
+    }
 });
 
 app.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email: email.toLowerCase(), password });
-    
     if (!user) return res.status(400).json({ error: "Dados inválidos" });
-    
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET);
     initWA(user._id.toString());
-    
     res.json({ token, role: user.role });
 });
 
@@ -116,14 +110,9 @@ app.get("/admin/users", async (req, res) => {
     try {
         const token = req.headers.authorization;
         const decoded = jwt.verify(token, JWT_SECRET);
-        
         if (decoded.role !== 'admin') return res.status(403).json({error: "Acesso Negado"});
-        
-        const users = await User.find({}, 'email totalEnviados role');
-        res.json(users.map(u => ({ 
-            ...u._doc, 
-            status: qrcodes[u._id] || "OFFLINE" 
-        })));
+        const users = await User.find({}, 'email usuario telefone totalEnviados role');
+        res.json(users.map(u => ({ ...u._doc, status: qrcodes[u._id] || "OFFLINE" })));
     } catch (e) { res.status(401).send(); }
 });
 
