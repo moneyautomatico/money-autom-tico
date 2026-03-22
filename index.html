@@ -8,56 +8,54 @@
     <style>
         :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #3b82f6; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .container { width: 100%; max-width: 500px; text-align: center; }
-        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.3); }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; outline: none; }
-        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        button:hover { filter: brightness(1.1); }
-        .btn-alt { background: #475569; font-size: 13px; }
-        #adminArea { display: none; border: 2px solid #fbbf24; overflow-x: auto; }
-        table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 15px; color: #cbd5e1; }
-        th, td { padding: 10px; border-bottom: 1px solid #334155; text-align: left; }
-        #qrcode { background: white; padding: 15px; border-radius: 10px; margin: 20px auto; width: 150px; display: none; }
+        .container { width: 100%; max-width: 500px; }
+        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; margin-bottom: 20px; text-align: center; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .online { background: #065f46; color: #34d399; }
         .offline { background: #7f1d1d; color: #f87171; }
+        table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 8px; border-bottom: 1px solid #334155; text-align: left; }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="loginBox" class="card">
             <h2 style="color: var(--primary)">🚀 Money Automático</h2>
-            <div id="formInputs">
-                <input id="email" type="email" placeholder="E-mail">
-                
-                <div id="registerFields" style="display: none;">
-                    <input id="usuario" type="text" placeholder="Nome completo">
-                    <input id="telefone" type="text" placeholder="WhatsApp (DDD + Número)">
-                </div>
-
-                <input id="pass" type="password" placeholder="Senha">
-                
-                <div id="confirmPassField" style="display: none;">
-                    <input id="confirmPass" type="password" placeholder="Confirme a senha">
-                </div>
-
-                <button id="btnAction" onclick="handleAuth('login')">Entrar no Painel</button>
-                <button id="btnToggle" onclick="toggleView()" class="btn-alt">Criar nova conta grátis</button>
+            <input id="email" type="email" placeholder="Seu melhor e-mail">
+            <div id="regExtra" style="display: none;">
+                <input id="usuario" type="text" placeholder="Seu nome">
+                <input id="telefone" type="text" placeholder="Seu WhatsApp (Ex: 5511999999999)">
             </div>
+            <input id="pass" type="password" placeholder="Sua senha">
+            <input id="confirmPass" type="password" placeholder="Confirme a senha" style="display: none;">
+            <button id="btnPrincipal" onclick="handleAuth('login')">Entrar no Painel</button>
+            <button onclick="toggleReg()" style="background:transparent; font-size: 12px; color: #94a3b8;">Criar nova conta grátis</button>
         </div>
 
-        <div id="mainDash" style="display: none;">
+        <div id="dash" style="display: none;">
             <div class="card">
-                <h2>Seu Robô WhatsApp</h2>
-                <p>Status: <span id="statusTxt">Carregando...</span></p>
-                <div id="qrcode"></div>
-                <button onclick="logout()" style="background: #ef4444; width: auto; font-size: 12px;">Sair</button>
+                <h3>📲 Conexão WhatsApp</h3>
+                <p id="statusTxt">Iniciando servidor...</p>
+                <div id="qrcode" style="background:white; padding:10px; display:inline-block; border-radius:10px; margin:10px auto; display:none;"></div>
+                <button onclick="localStorage.clear(); location.reload();" style="background:#ef4444; font-size:12px; height: 35px; width: auto; padding: 0 15px;">Sair</button>
             </div>
 
-            <div id="adminArea" class="card">
-                <h3 style="color:#fbbf24">👑 Gestão Master (Lista de Clientes)</h3>
+            <div class="card" style="border-top: 3px solid var(--accent);">
+                <h3>🚀 Disparo em Massa</h3>
+                <textarea id="lista" placeholder="Números (vírgula ou espaço)"></textarea>
+                <textarea id="msgMassa" placeholder="Mensagem de envio"></textarea>
+                <div style="display:flex; align-items:center; gap:10px; font-size:12px;">
+                    Delay (seg): <input id="delay" type="number" value="10" style="width:60px;">
+                </div>
+                <button onclick="disparar()" style="background:var(--accent)">Iniciar Disparos</button>
+            </div>
+
+            <div id="admin" class="card" style="border: 2px solid #fbbf24; display: none;">
+                <h3 style="color:#fbbf24">👑 Gestão Master</h3>
                 <table>
-                    <thead><tr><th>Usuário</th><th>Telefone</th><th>Status</th><th>Envios</th></tr></thead>
+                    <thead><tr><th>Nome</th><th>Telefone</th><th>Status</th><th>Envios</th></tr></thead>
                     <tbody id="userList"></tbody>
                 </table>
             </div>
@@ -65,89 +63,75 @@
     </div>
 
     <script>
-        let isRegisterMode = false;
-
-        function toggleView() {
-            isRegisterMode = !isRegisterMode;
-            document.getElementById("registerFields").style.display = isRegisterMode ? "block" : "none";
-            document.getElementById("confirmPassField").style.display = isRegisterMode ? "block" : "none";
-            document.getElementById("btnAction").innerText = isRegisterMode ? "Cadastrar Agora" : "Entrar no Painel";
-            document.getElementById("btnAction").setAttribute("onclick", isRegisterMode ? "handleAuth('register')" : "handleAuth('login')");
-            document.getElementById("btnToggle").innerText = isRegisterMode ? "Já tenho conta" : "Criar nova conta grátis";
+        let isReg = false;
+        function toggleReg() {
+            isReg = !isReg;
+            document.getElementById("regExtra").style.display = isReg ? "block" : "none";
+            document.getElementById("confirmPass").style.display = isReg ? "block" : "none";
+            document.getElementById("btnPrincipal").innerText = isReg ? "Cadastrar Agora" : "Entrar no Painel";
+            document.getElementById("btnPrincipal").setAttribute("onclick", isReg ? "handleAuth('register')" : "handleAuth('login')");
         }
 
         async function handleAuth(tipo) {
-            const payload = {
-                email: document.getElementById("email").value,
-                password: document.getElementById("pass").value
+            const body = { 
+                email: document.getElementById("email").value, 
+                password: document.getElementById("pass").value 
             };
-
-            if (tipo === 'register') {
-                payload.usuario = document.getElementById("usuario").value;
-                payload.telefone = document.getElementById("telefone").value;
-                payload.confirmPassword = document.getElementById("confirmPass").value;
-                if(!payload.email || !payload.password || !payload.usuario || !payload.telefone) return alert("Preencha tudo!");
+            if(tipo === 'register') {
+                body.usuario = document.getElementById("usuario").value;
+                body.telefone = document.getElementById("telefone").value;
+                body.confirmPassword = document.getElementById("confirmPass").value;
             }
-
-            try {
-                const res = await fetch(`/${tipo}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                
-                if (data.ok && tipo === 'register') {
-                    alert("Conta criada! Agora faça o login.");
-                    location.reload();
-                } else if (data.token) {
-                    localStorage.setItem("token", data.token);
-                    localStorage.setItem("role", data.role);
-                    location.reload();
-                } else { alert(data.error || "Erro na operação"); }
-            } catch (e) { alert("Erro de conexão"); }
+            const res = await fetch(`/${tipo}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+            const data = await res.json();
+            if(data.token) { localStorage.setItem("token", data.token); localStorage.setItem("role", data.role); location.reload(); }
+            else if(data.ok) { alert("Conta criada! Faça login."); location.reload(); }
+            else alert(data.error);
         }
 
-        function logout() { localStorage.clear(); location.reload(); }
+        async function disparar() {
+            const res = await fetch("/enviar-massa", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token") },
+                body: JSON.stringify({
+                    lista: document.getElementById("lista").value,
+                    mensagem: document.getElementById("msgMassa").value,
+                    intervalo: document.getElementById("delay").value
+                })
+            });
+            const data = await res.json();
+            alert(data.ok ? "Envios iniciados!" : data.error);
+        }
 
-        async function load() {
+        async function update() {
             const token = localStorage.getItem("token");
-            if (!token) return;
+            if(!token) return;
             document.getElementById("loginBox").style.display = "none";
-            document.getElementById("mainDash").style.display = "block";
+            document.getElementById("dash").style.display = "block";
 
-            // Status Zap
-            const sRes = await fetch("/status-whatsapp", { headers: {"Authorization": token} });
+            const sRes = await fetch("/status-whatsapp", { headers:{"Authorization":token} });
             const sData = await sRes.json();
-            const qrDiv = document.getElementById("qrcode");
+            const qrd = document.getElementById("qrcode");
             
             if(sData.status === "CONECTADO") {
                 document.getElementById("statusTxt").innerHTML = '<span class="status-badge online">ONLINE</span>';
-                qrDiv.style.display = "none";
-            } else if(sData.status && sData.status.length > 50) {
-                document.getElementById("statusTxt").innerText = "Escaneie o QR Code abaixo:";
-                qrDiv.style.display = "block";
-                qrDiv.innerHTML = "";
-                new QRCode(qrDiv, { text: sData.status, width: 150, height: 150 });
+                qrd.style.display = "none";
+            } else if(sData.status.length > 50) {
+                document.getElementById("statusTxt").innerText = "Escaneie para ativar:";
+                qrd.style.display = "block"; qrd.innerHTML = "";
+                new QRCode(qrd, { text: sData.status, width: 140, height: 140 });
             }
 
-            // Admin
             if(localStorage.getItem("role") === "admin") {
-                document.getElementById("adminArea").style.display = "block";
-                const uRes = await fetch("/admin/users", { headers: {"Authorization": token} });
+                document.getElementById("admin").style.display = "block";
+                const uRes = await fetch("/admin/users", { headers:{"Authorization":token} });
                 const users = await uRes.json();
                 document.getElementById("userList").innerHTML = users.map(u => `
-                    <tr>
-                        <td>${u.usuario}</td>
-                        <td>${u.telefone}</td>
-                        <td><span class="status-badge ${u.status === 'CONECTADO' ? 'online' : 'offline'}">${u.status}</span></td>
-                        <td>${u.totalEnviados}</td>
-                    </tr>
+                    <tr><td>${u.usuario}</td><td>${u.telefone}</td><td><span class="status-badge ${u.status === 'CONECTADO' ? 'online':'offline'}">${u.status}</span></td><td>${u.totalEnviados}</td></tr>
                 `).join('');
             }
         }
-
-        if(localStorage.getItem("token")) { load(); setInterval(load, 15000); }
+        if(localStorage.getItem("token")) { update(); setInterval(update, 10000); }
     </script>
 </body>
 </html>
