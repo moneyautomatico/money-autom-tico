@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner | Dashboard</title>
+    <title>Money Partner | Pro Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --p: #00ff88; --b: #0b141a; --c: #1d272e; --s: #25d366; --t: #e9edef; }
@@ -17,10 +17,18 @@
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; opacity: 0.4; }
         .nav-item.active { opacity: 1; color: var(--p); }
         .tab { display: none; } .tab.active { display: block; }
+        
+        /* Monitor Modernizado */
         #mirrorView { position: fixed; inset: 0; background: var(--b); display: none; flex-direction: column; z-index: 9999; }
-        .chat-scroll { flex: 1; overflow-y: auto; padding: 20px; background-color: rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 10px; }
-        #qrcode { background: white; padding: 10px; margin: 20px auto; width: fit-content; border-radius: 8px; }
-        /* Estilo da Tabela de Logs */
+        .chat-scroll { flex: 1; overflow-y: auto; padding: 20px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; background-color: rgba(11,20,26,0.95); display: flex; flex-direction: column; gap: 8px; }
+        .m-bubble { padding: 10px 14px; border-radius: 10px; max-width: 85%; font-size: 14px; line-height: 1.4; position: relative; }
+        .m-ia { align-self: flex-end; background: #005c4b; color: #e9edef; }
+        .m-us { align-self: flex-start; background: #202c33; color: #e9edef; }
+        
+        #qrcode { background: white; padding: 15px; margin: 20px auto; width: fit-content; border-radius: 10px; }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 10px; }
+        .st-on { background: rgba(0,255,136,0.2); color: var(--p); }
+        .st-off { background: rgba(255,75,75,0.2); color: #ff4b4b; }
         .log-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #303d45; font-size: 12px; }
     </style>
 </head>
@@ -35,7 +43,7 @@
             <p onclick="toggleAuth(true)" style="font-size: 12px; cursor: pointer; opacity: 0.6;">Criar nova conta</p>
         </div>
         <div id="regBox" class="card" style="width: 320px; text-align: center; display: none;">
-            <h2 style="color: var(--p);">Novo Cadastro</h2>
+            <h2 style="color: var(--p);">Cadastro Pro</h2>
             <input id="rEmail" placeholder="E-mail">
             <input id="rPass" type="password" placeholder="Senha">
             <button onclick="register()">CADASTRAR</button>
@@ -49,7 +57,7 @@
                 <h3 style="color: var(--p);">⚙️ Configurações</h3>
                 <textarea id="iaT" rows="2" placeholder="Saudação"></textarea>
                 <textarea id="baseT" rows="5" placeholder="Base de Conhecimento"></textarea>
-                <textarea id="followMsg" rows="2" placeholder="Mensagem Follow-up (15 min)"></textarea>
+                <textarea id="followMsg" rows="2" placeholder="Follow-up (15 min)"></textarea>
                 <button onclick="save()" style="background: var(--s);">SALVAR CONFIGURAÇÕES</button>
                 <button onclick="logoutWA()" class="btn-danger">DESCONECTAR WHATSAPP</button>
                 <button onclick="logoutApp()" class="btn-outline">SAIR DO PAINEL</button>
@@ -59,19 +67,24 @@
         <div id="tab2" class="tab">
             <div class="card">
                 <h3 style="color: var(--p);">🚀 Disparador</h3>
-                <textarea id="numM" rows="4" placeholder="Números (um por linha)"></textarea>
+                <div id="zapStatusDisp" class="status-badge st-off">Verificando WhatsApp...</div>
+                
+                <textarea id="numM" rows="4" placeholder="Números (Ex: 5511999999999)"></textarea>
                 <textarea id="msgM" rows="3" placeholder="Mensagem"></textarea>
-                <button onclick="disparar()">LANÇAR CAMPANHA</button>
+                <label style="font-size: 12px; opacity: 0.7;">Intervalo (Segundos):</label>
+                <input type="number" id="intM" value="30">
+                <button id="btnLaunch" onclick="disparar()">LANÇAR CAMPANHA</button>
             </div>
-            <div class="card" style="max-height: 250px; overflow-y: auto;">
-                <h4 style="margin:0 0 10px 0; color:var(--p)">📋 Detalhes de Envio</h4>
-                <div id="logLista">Carregando relatórios...</div>
+            <div class="card" style="max-height: 200px; overflow-y: auto;">
+                <h4 style="margin:0 0 10px 0; color:var(--p)">📋 Logs de Envio</h4>
+                <div id="logLista" style="font-size: 12px;">Nenhum registro.</div>
             </div>
         </div>
 
         <div id="mirrorView">
             <div style="padding:15px; background:#202c33; display:flex; justify-content:space-between; align-items:center;">
-                <b>Monitor</b> <button onclick="closeMonitor()" style="width:auto; background:red; color:white; padding:5px 10px;">X</button>
+                <b>📱 Monitor em Tempo Real</b> 
+                <button onclick="closeMonitor()" style="width:auto; background:#ff4b4b; color:white; padding:5px 12px; border-radius:5px;">FECHAR</button>
             </div>
             <div id="qrcode"></div>
             <div id="chatBox" class="chat-scroll"></div>
@@ -87,8 +100,10 @@
     <script>
         const qrG = new QRCode(document.getElementById("qrcode"), { width: 220, height: 220 });
         function toggleAuth(reg) { loginBox.style.display = reg ? 'none' : 'block'; regBox.style.display = reg ? 'block' : 'none'; }
-        function openMonitor() { document.getElementById("mirrorView").style.display = 'flex'; }
+        function openMonitor() { document.getElementById("mirrorView").style.display = 'flex'; scrollChat(); }
         function closeMonitor() { document.getElementById("mirrorView").style.display = 'none'; }
+        function scrollChat() { chatBox.scrollTop = chatBox.scrollHeight; }
+        
         function nav(id, el) { 
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -99,7 +114,7 @@
 
         async function register() {
             const res = await fetch("/register", { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: rEmail.value, password: rPass.value}) });
-            if(res.ok) { alert("Sucesso! Faça o login."); toggleAuth(false); }
+            if(res.ok) { alert("Cadastro ok!"); toggleAuth(false); }
         }
 
         async function login() {
@@ -107,11 +122,11 @@
             if(res.ok) {
                 const d = await res.json();
                 localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload();
-            } else { alert("Login incorreto."); }
+            } else { alert("Login falhou."); }
         }
 
         function logoutApp() { localStorage.clear(); location.reload(); }
-        async function logoutWA() { if(confirm("Desconectar Zap?")) { await fetch("/logout-wa", { headers: {"Authorization": localStorage.getItem("tk")}, method: 'POST' }); location.reload(); } }
+        async function logoutWA() { if(confirm("Desconectar WhatsApp?")) { await fetch("/logout-wa", { headers: {"Authorization": localStorage.getItem("tk")}, method: 'POST' }); location.reload(); } }
 
         if(localStorage.getItem("tk")) {
             authV.style.display = "none"; dashV.style.display = "block";
@@ -122,9 +137,25 @@
                 const res = await fetch("/sync", { headers: {"Authorization": localStorage.getItem("tk")} });
                 if(res.ok) {
                     const d = await res.json();
-                    if(d.status.length > 50) { document.getElementById("qrcode").style.display = 'block'; qrG.makeCode(d.status); }
-                    else { document.getElementById("qrcode").style.display = 'none'; }
-                    chatBox.innerHTML = d.chats.map(c => `<div style="padding:10px; background:#202c33; border-radius:8px; margin-bottom:5px;">${c.txt}</div>`).join('');
+                    
+                    // Lógica de Status no Disparador
+                    const badge = document.getElementById("zapStatusDisp");
+                    if(d.status === "READY") {
+                        badge.innerText = "🟢 WhatsApp Conectado"; badge.className = "status-badge st-on";
+                        document.getElementById("qrcode").style.display = 'none';
+                    } else if(d.status.length > 50) {
+                        badge.innerText = "🔴 WhatsApp Desconectado"; badge.className = "status-badge st-off";
+                        document.getElementById("qrcode").style.display = 'block'; qrG.makeCode(d.status);
+                    } else {
+                        badge.innerText = "🟡 Aguardando WhatsApp..."; badge.className = "status-badge st-off";
+                    }
+
+                    // Monitor com estilo de Balões
+                    chatBox.innerHTML = d.chats.map(c => `
+                        <div class="m-bubble ${c.tipo === 'enviada' ? 'm-ia' : 'm-us'}">
+                            <small style="opacity:0.6; font-size:10px;">${c.de} • ${c.hora}</small><br>${c.txt}
+                        </div>
+                    `).join('');
                 }
             }, 4000);
         }
@@ -134,13 +165,13 @@
                 method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
                 body: JSON.stringify({ iaResumo: iaT.value, baseAprendizado: baseT.value, msgFollowUp: followMsg.value }) 
             });
-            alert("Salvo!");
+            alert("Configurações Salvas!");
         }
 
         async function disparar() {
             const res = await fetch("/disparar", { 
                 method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
-                body: JSON.stringify({ numeros: numM.value, mensagem: msgM.value, intervalo: 30 }) 
+                body: JSON.stringify({ numeros: numM.value, mensagem: msgM.value, intervalo: intM.value }) 
             });
             const d = await res.json(); alert(d.msg || d.error);
             atualizarLogs();
@@ -154,9 +185,9 @@
                     <div class="log-row">
                         <span>${l.numero}</span>
                         <span>${l.status}</span>
-                        <span style="opacity:0.5">${new Date(l.data).toLocaleTimeString()}</span>
+                        <span style="opacity:0.4">${new Date(l.data).toLocaleTimeString()}</span>
                     </div>
-                `).join('') || "Nenhum envio registrado.";
+                `).join('') || "Sem registros.";
             }
         }
     </script>
