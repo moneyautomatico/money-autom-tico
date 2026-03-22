@@ -6,98 +6,93 @@
     <title>Money Partner | Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #00ff88; --bg: #0b0f1a; --card: #161b2c; --text: #f0f2f5; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
-        .login-container { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); width: 100%; max-width: 400px; border: 1px solid #2d334a; }
+        :root { --primary: #00ff88; --bg: #0b0f1a; --card: #161b2c; --accent: #3b82f6; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid #2d334a; margin: 15px; }
         input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #2d334a; background: #0b0f1a; color: white; box-sizing: border-box; }
         button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: #000; font-weight: bold; cursor: pointer; }
         
-        /* Dashboard Layout */
-        .nav-tabs { display: flex; background: var(--card); position: fixed; bottom: 0; width: 100%; justify-content: space-around; padding: 12px 0; border-top: 1px solid #2d334a; z-index: 100; }
-        .tab-btn { background: none; border: none; color: #64748b; font-size: 12px; font-weight: bold; width: auto; }
-        .tab-btn.active { color: var(--primary); }
-        .content { padding: 20px; padding-bottom: 100px; display: none; max-width: 500px; margin: auto; }
-        .content.active { display: block; }
+        /* Sistema de Abas */
+        .tabs-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #2d334a; padding: 10px 0; z-index: 1000; }
+        .tab-link { flex: 1; text-align: center; font-size: 11px; color: #64748b; background: none; border: none; }
+        .tab-link.active { color: var(--primary); }
+        .tab-content { display: none; padding-bottom: 80px; }
+        .tab-content.active { display: block; }
         
-        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .ticket-item { background: #0b0f1a; border-radius: 10px; padding: 15px; margin-bottom: 12px; border: 1px solid #2d334a; }
+        .ticket-card { background: #0b0f1a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
     </style>
 </head>
 <body>
 
-    <div id="loginPage" class="login-container">
-        <div class="card">
-            <h2 style="text-align: center; color: var(--primary);">Money Partner</h2>
-            <div id="regFields" style="display: none;">
-                <input id="regNome" type="text" placeholder="Nome Completo">
-                <input id="regTel" type="text" placeholder="Telefone">
+    <div id="loginView" style="height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div class="card" style="width: 100%; max-width: 400px;">
+            <h2 style="color: var(--primary); text-align: center;">Money Partner 🚀</h2>
+            <div id="regExtra" style="display: none;">
+                <input id="uNome" type="text" placeholder="Nome Completo">
+                <input id="uTel" type="text" placeholder="Telefone">
             </div>
-            <input id="email" type="email" placeholder="E-mail">
-            <input id="pass" type="password" placeholder="Senha">
-            <button id="btnMain" onclick="auth()">Entrar</button>
-            <p id="toggleTxt" onclick="toggleReg()" style="font-size: 12px; text-align: center; cursor: pointer; color: #64748b; margin-top: 15px;">Criar nova conta (Teste 2h)</p>
+            <input id="uEmail" type="email" placeholder="E-mail">
+            <input id="uPass" type="password" placeholder="Senha">
+            <button onclick="authAction()" id="btnAuth">Entrar</button>
+            <p onclick="toggleReg()" style="font-size: 12px; color: #64748b; text-align: center; margin-top: 15px; cursor: pointer;">Novo aqui? Criar conta</p>
         </div>
     </div>
 
-    <div id="dashPage" style="display: none;">
-        <div id="tab1" class="content active">
+    <div id="dashView" style="display: none;">
+        <div id="home" class="tab-content active">
             <div class="card">
-                <h3 id="userName">Olá!</h3>
-                <p id="planInfo" style="color: #64748b; font-size: 13px;"></p>
+                <h3 id="welcomeMsg">Olá!</h3>
+                <p id="planLabel" style="font-size: 13px; color: #64748b;"></p>
+                <div id="waStatus" style="font-weight: bold; margin: 20px 0;">Verificando conexão...</div>
+                <div id="qrcode" style="background: white; padding: 10px; border-radius: 8px; display: none; margin: auto; width: fit-content;"></div>
+            </div>
+        </div>
+
+        <div id="support" class="tab-content">
+            <div class="card">
+                <h3>🎫 Abrir Ticket</h3>
+                <input id="tkAssunto" type="text" placeholder="Assunto (ex: Ativação)">
+                <textarea id="tkMsg" placeholder="Descreva seu problema..."></textarea>
+                <button onclick="sendTicket()" style="background: var(--accent); color: #fff;">Enviar Chamado</button>
+            </div>
+            <div id="myTickets" style="padding: 15px;"></div>
+        </div>
+
+        <div id="admin" class="tab-content">
+            <div class="card">
+                <h3 style="color: var(--primary);">👑 Painel Master</h3>
+                <h4>Usuários Recentes</h4>
+                <div id="admUsers"></div>
                 <hr style="border: 0; border-top: 1px solid #2d334a; margin: 20px 0;">
-                <p>Status WhatsApp:</p>
-                <div id="statusWA" style="font-weight: bold; margin-bottom: 15px;">Iniciando...</div>
-                <div id="qrcode" style="background: #fff; padding: 10px; border-radius: 8px; display: none; width: fit-content; margin: auto;"></div>
-            </div>
-        </div>
-
-        <div id="tab2" class="content">
-            <h3>🎫 Suporte</h3>
-            <div class="card">
-                <input id="tkAssunto" type="text" placeholder="Assunto">
-                <textarea id="tkMsg" placeholder="Descreva sua dúvida ou envie o comprovante Pix..."></textarea>
-                <button onclick="novoTicket()" style="background: #3b82f6; color: white;">Enviar Ticket</button>
-            </div>
-            <h4>Meus Chamados</h4>
-            <div id="listaTickets"></div>
-        </div>
-
-        <div id="tab3" class="content">
-            <h3 style="color: var(--primary);">👑 Admin Master</h3>
-            <div id="adminArea">
-                <h4>Usuários</h4>
-                <div id="adminUsers"></div>
                 <h4>Tickets Pendentes</h4>
-                <div id="adminTickets"></div>
+                <div id="admTickets"></div>
             </div>
         </div>
 
-        <nav class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab(1)">🏠 Início</button>
-            <button class="tab-btn" onclick="switchTab(2)">🎫 Suporte</button>
-            <button id="navAdmin" class="tab-btn" onclick="switchTab(3)" style="display: none;">👑 Admin</button>
-            <button class="tab-btn" onclick="logout()" style="color: #ef4444;">🚪 Sair</button>
+        <nav class="tabs-nav">
+            <button class="tab-link active" onclick="navTo('home')">🏠 Início</button>
+            <button class="tab-link" onclick="navTo('support')">🎫 Suporte</button>
+            <button id="navAdmin" class="tab-link" onclick="navTo('admin')" style="display: none;">👑 Admin</button>
+            <button class="tab-link" onclick="logout()" style="color: #ef4444;">🚪 Sair</button>
         </nav>
     </div>
 
     <script>
-        let isReg = false;
+        let isRegMode = false;
 
         function toggleReg() {
-            isReg = !isReg;
-            document.getElementById("regFields").style.display = isReg ? "block" : "none";
-            document.getElementById("btnMain").innerText = isReg ? "Criar Conta" : "Entrar";
-            document.getElementById("toggleTxt").innerText = isReg ? "Já tenho conta" : "Criar nova conta (Teste 2h)";
+            isRegMode = !isRegMode;
+            document.getElementById("regExtra").style.display = isRegMode ? "block" : "none";
+            document.getElementById("btnAuth").innerText = isRegMode ? "Criar Conta" : "Entrar";
         }
 
-        async function auth() {
-            const body = { email: document.getElementById("email").value, password: document.getElementById("pass").value };
-            if(isReg) {
-                body.usuario = document.getElementById("regNome").value;
-                body.telefone = document.getElementById("regTel").value;
+        async function authAction() {
+            const body = { email: document.getElementById("uEmail").value, password: document.getElementById("uPass").value };
+            if(isRegMode) {
+                body.usuario = document.getElementById("uNome").value;
+                body.telefone = document.getElementById("uTel").value;
             }
-            const res = await fetch(isReg ? '/register' : '/login', {
+            const res = await fetch(isRegMode ? '/register' : '/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(body)
@@ -107,19 +102,19 @@
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("user", JSON.stringify(data.user));
                 location.reload();
-            } else { alert(data.error || "Erro de acesso"); }
+            } else { alert(data.error || "Erro de login"); }
         }
 
-        function switchTab(n) {
-            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`tab${n}`).classList.add('active');
+        function navTo(id) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
             event.currentTarget.classList.add('active');
-            if(n === 2) carregarTickets();
-            if(n === 3) carregarAdmin();
+            if(id === 'support') loadMyTickets();
+            if(id === 'admin') loadAdminData();
         }
 
-        async function novoTicket() {
+        async function sendTicket() {
             const assunto = document.getElementById("tkAssunto").value;
             const mensagem = document.getElementById("tkMsg").value;
             await fetch("/tickets/novo", {
@@ -127,80 +122,76 @@
                 headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")},
                 body: JSON.stringify({ assunto, mensagem })
             });
-            alert("Enviado!"); carregarTickets();
+            alert("Ticket enviado!"); loadMyTickets();
         }
 
-        async function carregarTickets() {
+        async function loadMyTickets() {
             const res = await fetch("/tickets/meus", { headers: {"Authorization": localStorage.getItem("token")} });
             const data = await res.json();
-            document.getElementById("listaTickets").innerHTML = data.map(t => `
-                <div class="ticket-item">
-                    <small style="color:#64748b">${new Date(t.data).toLocaleDateString()}</small><br>
-                    <b>${t.assunto}</b> <span class="status-badge" style="background:#2d334a">${t.status}</span>
-                    <p style="font-size:13px;">${t.mensagem}</p>
-                    ${t.resposta ? `<div style="color:var(--primary); padding-top:10px; border-top:1px solid #2d334a;"><b>Resp:</b> ${t.resposta}</div>` : ""}
+            document.getElementById("myTickets").innerHTML = data.map(t => `
+                <div class="ticket-card">
+                    <b>${t.assunto}</b> [${t.status}]<br>
+                    <small>${t.mensagem}</small>
+                    ${t.resposta ? `<div style="color: var(--primary); margin-top:5px;">Resp: ${t.resposta}</div>` : ""}
                 </div>
             `).join('');
         }
 
-        async function carregarAdmin() {
+        async function loadAdminData() {
             const res = await fetch("/admin/dados", { headers: {"Authorization": localStorage.getItem("token")} });
             const data = await res.json();
-            document.getElementById("adminUsers").innerHTML = data.users.map(u => `
-                <div class="ticket-item">
+            document.getElementById("admUsers").innerHTML = data.users.map(u => `
+                <div class="ticket-card" style="border-color: var(--primary)">
                     ${u.usuario} (${u.email})<br>
-                    Status: ${u.ativo ? '⭐ Partner' : '⏳ Teste'}
-                    <div style="display:flex; gap:5px; margin-top:5px;">
-                        <input type="number" id="dias_${u._id}" value="30" style="width:60px; margin:0; padding:5px;">
-                        <button onclick="ativarUser('${u._id}')" style="padding:5px; font-size:11px;">Ativar</button>
-                    </div>
+                    <input type="number" id="d_${u._id}" value="30" style="width: 50px; padding: 5px;">
+                    <button onclick="liberar('${u._id}')" style="width: auto; padding: 5px 10px; font-size: 11px;">Ativar</button>
                 </div>
             `).join('');
-            document.getElementById("adminTickets").innerHTML = data.tickets.map(t => `
-                <div class="ticket-item">
-                    <b>De: ${t.userName}</b><br>Msg: ${t.mensagem}
-                    <input id="resp_${t._id}" type="text" placeholder="Resposta...">
-                    <button onclick="responderTicket('${t._id}')" style="padding:5px; font-size:11px;">Responder</button>
+            document.getElementById("admTickets").innerHTML = data.tickets.map(t => `
+                <div class="ticket-card">
+                    <b>De: ${t.userName}</b><br>${t.mensagem}
+                    <input id="res_${t._id}" type="text" placeholder="Resposta...">
+                    <button onclick="respTicket('${t._id}')" style="width: auto; padding: 5px 10px; font-size: 11px;">Responder</button>
                 </div>
             `).join('');
         }
 
-        async function ativarUser(id) {
-            const dias = document.getElementById(`dias_${id}`).value;
+        async function liberar(id) {
+            const dias = document.getElementById(`d_${id}`).value;
             await fetch("/admin/liberar-flex", {
                 method: 'POST',
-                headers: {'Content-Type':'application/json', 'Authorization':localStorage.getItem("token")},
+                headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")},
                 body: JSON.stringify({id, dias})
             });
-            alert("Ativado!"); carregarAdmin();
+            alert("Ativado!"); loadAdminData();
         }
 
-        async function responderTicket(id) {
-            const resposta = document.getElementById(`resp_${id}`).value;
+        async function respTicket(id) {
+            const resposta = document.getElementById(`res_${id}`).value;
             await fetch("/admin/tickets/responder", {
                 method: 'POST',
-                headers: {'Content-Type':'application/json', 'Authorization':localStorage.getItem("token")},
+                headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")},
                 body: JSON.stringify({id, resposta})
             });
-            alert("Respondido!"); carregarAdmin();
+            alert("Respondido!"); loadAdminData();
         }
 
         if(localStorage.getItem("token")) {
             const user = JSON.parse(localStorage.getItem("user"));
-            document.getElementById("loginPage").style.display = "none";
-            document.getElementById("dashPage").style.display = "block";
-            document.getElementById("userName").innerText = `Olá, ${user.usuario}!`;
-            document.getElementById("planInfo").innerText = user.role === 'admin' ? 'Acesso Master' : (user.ativo ? 'Plano Partner Ativo' : 'Modo Teste (2h)');
+            document.getElementById("loginView").style.display = "none";
+            document.getElementById("dashView").style.display = "block";
+            document.getElementById("welcomeMsg").innerText = `Olá, ${user.usuario}!`;
+            document.getElementById("planLabel").innerText = user.role === 'admin' ? 'Acesso Master' : (user.ativo ? 'Conta Partner Ativa' : 'Teste Grátis (2h)');
             if(user.role === 'admin') document.getElementById("navAdmin").style.display = "block";
-            
+
             setInterval(async () => {
                 const r = await fetch("/status-whatsapp", { headers: {"Authorization": localStorage.getItem("token")} });
                 const d = await r.json();
-                const s = document.getElementById("statusWA");
+                const s = document.getElementById("waStatus");
                 const q = document.getElementById("qrcode");
                 if(d.status === "CONECTADO") { s.innerHTML = "✅ Conectado"; q.style.display = "none"; }
-                else if(d.status.length > 50) { s.innerHTML = "Escaneie o QR Code:"; q.style.display = "block"; q.innerHTML = ""; new QRCode(q, {text: d.status, width:180, height:180}); }
-                else { s.innerHTML = "Aguardando servidor..."; }
+                else if(d.status.length > 50) { s.innerHTML = "Escaneie para conectar:"; q.style.display = "block"; q.innerHTML = ""; new QRCode(q, {text: d.status, width: 180, height: 180}); }
+                else { s.innerHTML = "Iniciando servidor..."; }
             }, 10000);
         }
 
