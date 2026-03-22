@@ -1,7 +1,7 @@
 {
-  "name": "money-partner-2026",
-  "version": "1.1.0",
-  "description": "Sistema Blindado de Automação",
+  "name": "money-partner-pro-2026",
+  "version": "1.2.0",
+  "description": "Sistema de Automação de Alta Performance",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
