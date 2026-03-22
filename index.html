@@ -1,86 +1,165 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <title>Painel Money Partner</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Partner | Command Center</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { background: #0b141a; color: white; font-family: sans-serif; padding: 20px; }
-        .card { background: #1d272e; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        textarea, input { width: 100%; background: #2a3942; color: white; border: 1px solid #444; padding: 10px; margin: 10px 0; }
-        button { width: 100%; padding: 15px; background: #00ff88; border: none; font-weight: bold; cursor: pointer; }
-        #qrcode { background: white; padding: 10px; width: fit-content; margin: 10px auto; display: none; }
+        :root { --p: #00ff88; --b: #0b141a; --c: #1d272e; --t: #e9edef; }
+        body { background: var(--b); color: var(--t); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; }
+        .card { background: var(--c); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #303d45; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #303d45; background: #2a3942; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: #0b141a; }
+        .tab { display: none; } .tab.active { display: block; }
+        nav { position: fixed; bottom: 0; width: 100%; background: #202c33; display: flex; height: 70px; border-top: 1px solid #303d45; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; opacity: 0.4; }
+        .nav-item.active { opacity: 1; color: var(--p); }
+        .progress-container { background: #2a3942; border-radius: 10px; height: 12px; width: 100%; margin: 15px 0; overflow: hidden; display: none; }
+        .progress-bar { background: var(--p); height: 100%; width: 0%; transition: width 0.3s ease; }
+        #qrcode { background: white; padding: 10px; width: fit-content; margin: 10px auto; border-radius: 10px; }
+        .log-row { display: flex; justify-content: space-between; font-size: 11px; padding: 5px; border-bottom: 1px solid #444; }
     </style>
 </head>
 <body>
 
-    <div id="loginArea">
-        <div class="card">
-            <h2>Acesso</h2>
-            <input id="email" placeholder="E-mail">
-            <input id="pass" type="password" placeholder="Senha">
-            <button onclick="entrar()">ENTRAR NO PAINEL</button>
+    <div id="authArea" style="height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+        <div id="loginBox" class="card" style="width: 320px;">
+            <h2 style="color:var(--p); text-align:center">Money Partner</h2>
+            <input id="lEmail" placeholder="E-mail">
+            <input id="lPass" type="password" placeholder="Senha">
+            <button onclick="login()">ACESSAR SISTEMA</button>
+            <p onclick="toggleReg(true)" style="text-align:center; font-size:12px; cursor:pointer; opacity:0.6; margin-top:15px;">Ainda não tem conta? Criar</p>
+        </div>
+        <div id="regBox" class="card" style="width: 320px; display:none">
+            <h2 style="color:var(--p); text-align:center">Novo Acesso</h2>
+            <input id="rEmail" placeholder="E-mail">
+            <input id="rPass" type="password" placeholder="Senha">
+            <button onclick="register()">CADASTRAR AGORA</button>
+            <p onclick="toggleReg(false)" style="text-align:center; font-size:12px; cursor:pointer; opacity:0.6; margin-top:15px;">Voltar ao Login</p>
         </div>
     </div>
 
-    <div id="mainArea" style="display:none">
-        <div class="card">
-            <h3>📱 Conexão Monitor</h3>
-            <div id="statusZap">Verificando...</div>
-            <div id="qrcode"></div>
+    <div id="dashArea" style="display: none;">
+        <div id="tab1" class="tab active">
+            <div class="card">
+                <h3 style="color:var(--p)">⚙️ Configurações da IA</h3>
+                <textarea id="iaT" rows="2" placeholder="Ex: Olá! Sou o assistente virtual..."></textarea>
+                <textarea id="baseT" rows="5" placeholder="Instruções para a IA (Base de Conhecimento)"></textarea>
+                <button onclick="save()">SALVAR CONFIGURAÇÕES</button>
+            </div>
+            <div class="card" style="text-align: center;">
+                <h3 style="color:var(--p)">📱 Status do WhatsApp</h3>
+                <div id="statusZap" style="margin-bottom: 10px;">Verificando...</div>
+                <div id="qrcode"></div>
+                <button onclick="logoutApp()" style="background:transparent; color:white; border:1px solid #444; margin-top:20px;">SAIR DO SISTEMA</button>
+            </div>
         </div>
 
-        <div class="card">
-            <h3>🚀 Disparo em Massa</h3>
-            <textarea id="lista" rows="5" placeholder="5511999999999 (um por linha)"></textarea>
-            <textarea id="msg" rows="3" placeholder="Mensagem de envio"></textarea>
-            <button onclick="enviarMassa()">LANÇAR CAMPANHA</button>
-            <div id="progresso"></div>
+        <div id="tab2" class="tab">
+            <div class="card">
+                <h3 style="color:var(--p)">🚀 Disparo em Massa Anti-Ban</h3>
+                <textarea id="numM" rows="4" placeholder="Números (Um por linha com 55...)"></textarea>
+                <textarea id="msgM" rows="3" placeholder="Mensagem {Oi|Olá|Eae}!"></textarea>
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                    <label style="font-size:12px">Intervalo (Seg):</label>
+                    <input type="number" id="intM" value="30" style="margin:0; width:80px">
+                </div>
+                <button onclick="disparar()">LANÇAR CAMPANHA</button>
+                <div id="progArea" class="progress-container"><div id="progBar" class="progress-bar"></div></div>
+                <div id="statusTxt" style="text-align:center; font-size:12px; margin-top:8px; color:var(--p)"></div>
+            </div>
+            <div class="card" style="max-height: 250px; overflow-y: auto;">
+                <h4 style="margin:0 0 10px 0">📋 Últimos Envios</h4>
+                <div id="logLista"></div>
+            </div>
         </div>
+
+        <nav>
+            <div class="nav-item active" onclick="nav('tab1', this)">⚙️ Monitor</div>
+            <div class="nav-item" onclick="nav('tab2', this)">🚀 Disparo</div>
+        </nav>
     </div>
 
     <script>
-        const qr = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
+        const qrG = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
 
-        async function entrar() {
-            const r = await fetch("/login", { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({email: email.value, password: pass.value}) 
-            });
-            if(r.ok) {
-                const d = await r.json();
-                localStorage.setItem("tk", d.token);
-                location.reload();
-            }
+        function toggleReg(show) { loginBox.style.display = show ? 'none' : 'block'; regBox.style.display = show ? 'block' : 'none'; }
+        
+        async function register() {
+            const res = await fetch("/register", { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: rEmail.value, password: rPass.value}) });
+            if(res.ok) { alert("Conta criada!"); toggleReg(false); } else alert("Erro: E-mail já existe.");
+        }
+
+        async function login() {
+            const res = await fetch("/login", { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: lEmail.value, password: lPass.value}) });
+            if(res.ok) {
+                const d = await res.json();
+                localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload();
+            } else alert("E-mail ou senha incorretos.");
         }
 
         if(localStorage.getItem("tk")) {
-            loginArea.style.display = 'none';
-            mainArea.style.display = 'block';
+            authArea.style.display = "none"; dashArea.style.display = "block";
+            const u = JSON.parse(localStorage.getItem("u"));
+            iaT.value = u.iaResumo; baseT.value = u.baseAprendizado;
 
             setInterval(async () => {
-                const r = await fetch("/sync", { headers: {"Authorization": localStorage.getItem("tk")} });
-                const d = await r.json();
+                const res = await fetch("/sync", { headers: {"Authorization": localStorage.getItem("tk")} });
+                const d = await res.json();
                 if(d.status === "READY") {
-                    statusZap.innerText = "✅ CONECTADO";
-                    qrcode.style.display = 'none';
+                    statusZap.innerText = "✅ WhatsApp Conectado e Operando Offline"; qrcode.style.display = 'none';
                 } else if(d.status.length > 50) {
-                    statusZap.innerText = "⏳ LEIA O QR CODE";
-                    qrcode.style.display = 'block';
-                    qr.makeCode(d.status);
+                    statusZap.innerText = "⏳ Escaneie para ativar o Modo Offline"; qrcode.style.display = 'block'; qrG.makeCode(d.status);
+                } else {
+                    statusZap.innerText = "❌ Sistema Desconectado";
                 }
+                if(document.getElementById('tab2').classList.contains('active')) { monitorarProgresso(); atualizarLogs(); }
             }, 5000);
         }
 
-        async function enviarMassa() {
-            const r = await fetch("/disparar", {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("tk")},
-                body: JSON.stringify({ numeros: lista.value, mensagem: msg.value, intervalo: 30 })
+        async function disparar() {
+            const res = await fetch("/disparar", { 
+                method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
+                body: JSON.stringify({ numeros: numM.value, mensagem: msgM.value, intervalo: intM.value }) 
             });
-            const d = await r.json();
-            alert(d.msg || d.error);
+            const d = await res.json();
+            if(d.error) alert(d.error); else progArea.style.display = 'block';
         }
+
+        async function monitorarProgresso() {
+            const res = await fetch("/progresso", { headers: {"Authorization": localStorage.getItem("tk")} });
+            const p = await res.json();
+            if(p.status === 'rodando') {
+                progArea.style.display = 'block';
+                progBar.style.width = (p.atual / p.total * 100) + "%";
+                statusTxt.innerText = `Enviando: ${p.atual} de ${p.total}`;
+            } else if(p.status === 'finalizado') {
+                progBar.style.width = "100%"; statusTxt.innerText = "Campanha Finalizada!";
+            }
+        }
+
+        async function atualizarLogs() {
+            const res = await fetch("/logs-envio", { headers: {"Authorization": localStorage.getItem("tk")} });
+            const logs = await res.json();
+            logLista.innerHTML = logs.map(l => `<div class="log-row"><span>${l.numero}</span><span>${l.status}</span></div>`).join('');
+        }
+
+        async function save() {
+            await fetch("/save-config", { 
+                method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
+                body: JSON.stringify({ iaResumo: iaT.value, baseAprendizado: baseT.value }) 
+            });
+            alert("Configurações Salvas!");
+        }
+
+        function nav(id, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+        }
+        function logoutApp() { localStorage.clear(); location.reload(); }
     </script>
 </body>
 </html>
