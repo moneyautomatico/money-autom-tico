@@ -10,97 +10,71 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(__dirname));
 
-// Configurações Mestras (Blindadas)
 const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
-// Modelos de Dados (Isolamento por Usuário)
+// Conexão Blindada
+mongoose.connect(MONGO_URI).then(() => console.log("✅ BANCO CONECTADO"));
+
 const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    iaResumo: { type: String, default: "Olá! Como posso ajudar?" },
-    baseAprendizado: { type: String, default: "" },
-    delayResponda: { type: Number, default: 3000 }
+    iaResumo: { type: String, default: "Olá!" },
+    baseAprendizado: { type: String, default: "" }
 }));
-
-const LogEnvio = mongoose.model("LogEnvio", new mongoose.Schema({
-    userId: String,
-    numero: String,
-    status: String,
-    data: { type: Date, default: Date.now }
-}));
-
-// Conexão e Inicialização Offline
-mongoose.connect(MONGO_URI).then(() => {
-    console.log("🚀 NÚCLEO OPERACIONAL CONECTADO");
-    // Acorda todos os usuários já logados para rodar 24h
-    User.find().then(users => {
-        users.forEach(u => engineWA(u._id.toString()));
-    });
-});
 
 const qrcodes = {};
 const clientes = {};
-const logsChat = {};
 const progressoDisparo = {};
-
-// Função de Inteligência e Motor WA (Anti-Ban)
-function processarSpintax(texto) {
-    if (!texto) return "";
-    return texto.replace(/{([^{}]+)}/g, (match, escolhas) => {
-        const opcoes = escolhas.split('|');
-        return opcoes[Math.floor(Math.random() * opcoes.length)];
-    });
-}
 
 async function engineWA(userId) {
     if (clientes[userId]) return;
-
     const client = new Client({
-        authStrategy: new LocalAuth({ 
-            clientId: userId,
-            dataPath: './sessions' 
-        }),
-        puppeteer: { 
-            headless: "new", 
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] 
-        }
+        authStrategy: new LocalAuth({ clientId: userId, dataPath: './sessions' }),
+        puppeteer: { headless: "new", args: ['--no-sandbox', '--disable-setuid-sandbox'] }
     });
 
     client.on('qr', qr => { qrcodes[userId] = qr; });
-    client.on('ready', () => { qrcodes[userId] = "READY"; console.log(`Zap Ativo: ${userId}`); });
+    client.on('ready', () => { qrcodes[userId] = "READY"; });
     client.on('disconnected', () => { qrcodes[userId] = "OFF"; delete clientes[userId]; });
 
-    client.on('message', async msg => {
-        if (msg.fromMe || msg.from.endsWith('@g.us')) return;
-        const u = await User.findById(userId);
-        if (!u) return;
-
-        const chat = await msg.getChat();
-        
-        // Aplica Spintax e Variáveis na Resposta da IA
-        const respostaFinal = processarSpintax(`${u.iaResumo}\n\n${u.baseAprendizado}`);
-        
-        if (!logsChat[userId]) logsChat[userId] = [];
-        logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body, tipo: 'recebida' });
-
-        // Simulação Humana: Aparece "Digitando..." antes de responder
-        await chat.sendStateTyping();
-
-        setTimeout(async () => {
-            try { 
-                await msg.reply(respostaFinal); 
-                logsChat[userId].push({ de: "IA", txt: respostaFinal, tipo: 'enviada' });
-                await chat.clearState();
-            } catch (e) { console.log("Erro no reply"); }
-        }, u.delayResponda);
-    });
-
     clientes[userId] = client;
-    client.initialize().catch(e => console.log("Erro Init:", e));
+    client.initialize().catch(() => {});
 }
 
-// --- ROTAS DO SISTEMA (BLINDAGEM TOTAL) ---
+// ROTA DE DISPARO (A função que você pediu)
+app.post("/disparar", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        const { numeros, mensagem, intervalo } = req.body;
+        const client = clientes[d.id];
+
+        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "Zap Desconectado" });
+
+        const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, '')).filter(n => n.length > 8);
+        progressoDisparo[d.id] = { total: lista.length, atual: 0, status: 'rodando' };
+        
+        res.json({ msg: "Iniciado!" });
+
+        (async () => {
+            for (let i = 0; i < lista.length; i++) {
+                try {
+                    await client.sendMessage(`${lista[i]}@c.us`, mensagem);
+                    progressoDisparo[d.id].atual = i + 1;
+                } catch (e) { console.log("Erro no envio"); }
+                if (i < lista.length - 1) await new Promise(r => setTimeout(r, (intervalo || 30) * 1000));
+            }
+            progressoDisparo[d.id].status = 'finalizado';
+        })();
+    } catch (e) { res.status(401).send(); }
+});
+
+app.get("/sync", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        res.json({ status: qrcodes[d.id] || "OFF" });
+    } catch (e) { res.status(401).send(); }
+});
 
 app.post("/login", async (req, res) => {
     const u = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
@@ -109,102 +83,5 @@ app.post("/login", async (req, res) => {
     res.json({ token: jwt.sign({ id: u._id }, JWT_SECRET), user: u });
 });
 
-app.post("/register", async (req, res) => {
-    try {
-        const novo = new User(req.body);
-        await novo.save();
-        res.json({ ok: true });
-    } catch (e) { res.status(400).json({ error: "E-mail já existe" }); }
-});
-
-app.post("/disparar", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const { numeros, mensagem, intervalo } = req.body;
-        const client = clientes[d.id];
-
-        if (!client || qrcodes[d.id] !== "READY") {
-            return res.status(400).json({ error: "WhatsApp não está conectado no Monitor." });
-        }
-
-        const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, '')).filter(n => n.length > 8);
-        progressoDisparo[d.id] = { total: lista.length, atual: 0, msg: "Iniciando...", status: 'rodando' };
-        
-        res.json({ msg: "Disparo iniciado em background!" });
-
-        // Processo Assíncrono (Continua rodando offline)
-        (async () => {
-            for (let i = 0; i < lista.length; i++) {
-                const num = lista[i];
-                progressoDisparo[d.id].atual = i + 1;
-                const msgFinal = processarSpintax(mensagem);
-                progressoDisparo[d.id].msg = `Enviando para ${num}...`;
-
-                try {
-                    await client.sendMessage(`${num}@c.us`, msgFinal);
-                    await new LogEnvio({ userId: d.id, numero: num, status: "✅ Sucesso" }).save();
-                } catch (e) {
-                    await new LogEnvio({ userId: d.id, numero: num, status: "❌ Erro" }).save();
-                }
-                
-                if (i < lista.length - 1) {
-                    await new Promise(r => setTimeout(r, (intervalo || 30) * 1000));
-                }
-            }
-            progressoDisparo[d.id].status = 'finalizado';
-            progressoDisparo[d.id].msg = "Campanha Concluída!";
-        })();
-    } catch (e) { res.status(401).send(); }
-});
-
-app.get("/progresso", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json(progressoDisparo[d.id] || { status: 'parado' });
-    } catch (e) { res.status(401).send(); }
-});
-
-app.get("/sync", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json({ 
-            status: qrcodes[d.id] || "OFF", 
-            chats: (logsChat[d.id] || []).slice(-15) 
-        });
-    } catch (e) { res.status(401).send(); }
-});
-
-app.get("/logs-envio", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const logs = await LogEnvio.find({ userId: d.id }).sort({ data: -1 }).limit(50);
-        res.json(logs);
-    } catch (e) { res.status(401).send(); }
-});
-
-app.post("/save-config", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        await User.findByIdAndUpdate(d.id, req.body);
-        res.json({ ok: true });
-    } catch (e) { res.status(401).send(); }
-});
-
-app.post("/logout-wa", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        if (clientes[d.id]) { 
-            await clientes[d.id].logout(); 
-            delete clientes[d.id]; 
-            qrcodes[d.id] = "OFF"; 
-        }
-        res.json({ ok: true });
-    } catch (e) { res.status(500).send(); }
-});
-
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-
-// Porta explícita para o Railway
-app.listen(process.env.PORT || 8080, "0.0.0.0", () => {
-    console.log("🚀 SERVIDOR BLINDADO RODANDO");
-});
+app.listen(process.env.PORT || 8080, "0.0.0.0");
