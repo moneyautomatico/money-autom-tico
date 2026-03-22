@@ -12,24 +12,27 @@ app.use(cors());
 const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
+// SCHEMA COMPLETO - NÃO REMOVER NENHUM CAMPO
 const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true },
     usuario: String,
     password: { type: String, required: true },
     role: { type: String, default: "user" },
+    ativo: { type: Boolean, default: false },
     botAtivo: { type: Boolean, default: true },
     delayResponda: { type: Number, default: 3000 },
-    iaResumo: { type: String, default: "Olá!" },
+    iaResumo: { type: String, default: "Olá! Sou seu assistente." },
     baseAprendizado: { type: String, default: "" },
-    dataCadastro: { type: Date, default: Date.now }
+    dataCadastro: { type: Date, default: Date.now },
+    validade: { type: Date }
 }));
 
-mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA PRONTO PARA DISPAROS"));
+mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA UNIFICADO CONECTADO"));
 
 const qrcodes = {};
 const clientes = {};
+const logsChat = {};
 
-// FUNÇÃO DE CONEXÃO WHATSAPP
 async function engineWA(userId) {
     if (clientes[userId]) return;
     const client = new Client({
@@ -37,21 +40,27 @@ async function engineWA(userId) {
         puppeteer: {
             headless: "new",
             executablePath: '/usr/bin/google-chrome',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         }
     });
 
     client.on('qr', qr => { qrcodes[userId] = qr; });
-    client.on('ready', () => { qrcodes[userId] = "READY"; console.log(`Zap Conectado: ${userId}`); });
+    client.on('ready', () => { qrcodes[userId] = "READY"; });
     
-    // Resposta Automática com Contexto
     client.on('message', async msg => {
         if (msg.fromMe) return;
         const u = await User.findById(userId);
         if (!u || !u.botAtivo) return;
 
+        // LÓGICA DE VISÃO TOTAL (CONTEXTO)
+        const chat = await msg.getChat();
+        const historico = await chat.fetchMessages({ limit: 15 });
+        
         setTimeout(async () => {
             await msg.reply(u.iaResumo);
+            if (!logsChat[userId]) logsChat[userId] = [];
+            logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body });
+            if (logsChat[userId].length > 15) logsChat[userId].shift();
         }, u.delayResponda);
     });
 
@@ -59,42 +68,34 @@ async function engineWA(userId) {
     client.initialize().catch(() => {});
 }
 
-// ROTA DE DISPARO EM MASSA CONTROLADO
+// ROTA DE DISPARO EM MASSA
 app.post("/disparar", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const { numeros, mensagem, intervalo } = req.body; // intervalo em segundos
+        const { numeros, mensagem, intervalo } = req.body;
         const client = clientes[d.id];
-
-        if (!client || qrcodes[d.id] !== "READY") {
-            return res.status(400).json({ error: "WhatsApp não conectado!" });
-        }
+        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "WhatsApp Desconectado" });
 
         const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, ''));
-        
-        // Loop de disparo com Delay (Promessa)
-        res.json({ msg: `Iniciando disparo para ${lista.length} contatos...` });
+        res.json({ msg: "Disparo iniciado..." });
 
-        for (let i = 0; i < lista.length; i++) {
-            const num = lista[i];
+        for (let num of lista) {
             if (num.length < 10) continue;
-
-            const chatId = num.includes('@c.us') ? num : `${num}@c.us`;
-            
-            // Espera o tempo definido antes de cada envio
-            await new Promise(resolve => setTimeout(resolve, intervalo * 1000));
-            
-            try {
-                await client.sendMessage(chatId, mensagem);
-                console.log(`✅ Enviado para: ${num}`);
-            } catch (err) {
-                console.log(`❌ Erro no número: ${num}`);
-            }
+            await new Promise(r => setTimeout(r, intervalo * 1000));
+            try { await client.sendMessage(`${num}@c.us`, mensagem); } catch (e) {}
         }
     } catch (e) { res.status(401).send(); }
 });
 
-// Rotas Base (Login, Sync, Save) mantidas...
+// ROTAS DE CONFIGURAÇÃO E SYNC
+app.post("/save-config", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        await User.findByIdAndUpdate(d.id, req.body);
+        res.json({ ok: true });
+    } catch (e) { res.status(401).send(); }
+});
+
 app.post("/login", async (req, res) => {
     const u = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
     if (!u) return res.status(401).send();
@@ -105,7 +106,7 @@ app.post("/login", async (req, res) => {
 app.get("/sync", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json({ status: qrcodes[d.id] || "OFF" });
+        res.json({ status: qrcodes[d.id] || "OFF", chats: logsChat[d.id] || [] });
     } catch (e) { res.status(401).send(); }
 });
 
