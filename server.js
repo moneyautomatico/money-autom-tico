@@ -1,52 +1,110 @@
-<script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+const { Client, LocalAuth } = require('whatsapp-web.js');
 
-<script>
-    // 1. Variável global para não recriar o objeto toda hora
-    let geradorQR = null;
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-    async function atualizarStatus() {
-        const token = localStorage.getItem("tk");
-        if(!token) return;
+const JWT_SECRET = "chave_mestra_2026";
+const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
+const ADMIN_EMAIL = "tiagoscosta.business@gmail.com";
 
-        try {
-            const res = await fetch("/sync", { headers: {"Authorization": token} });
-            const d = await res.json();
+// SCHEMA COMPLETO (Todas as funções pedidas)
+const User = mongoose.model("User", new mongoose.Schema({
+    email: { type: String, required: true, unique: true, lowercase: true },
+    usuario: String,
+    password: { type: String, required: true },
+    role: { type: String, default: "user" },
+    ativo: { type: Boolean, default: false }, // Liberação manual do Admin
+    dataCadastro: { type: Date, default: Date.now }, // Para o teste de 2h
+    validade: { type: Date }, // Para os dias (30, 60, 90)
+    iaResumo: { type: String, default: "Olá! Sou sua IA de vendas. Como posso ajudar?" }
+}));
+
+mongoose.connect(MONGO_URI).then(async () => {
+    console.log("🚀 SISTEMA ONLINE - BANCO CONECTADO");
+    await User.findOneAndUpdate({ email: ADMIN_EMAIL }, { role: "admin", ativo: true });
+});
+
+const qrcodes = {};
+const clientes = {};
+const logsChat = {};
+
+async function engineWA(userId) {
+    if (clientes[userId]) return;
+    const client = new Client({
+        authStrategy: new LocalAuth({ clientId: userId }),
+        puppeteer: { 
+            headless: "new", 
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] 
+        }
+    });
+
+    client.on('qr', qr => { qrcodes[userId] = qr; });
+    client.on('ready', () => { qrcodes[userId] = "READY"; });
+    
+    client.on('message', async msg => {
+        if (msg.fromMe) return;
+        const u = await User.findById(userId);
+        if (!u) return;
+
+        // LÓGICA DE ACESSO: Admin OU Ativo OU Teste de 2 horas
+        const agora = new Date();
+        const emTeste = (agora - u.dataCadastro) < (2 * 60 * 60 * 1000);
+        const planoValido = u.validade && agora < u.validade;
+
+        if (u.role === 'admin' || u.ativo || emTeste || planoValido) {
+            if (!logsChat[userId]) logsChat[userId] = [];
+            logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body, hora: agora.toLocaleTimeString() });
             
-            const areaQR = document.getElementById("qrcode");
-            const txtStatus = document.getElementById("st");
+            msg.reply(u.iaResumo); // Responde com o treinamento salvo
+            
+            logsChat[userId].push({ de: "IA", txt: u.iaResumo, hora: agora.toLocaleTimeString() });
+            if (logsChat[userId].length > 20) logsChat[userId].shift();
+        }
+    });
 
-            if(d.status === "READY") {
-                txtStatus.innerText = "CONECTADO ✅";
-                areaQR.style.display = "none";
-            } 
-            else if(d.status && d.status.length > 50) {
-                txtStatus.innerText = "ESCANEIE O QR CODE ⚠️";
-                areaQR.style.display = "block";
-                
-                // LIMPA E RECRIA O QR CODE PARA NÃO ACUMULAR IMAGENS
-                areaQR.innerHTML = ""; 
-                new QRCode(areaQR, {
-                    text: d.status,
-                    width: 200,
-                    height: 200
-                });
-            } else {
-                txtStatus.innerText = "Iniciando WhatsApp...";
-                areaQR.style.display = "none";
-            }
+    clientes[userId] = client;
+    client.initialize().catch(() => {});
+}
 
-            // Atualiza o chat
-            const box = document.getElementById("chatBox");
-            if(d.chats) {
-                box.innerHTML = d.chats.map(c => `
-                    <div class="${c.de==='IA'?'m-ia':'m-us'}">
-                        <b>${c.de}:</b> ${c.txt}
-                    </div>
-                `).join('');
-            }
-        } catch (e) { console.log("Erro na sincronização"); }
-    }
+// ROTAS DE CONTROLE
+app.post("/login", async (req, res) => {
+    const u = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
+    if (!u) return res.status(401).json({ error: "Erro" });
+    engineWA(u._id.toString());
+    res.json({ token: jwt.sign({ id: u._id, role: u.role }, JWT_SECRET), user: u });
+});
 
-    // Aumentamos o intervalo para 5 segundos para dar tempo do Railway processar
-    setInterval(atualizarStatus, 5000);
-</script>
+app.get("/sync", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        res.json({ status: qrcodes[d.id] || "OFF", chats: logsChat[d.id] || [] });
+    } catch (e) { res.status(401).send(); }
+});
+
+app.post("/admin/liberar", async (req, res) => {
+    const { id, dias } = req.body;
+    const v = new Date(); v.setDate(v.getDate() + parseInt(dias));
+    await User.findByIdAndUpdate(id, { ativo: true, validade: v });
+    res.json({ ok: true });
+});
+
+app.get("/admin/users", async (req, res) => {
+    const users = await User.find({});
+    res.json(users);
+});
+
+app.post("/set-ia", async (req, res) => {
+    const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+    await User.findByIdAndUpdate(d.id, { iaResumo: req.body.txt });
+    res.json({ ok: true });
+});
+
+app.use(express.static(__dirname));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.listen(8080, '0.0.0.0');
