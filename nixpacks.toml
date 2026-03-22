@@ -1,5 +1,0 @@
-[phases.setup]
-nixPkgs = ['nodejs_18', 'google-chrome', 'nss', 'libgbm']
-
-[phases.build]
-cmds = ['npm install']
