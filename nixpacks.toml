@@ -1,2 +1,5 @@
 [phases.setup]
-nixPkgs = ['nodejs_18', 'npm-9_x', 'google-chrome', 'glib', 'nss', 'nspr', 'atk', 'cups', 'dbus', 'libdrm', 'expat', 'libX11', 'libXcomposite', 'libXdamage', 'libXext', 'libXfixes', 'libXrandr', 'libgbm', 'pango', 'asound', 'cairo']
+nixPkgs = ['nodejs_18', 'google-chrome', 'nss', 'libgbm']
+
+[phases.build]
+cmds = ['npm install']
