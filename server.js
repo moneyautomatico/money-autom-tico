@@ -39,10 +39,12 @@ mongoose
 // MODELS
 // ─────────────────────────────────────────────────
 const UserSchema = new mongoose.Schema({
-  name:      { type: String, required: true },
-  email:     { type: String, required: true, unique: true },
-  password:  { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
+  name:             { type: String, required: true },
+  email:            { type: String, required: true, unique: true },
+  password:         { type: String, required: true },
+  iaResumo:         { type: String, default: '' },
+  baseAprendizado:  { type: String, default: '' },
+  createdAt:        { type: Date, default: Date.now },
 });
 const User = mongoose.model('User', UserSchema);
 
@@ -102,6 +104,33 @@ wppClient.on('disconnected', reason => {
 });
 
 wppClient.initialize();
+
+// ─────────────────────────────────────────────────
+// ESTADO EM MEMÓRIA — DISPARO
+// ─────────────────────────────────────────────────
+let disparo = {
+  status:  'idle',   // idle | agendado | rodando | pausado | finalizado | cancelado
+  atual:   0,
+  total:   0,
+  pausado: false,
+  logs:    [],       // [{ numero, status }]
+  stats:   { total: 0, sucesso: 0, erro: 0, taxa: 0 },
+};
+
+// ─────────────────────────────────────────────────
+// ESTADO EM MEMÓRIA — CHATS RECEBIDOS
+// ─────────────────────────────────────────────────
+let chatsMemoria = []; // [{ tipo, de, txt, hora }]
+
+wppClient.on('message', msg => {
+  chatsMemoria.push({
+    tipo: 'recebida',
+    de:   msg.from.replace('@c.us', ''),
+    txt:  msg.body,
+    hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+  });
+  if (chatsMemoria.length > 200) chatsMemoria.shift();
+});
 
 // ─────────────────────────────────────────────────
 // MIDDLEWARE JWT
@@ -172,7 +201,7 @@ app.post('/login', async (req, res) => {
     return res.json({
       message: 'Login realizado!',
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, iaResumo: user.iaResumo, baseAprendizado: user.baseAprendizado },
     });
   } catch (err) {
     console.error(err);
@@ -333,6 +362,141 @@ app.post('/screenshot', autenticar, async (req, res) => {
   } finally {
     if (browser) await browser.close();
   }
+});
+
+// ─────────────────────────────────────────────────
+// ROTAS — FRONTEND (index.html)
+// ─────────────────────────────────────────────────
+
+// /sync — status do WhatsApp para o monitor
+app.get('/sync', autenticar, (req, res) => {
+  if (whatsappReady)  return res.json({ status: 'READY' });
+  if (whatsappQR)     return res.json({ status: whatsappQR });
+  return res.json({ status: 'DISCONNECTED' });
+});
+
+// /save-config — salva iaResumo e baseAprendizado do usuário
+app.post('/save-config', autenticar, async (req, res) => {
+  const { iaResumo, baseAprendizado } = req.body;
+  await User.findByIdAndUpdate(req.userId, { iaResumo, baseAprendizado });
+  return res.json({ ok: true });
+});
+
+// /disparar — disparo em massa via lista de números do frontend
+app.post('/disparar', autenticar, async (req, res) => {
+  const { numeros, mensagem, intervalo, agendarEm, imagemBase64, imagemMime, imagemNome } = req.body;
+
+  if (!numeros || !mensagem)
+    return res.status(400).json({ error: 'Informe números e mensagem.' });
+
+  if (!whatsappReady)
+    return res.status(503).json({ error: 'WhatsApp não está conectado.' });
+
+  const lista = numeros.split('\n').map(n => n.trim()).filter(Boolean);
+  if (!lista.length)
+    return res.status(400).json({ error: 'Nenhum número válido informado.' });
+
+  disparo = { status: 'rodando', atual: 0, total: lista.length, pausado: false, logs: [], stats: { total: 0, sucesso: 0, erro: 0, taxa: 0 } };
+
+  // Agendamento
+  if (agendarEm) {
+    const agendadoEm = new Date(agendarEm).getTime();
+    const agora      = Date.now();
+    if (agendadoEm > agora) {
+      disparo.status = 'agendado';
+      setTimeout(() => executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemMime, imagemNome), agendadoEm - agora);
+      return res.json({ msg: 'Disparo agendado!' });
+    }
+  }
+
+  executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemMime, imagemNome);
+  return res.json({ msg: 'Disparo iniciado!' });
+});
+
+async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemMime, imagemNome) {
+  disparo.status = 'rodando';
+  const delay = (parseInt(intervalo) || 30) * 1000;
+
+  for (let i = 0; i < lista.length; i++) {
+    if (disparo.status === 'cancelado') break;
+
+    while (disparo.pausado) {
+      await new Promise(r => setTimeout(r, 1000));
+      if (disparo.status === 'cancelado') break;
+    }
+
+    const numero = lista[i];
+    const chatId = numero.replace(/\D/g, '') + '@c.us';
+
+    // Substitui spintax {A|B} aleatoriamente
+    const texto = mensagem.replace(/\{([^}]+)\}/g, (_, ops) => {
+      const opcoes = ops.split('|');
+      return opcoes[Math.floor(Math.random() * opcoes.length)];
+    });
+
+    try {
+      if (imagemBase64) {
+        const { MessageMedia } = require('whatsapp-web.js');
+        const media = new MessageMedia(imagemMime, imagemBase64, imagemNome);
+        await wppClient.sendMessage(chatId, media, { caption: texto });
+      } else {
+        await wppClient.sendMessage(chatId, texto);
+      }
+
+      disparo.logs.push({ numero, status: '✅ Enviado' });
+      disparo.stats.sucesso++;
+      chatsMemoria.push({ tipo: 'enviada', de: numero, txt: texto, hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) });
+    } catch {
+      disparo.logs.push({ numero, status: '❌ Erro' });
+      disparo.stats.erro++;
+    }
+
+    disparo.atual = i + 1;
+    disparo.stats.total = disparo.atual;
+    disparo.stats.taxa  = Math.round((disparo.stats.sucesso / disparo.atual) * 100);
+
+    if (i < lista.length - 1) await new Promise(r => setTimeout(r, delay));
+  }
+
+  if (disparo.status !== 'cancelado') disparo.status = 'finalizado';
+}
+
+// /progresso — estado atual do disparo
+app.get('/progresso', autenticar, (req, res) => {
+  return res.json({
+    status:  disparo.status,
+    atual:   disparo.atual,
+    total:   disparo.total,
+    pausado: disparo.pausado,
+  });
+});
+
+// /logs-envio — logs do disparo atual
+app.get('/logs-envio', autenticar, (req, res) => {
+  return res.json(disparo.logs.slice(-100));
+});
+
+// /pausar — alterna pause/retomar
+app.post('/pausar', autenticar, (req, res) => {
+  disparo.pausado = !disparo.pausado;
+  return res.json({ pausado: disparo.pausado });
+});
+
+// /cancelar — cancela disparo em andamento
+app.post('/cancelar', autenticar, (req, res) => {
+  disparo.status  = 'cancelado';
+  disparo.pausado = false;
+  return res.json({ ok: true });
+});
+
+// /chats — mensagens recebidas e enviadas em memória
+app.get('/chats', autenticar, (req, res) => {
+  return res.json(chatsMemoria.slice(-100));
+});
+
+// /stats — estatísticas do último disparo
+app.get('/stats', autenticar, (req, res) => {
+  return res.json(disparo.stats);
 });
 
 // ─────────────────────────────────────────────────
