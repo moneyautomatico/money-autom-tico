@@ -3,42 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Automático</title>
+    <title>Money Automático | Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; min-height: 100vh; margin: 0; }
-        .container { width: 100%; max-width: 500px; padding: 20px; text-align: center; }
-        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-alt { background: #3b82f6; }
-        #adminArea { display: none; border: 2px solid #fbbf24; text-align: left; }
-        table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 8px; border-bottom: 1px solid #444; }
+        :root { --primary: #22c55e; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #3b82f6; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 500px; text-align: center; }
+        .card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.3); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; outline: none; }
+        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        button:hover { filter: brightness(1.1); }
+        .btn-alt { background: #475569; font-size: 13px; }
+        #adminArea { display: none; border: 2px solid #fbbf24; overflow-x: auto; }
+        table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 15px; color: #cbd5e1; }
+        th, td { padding: 10px; border-bottom: 1px solid #334155; text-align: left; }
+        #qrcode { background: white; padding: 15px; border-radius: 10px; margin: 20px auto; width: 150px; display: none; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .online { background: #065f46; color: #34d399; }
+        .offline { background: #7f1d1d; color: #f87171; }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="loginBox" class="card">
             <h2 style="color: var(--primary)">🚀 Money Automático</h2>
-            <input id="email" type="email" placeholder="E-mail">
-            <input id="pass" type="password" placeholder="Senha">
-            <button onclick="handleAuth('login')">Entrar</button>
-            <button onclick="handleAuth('register')" class="btn-alt">Criar Conta Grátis</button>
+            <div id="formInputs">
+                <input id="email" type="email" placeholder="E-mail">
+                
+                <div id="registerFields" style="display: none;">
+                    <input id="usuario" type="text" placeholder="Nome completo">
+                    <input id="telefone" type="text" placeholder="WhatsApp (DDD + Número)">
+                </div>
+
+                <input id="pass" type="password" placeholder="Senha">
+                
+                <div id="confirmPassField" style="display: none;">
+                    <input id="confirmPass" type="password" placeholder="Confirme a senha">
+                </div>
+
+                <button id="btnAction" onclick="handleAuth('login')">Entrar no Painel</button>
+                <button id="btnToggle" onclick="toggleView()" class="btn-alt">Criar nova conta grátis</button>
+            </div>
         </div>
 
         <div id="mainDash" style="display: none;">
             <div class="card">
-                <h3>Status: <span id="statusTxt">Carregando...</span></h3>
-                <div id="qrcode" style="background:white; padding:10px; margin:15px auto; width:150px; display:none;"></div>
-                <button onclick="localStorage.clear(); location.reload();" style="background:#ef4444; width:auto; padding:5px 15px;">Sair</button>
+                <h2>Seu Robô WhatsApp</h2>
+                <p>Status: <span id="statusTxt">Carregando...</span></p>
+                <div id="qrcode"></div>
+                <button onclick="logout()" style="background: #ef4444; width: auto; font-size: 12px;">Sair</button>
             </div>
 
             <div id="adminArea" class="card">
-                <h3 style="color:#fbbf24">👑 Painel Master</h3>
+                <h3 style="color:#fbbf24">👑 Gestão Master (Lista de Clientes)</h3>
                 <table>
-                    <thead><tr><th>E-mail</th><th>Whats</th><th>Envios</th></tr></thead>
+                    <thead><tr><th>Usuário</th><th>Telefone</th><th>Status</th><th>Envios</th></tr></thead>
                     <tbody id="userList"></tbody>
                 </table>
             </div>
@@ -46,55 +65,89 @@
     </div>
 
     <script>
-        async function handleAuth(tipo) {
-            const res = await fetch(`/${tipo}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.value, password: pass.value })
-            });
-            const data = await res.json();
-            if (data.token) {
-                localStorage.setItem("token", data.token);
-                localStorage.setItem("role", data.role);
-                location.reload();
-            } else { alert(data.error || "Erro ao processar"); }
+        let isRegisterMode = false;
+
+        function toggleView() {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById("registerFields").style.display = isRegisterMode ? "block" : "none";
+            document.getElementById("confirmPassField").style.display = isRegisterMode ? "block" : "none";
+            document.getElementById("btnAction").innerText = isRegisterMode ? "Cadastrar Agora" : "Entrar no Painel";
+            document.getElementById("btnAction").setAttribute("onclick", isRegisterMode ? "handleAuth('register')" : "handleAuth('login')");
+            document.getElementById("btnToggle").innerText = isRegisterMode ? "Já tenho conta" : "Criar nova conta grátis";
         }
 
-        async function loadData() {
+        async function handleAuth(tipo) {
+            const payload = {
+                email: document.getElementById("email").value,
+                password: document.getElementById("pass").value
+            };
+
+            if (tipo === 'register') {
+                payload.usuario = document.getElementById("usuario").value;
+                payload.telefone = document.getElementById("telefone").value;
+                payload.confirmPassword = document.getElementById("confirmPass").value;
+                if(!payload.email || !payload.password || !payload.usuario || !payload.telefone) return alert("Preencha tudo!");
+            }
+
+            try {
+                const res = await fetch(`/${tipo}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.ok && tipo === 'register') {
+                    alert("Conta criada! Agora faça o login.");
+                    location.reload();
+                } else if (data.token) {
+                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("role", data.role);
+                    location.reload();
+                } else { alert(data.error || "Erro na operação"); }
+            } catch (e) { alert("Erro de conexão"); }
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        async function load() {
             const token = localStorage.getItem("token");
             if (!token) return;
             document.getElementById("loginBox").style.display = "none";
             document.getElementById("mainDash").style.display = "block";
 
-            // Status Whats
-            const sRes = await fetch("/status-whatsapp", { headers: {"Authorization": token}});
+            // Status Zap
+            const sRes = await fetch("/status-whatsapp", { headers: {"Authorization": token} });
             const sData = await sRes.json();
-            const qrBox = document.getElementById("qrcode");
+            const qrDiv = document.getElementById("qrcode");
+            
             if(sData.status === "CONECTADO") {
-                document.getElementById("statusTxt").innerText = "✅ Conectado";
-                qrBox.style.display = "none";
-            } else if(sData.status.length > 50) {
-                document.getElementById("statusTxt").innerText = "⚠️ Escaneie o QR";
-                qrBox.style.display = "block";
-                qrBox.innerHTML = "";
-                new QRCode(qrBox, { text: sData.status, width: 150, height: 150 });
+                document.getElementById("statusTxt").innerHTML = '<span class="status-badge online">ONLINE</span>';
+                qrDiv.style.display = "none";
+            } else if(sData.status && sData.status.length > 50) {
+                document.getElementById("statusTxt").innerText = "Escaneie o QR Code abaixo:";
+                qrDiv.style.display = "block";
+                qrDiv.innerHTML = "";
+                new QRCode(qrDiv, { text: sData.status, width: 150, height: 150 });
             }
 
-            // Se for Admin
+            // Admin
             if(localStorage.getItem("role") === "admin") {
                 document.getElementById("adminArea").style.display = "block";
-                const uRes = await fetch("/admin/users", { headers: {"Authorization": token}});
+                const uRes = await fetch("/admin/users", { headers: {"Authorization": token} });
                 const users = await uRes.json();
                 document.getElementById("userList").innerHTML = users.map(u => `
-                    <tr><td>${u.email}</td><td>${u.status}</td><td>${u.totalEnviados}</td></tr>
+                    <tr>
+                        <td>${u.usuario}</td>
+                        <td>${u.telefone}</td>
+                        <td><span class="status-badge ${u.status === 'CONECTADO' ? 'online' : 'offline'}">${u.status}</span></td>
+                        <td>${u.totalEnviados}</td>
+                    </tr>
                 `).join('');
             }
         }
 
-        if(localStorage.getItem("token")) {
-            loadData();
-            setInterval(loadData, 10000);
-        }
+        if(localStorage.getItem("token")) { load(); setInterval(load, 15000); }
     </script>
 </body>
 </html>
