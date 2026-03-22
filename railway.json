@@ -1,0 +1,6 @@
+ {
+  "build": {
+    "builder": "NIXPACKS",
+    "pkgs": ["google-chrome-stable"]
+  }
+}
