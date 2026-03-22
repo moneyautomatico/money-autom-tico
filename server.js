@@ -15,65 +15,63 @@ const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyaut
 const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     usuario: String,
-    password: String,
-    ativo: { type: Boolean, default: false },
-    iaAtiva: { type: Boolean, default: true },
-    iaTreino: { type: Array, default: [] }, // Histórico para treinamento
-    iaResumo: { type: String, default: "Olá! Sou o assistente inteligente." }
+    password: { type: String, required: true },
+    iaResumo: { type: String, default: "Olá! Como posso ajudar?" }
 }));
 
-mongoose.connect(MONGO_URI);
+mongoose.connect(MONGO_URI).then(() => console.log("✅ MongoDB Conectado"));
 
 const qrcodes = {};
 const clientes = {};
-const logsConversa = {}; // Armazena mensagens temporárias para o painel
 
 async function initWA(userId) {
     if (clientes[userId]) return;
+    
     const client = new Client({
         authStrategy: new LocalAuth({ clientId: userId }),
-        puppeteer: { headless: "new", args: ['--no-sandbox'] }
+        puppeteer: { 
+            headless: "new", 
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions'] 
+        }
     });
 
-    client.on('qr', qr => qrcodes[userId] = qr);
-    client.on('ready', () => qrcodes[userId] = "CONECTADO");
-    
-    client.on('message', async msg => {
-        if (msg.fromMe) return;
-        const u = await User.findById(userId);
-        if (!u || !u.iaAtiva) return;
+    client.on('qr', qr => {
+        qrcodes[userId] = qr;
+        console.log(`[QR] Novo código gerado para: ${userId}`);
+    });
 
-        // Lógica de Monitoramento (Envia para o Painel)
-        if (!logsConversa[userId]) logsConversa[userId] = [];
-        logsConversa[userId].push({ de: msg.from, texto: msg.body, data: new Date() });
+    client.on('ready', () => {
+        qrcodes[userId] = "CONECTADO";
+        console.log(`[WA] Cliente ${userId} pronto!`);
+    });
 
-        // Resposta da IA (Baseada no treino/resumo)
-        msg.reply(u.iaResumo);
-        logsConversa[userId].push({ de: "SISTEMA", texto: u.iaResumo, data: new Date() });
+    client.on('disconnected', () => {
+        delete qrcodes[userId];
+        delete clientes[userId];
     });
 
     clientes[userId] = client;
-    client.initialize().catch(() => {});
+    client.initialize().catch(err => console.error("Erro WA:", err));
 }
 
-// ROTA DE STATUS E MONITOR
-app.get("/monitor-wa", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json({ 
-            status: qrcodes[d.id] || "OFFLINE",
-            conversas: logsConversa[d.id] || [] 
-        });
-    } catch (e) { res.status(401).send(); }
+app.post("/login", async (req, res) => {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase(), password });
+    if (!user) return res.status(401).json({ error: "Credenciais inválidas" });
+    
+    initWA(user._id.toString());
+    const token = jwt.sign({ id: user._id }, JWT_SECRET);
+    res.json({ token, user });
 });
 
-app.post("/login", async (req, res) => {
-    const user = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
-    if (!user) return res.status(400).send();
-    initWA(user._id.toString());
-    res.json({ token: jwt.sign({ id: user._id }, JWT_SECRET), user });
+app.get("/status-wa", async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        const decoded = jwt.verify(authHeader, JWT_SECRET);
+        res.json({ status: qrcodes[decoded.id] || "AGUARDANDO" });
+    } catch (e) { res.status(401).send(); }
 });
 
 app.use(express.static(__dirname));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.listen(8080, '0.0.0.0');
+app.listen(8080, '0.0.0.0', () => console.log("🚀 Servidor em 8080"));
