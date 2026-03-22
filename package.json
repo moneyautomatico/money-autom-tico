@@ -1,7 +1,7 @@
 {
   "name": "money-automatico",
   "version": "1.0.0",
-  "description": "",
+  "description": "Sistema SaaS de Automação",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
