@@ -23,30 +23,39 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", UserSchema);
 
-// CONEXÃO MONGO E ATIVAÇÃO DO SEU ADMIN
+// CONEXÃO MONGO E ATIVAÇÃO DO ADMIN
 mongoose.connect(MONGO_URI).then(async () => {
     console.log("✅ MongoDB Conectado");
-    // Garante que o seu e-mail seja o administrador do sistema
+    // Garante que o seu e-mail tenha permissão de Admin
     await User.findOneAndUpdate(
         { email: ADMIN_EMAIL.toLowerCase() }, 
-        { role: "admin" },
-        { upsert: false } // Só altera se o usuário já existir
+        { role: "admin" }
     );
 });
 
 const qrcodes = {};
 const clientes = {};
 
-// INICIALIZADOR DO WHATSAPP (ROBUSTO)
+// INICIALIZADOR DO WHATSAPP (CORRIGIDO SEM CAMINHO FIXO)
 async function initWA(userId) {
     if (clientes[userId]) return;
     
     console.log(`🤖 Iniciando Zap para: ${userId}`);
+    
     const client = new Client({
         authStrategy: new LocalAuth({ clientId: userId }),
         puppeteer: { 
             headless: "new",
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-extensions'] 
+            // Removido o executablePath para evitar o erro de 'not found'
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--disable-dev-shm-usage', 
+                '--disable-accelerated-2d-canvas', 
+                '--no-first-run', 
+                '--no-zygote', 
+                '--disable-gpu'
+            ] 
         }
     });
 
@@ -70,21 +79,15 @@ async function initWA(userId) {
     });
 
     clientes[userId] = client;
-    client.initialize().catch(err => console.error("Erro no Zap:", err));
+    client.initialize().catch(err => console.error("❌ Erro ao abrir navegador:", err.message));
 }
 
-// ROTAS DE AUTENTICAÇÃO
+// ROTAS
 app.post("/register", async (req, res) => {
     try {
         const { email, password } = req.body;
-        const newUser = await User.create({ email: email.toLowerCase(), password });
-        
-        // Se for o seu e-mail, já nasce como admin
-        if(email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
-            newUser.role = "admin";
-            await newUser.save();
-        }
-        
+        const role = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? "admin" : "user";
+        await User.create({ email: email.toLowerCase(), password, role });
         res.json({ ok: true });
     } catch (e) { res.status(400).json({ error: "E-mail já cadastrado" }); }
 });
@@ -101,7 +104,6 @@ app.post("/login", async (req, res) => {
     res.json({ token, role: user.role });
 });
 
-// STATUS DO WHATSAPP
 app.get("/status-whatsapp", async (req, res) => {
     try {
         const token = req.headers.authorization;
@@ -110,7 +112,6 @@ app.get("/status-whatsapp", async (req, res) => {
     } catch (e) { res.status(401).send(); }
 });
 
-// ROTA MASTER (ADMIN)
 app.get("/admin/users", async (req, res) => {
     try {
         const token = req.headers.authorization;
@@ -126,7 +127,6 @@ app.get("/admin/users", async (req, res) => {
     } catch (e) { res.status(401).send(); }
 });
 
-// SERVIR FRONTEND
 app.use(express.static(__dirname));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
