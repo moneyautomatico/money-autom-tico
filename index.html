@@ -3,119 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner 2026</title>
+    <title>Money Partner | Painel Oficial</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --primary: #00ff88; --bg: #0b0f1a; --card: #161b2c; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow-x: hidden; }
-        .card { background: var(--card); border-radius: 15px; padding: 20px; margin: 15px; border: 1px solid #2d334a; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 70px; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #2d334a; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #2d334a; background: #0b0f1a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--primary); color: black; font-weight: bold; cursor: pointer; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--primary); color: #000; font-weight: bold; cursor: pointer; }
         
-        .tab-link { flex: 1; text-align: center; padding: 15px; font-size: 12px; background: none; border: none; color: #64748b; }
-        .tab-link.active { color: var(--primary); border-top: 2px solid var(--primary); }
-        .tab-content { display: none; padding-bottom: 90px; }
+        /* Abas */
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
+        nav { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; border-top: 1px solid #2d334a; z-index: 100; }
+        .nav-link { flex: 1; padding: 15px; text-align: center; color: #64748b; font-size: 12px; cursor: pointer; }
+        .nav-link.active { color: var(--primary); font-weight: bold; }
 
-        #waWidget { position: fixed; right: 20px; bottom: 80px; background: #25d366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: pointer; }
-        #waModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; z-index: 1000; }
-        .chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .bubble { padding: 10px; border-radius: 10px; max-width: 80%; font-size: 13px; }
+        /* Widget e Modal Flutuante */
+        #waBtn { position: fixed; right: 20px; bottom: 85px; background: #25d366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 99; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        #waModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; z-index: 1000; }
+        .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .bubble { padding: 10px; border-radius: 10px; font-size: 13px; max-width: 85%; }
+        .bubble-ia { background: var(--primary); color: #000; align-self: flex-end; }
+        .bubble-user { background: #2d334a; align-self: flex-start; }
     </style>
 </head>
 <body>
 
-    <div id="loginView" style="display: flex; height: 100vh; align-items: center; justify-content: center;">
-        <div class="card" style="width: 320px;">
-            <h2 style="text-align: center; color: var(--primary);">Money Partner</h2>
-            <div id="regFields" style="display: none;">
-                <input id="regNome" placeholder="Nome">
-                <input id="regTel" placeholder="WhatsApp">
-            </div>
-            <input id="lEmail" placeholder="E-mail">
-            <input id="lPass" type="password" placeholder="Senha">
-            <button onclick="auth()">Entrar</button>
-            <p onclick="document.getElementById('regFields').style.display='block'" style="text-align:center; font-size:12px; margin-top:10px; cursor:pointer;">Criar conta</p>
+    <div id="viewLogin" style="height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div class="card" style="width: 100%; max-width: 350px; text-align: center;">
+            <h2 style="color: var(--primary); margin-bottom: 25px;">Money Partner 🚀</h2>
+            <input id="email" type="email" placeholder="Seu E-mail">
+            <input id="pass" type="password" placeholder="Sua Senha">
+            <button onclick="login()">Entrar no Sistema</button>
         </div>
     </div>
 
-    <div id="dashView" style="display: none;">
-        <div id="home" class="tab-content active">
+    <div id="viewDash" style="display: none;">
+        <div id="tabHome" class="tab-content active">
             <div class="card">
-                <h2 id="txtUser">Olá!</h2>
-                <p id="txtPlano" style="color: #64748b;"></p>
+                <h2 id="txtBoasVindas">Olá!</h2>
+                <p id="txtStatusPlano" style="color: #64748b; font-size: 13px;"></p>
             </div>
             <div class="card">
-                <h3>🧠 Treinar IA</h3>
-                <textarea id="txtTreino" placeholder="Instruções para o robô..."></textarea>
-                <button onclick="salvarTreino()">Atualizar Robô</button>
+                <h3>🧠 Treinar sua IA</h3>
+                <textarea id="iaTexto" placeholder="Instruções para o robô responder seus clientes..."></textarea>
+                <button onclick="salvarTreino()">Salvar Treinamento</button>
             </div>
         </div>
 
-        <div id="admin" class="tab-content">
-            <div class="card"><h3>👑 Gestão Master</h3><div id="admUsers"></div></div>
+        <div id="tabAdmin" class="tab-content">
+            <div class="card">
+                <h2 style="color: var(--primary);">👑 Administração</h2>
+                <div id="listaUsuarios"></div>
+            </div>
+        </div>
+
+        <div id="waBtn" onclick="abrirWA()">
+            <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="30">
         </div>
 
         <div id="waModal">
-            <div style="padding: 20px; background: var(--card); display: flex; justify-content: space-between;">
-                <span>WhatsApp Monitor</span>
-                <button onclick="toggleWA()" style="width:auto; padding:5px 10px;">Fechar</button>
+            <div style="padding: 15px; background: var(--card); display: flex; justify-content: space-between; align-items: center;">
+                <span id="txtWAStatus">WhatsApp</span>
+                <button onclick="fecharWA()" style="width:auto; padding:5px 15px; background: #ef4444; color:white;">Fechar</button>
             </div>
-            <div id="qrcode" style="background:white; margin:20px auto; padding:10px; border-radius:10px; display:none;"></div>
-            <div id="chatBox" class="chat-box"></div>
+            <div id="qrcode" style="background:white; margin:20px auto; padding:10px; border-radius:10px; display:none; width: fit-content;"></div>
+            <div id="monitorChat" class="chat-area"></div>
         </div>
 
-        <div id="waWidget" onclick="toggleWA()"><img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="30"></div>
-
-        <nav style="position:fixed; bottom:0; width:100%; display:flex; background:var(--card); border-top:1px solid #2d334a;">
-            <button class="tab-link active" onclick="nav('home')">Início</button>
-            <button id="btnAdm" class="tab-link" onclick="nav('admin')" style="display:none;">Admin</button>
-            <button class="tab-link" onclick="logout()">Sair</button>
+        <nav>
+            <div class="nav-link active" onclick="showTab('tabHome')">🏠 Início</div>
+            <div id="navAdmin" class="nav-link" onclick="showTab('tabAdmin')" style="display:none;">👑 Admin</div>
+            <div class="nav-link" onclick="logout()" style="color:#ef4444">Sair</div>
         </nav>
     </div>
 
     <script>
-        const qr = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
-        function nav(id) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        const qrCodeMaker = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-        }
-        function toggleWA() { 
-            const m = document.getElementById("waModal");
-            m.style.display = m.style.display === "flex" ? "none" : "flex";
+            event.currentTarget.classList.add('active');
+            if(id === 'tabAdmin') carregarUsuarios();
         }
 
-        async function auth() {
-            const isReg = document.getElementById('regFields').style.display === 'block';
-            const body = { email: lEmail.value, password: lPass.value, usuario: regNome.value, telefone: regTel.value };
-            const res = await fetch(isReg ? '/register' : '/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-            const data = await res.json();
-            if(data.token) {
-                localStorage.setItem("token", data.token);
-                localStorage.setItem("u", JSON.stringify(data.user));
+        async function login() {
+            const res = await fetch('/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: email.value, password: pass.value}) });
+            const d = await res.json();
+            if(d.token) {
+                localStorage.setItem("token", d.token);
+                localStorage.setItem("user", JSON.stringify(d.user));
                 location.reload();
-            }
+            } else { alert("Dados incorretos!"); }
         }
+
+        function abrirWA() { document.getElementById("waModal").style.display = "flex"; }
+        function fecharWA() { document.getElementById("waModal").style.display = "none"; }
 
         if(localStorage.getItem("token")) {
-            const u = JSON.parse(localStorage.getItem("u"));
-            loginView.style.display = "none"; dashView.style.display = "block";
-            txtUser.innerText = "Olá, " + u.usuario;
-            if(u.role === 'admin') btnAdm.style.display = "block";
+            const u = JSON.parse(localStorage.getItem("user"));
+            viewLogin.style.display = "none"; viewDash.style.display = "block";
+            txtBoasVindas.innerText = `Olá, ${u.usuario}!`;
+            if(u.role === 'admin') navAdmin.style.display = "block";
 
             setInterval(async () => {
-                const res = await fetch("/status-wa", { headers: {"Authorization": localStorage.getItem("token")} });
+                const res = await fetch("/status-full", { headers: {"Authorization": localStorage.getItem("token")} });
                 const d = await res.json();
-                if(d.status === "CONECTADO") { qrcode.style.display="none"; }
-                else if(d.status.length > 50) { qrcode.style.display="block"; qr.makeCode(d.status); }
-                chatBox.innerHTML = d.conversas.map(c => `<div class="bubble" style="background:${c.de==='IA'?'#00ff88':'#2d334a'}; align-self:${c.de==='IA'?'flex-end':'flex-start'}; color:${c.de==='IA'?'black':'white'}"><b>${c.de}:</b><br>${c.texto}</div>`).join('');
+                
+                const qrDiv = document.getElementById("qrcode");
+                const chatDiv = document.getElementById("monitorChat");
+
+                if(d.status === "CONECTADO") {
+                    qrDiv.style.display = "none";
+                    txtWAStatus.innerText = "✅ Robô Conectado";
+                } else if(d.status.length > 50) {
+                    qrDiv.style.display = "block";
+                    qrCodeMaker.makeCode(d.status);
+                    txtWAStatus.innerText = "⚠️ Escaneie o QR Code";
+                }
+
+                chatDiv.innerHTML = d.logs.map(l => `
+                    <div class="bubble ${l.de === 'IA' ? 'bubble-ia' : 'bubble-user'}">
+                        <b>${l.de}:</b> ${l.txt} <br><small style="opacity:0.5; font-size:9px;">${l.hora}</small>
+                    </div>
+                `).join('');
             }, 4000);
         }
 
-        async function salvarTreino() {
-            await fetch("/user/treinar", { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")}, body: JSON.stringify({instrucao: txtTreino.value}) });
-            alert("Treino salvo!");
+        async function carregarUsuarios() {
+            const res = await fetch("/admin/usuarios");
+            const users = await res.json();
+            listaUsuarios.innerHTML = users.map(u => `
+                <div class="card" style="margin: 10px 0; font-size: 13px;">
+                    ${u.usuario} (${u.email}) <br>
+                    Status: ${u.ativo ? '✅ Ativo' : '❌ Inativo'} <br>
+                    <input type="number" id="dias-${u._id}" placeholder="Dias" style="width: 70px; margin-top:5px;">
+                    <button onclick="liberar('${u._id}')" style="padding: 5px; width: auto; margin-left:10px;">Ativar</button>
+                </div>
+            `).join('');
         }
+
+        async function liberar(id) {
+            const dias = document.getElementById(`dias-${id}`).value;
+            await fetch("/admin/liberar", { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id, dias}) });
+            alert("Plano Ativado!"); carregarUsuarios();
+        }
+
+        async function salvarTreino() {
+            await fetch("/user/treinar", { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")}, body: JSON.stringify({texto: iaTexto.value}) });
+            alert("IA Atualizada!");
+        }
+
         function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
