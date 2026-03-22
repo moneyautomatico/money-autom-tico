@@ -13,17 +13,45 @@
         button:active { transform: scale(0.98); }
         .tab { display: none; } .tab.active { display: block; }
         nav { position: fixed; bottom: 0; width: 100%; background: #202c33; display: flex; height: 70px; border-top: 1px solid #303d45; }
-        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; opacity: 0.5; color: white; text-decoration: none; }
+        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; opacity: 0.5; color: white; text-decoration: none; flex-direction: column; gap: 2px; }
         .nav-item.active { opacity: 1; color: var(--p); border-top: 3px solid var(--p); }
         .prog-bg { background: #444; border-radius: 10px; height: 12px; margin: 15px 0; display: none; overflow: hidden; }
         .prog-fill { background: var(--p); height: 100%; width: 0%; transition: 0.5s ease; }
         #qrcode { background: white; padding: 15px; width: fit-content; margin: 10px auto; border-radius: 10px; display: none; }
         .status-badge { font-size: 12px; padding: 5px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
         .status-on { background: rgba(0,255,136,0.1); color: var(--p); border: 1px solid var(--p); }
+
+        /* NOVO: botões secundários */
+        .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-sec { background: transparent; color: var(--t); border: 1px solid #444; font-size: 13px; padding: 10px; }
+        .btn-danger { background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; font-size: 13px; padding: 10px; }
+
+        /* NOVO: label de upload de imagem */
+        .upload-label { display: flex; align-items: center; gap: 10px; background: #2a3942; border: 1px dashed #444; border-radius: 8px; padding: 12px; cursor: pointer; margin-bottom: 10px; font-size: 13px; color: #aaa; }
+        .upload-label input { display: none; }
+        #previewImg { max-width: 100%; border-radius: 8px; margin-bottom: 10px; display: none; }
+
+        /* NOVO: cards de estatísticas */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: #2a3942; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-num { font-size: 28px; font-weight: bold; color: var(--p); }
+        .stat-label { font-size: 11px; opacity: 0.6; margin-top: 4px; }
+        .taxa-bar-bg { background: #444; border-radius: 10px; height: 10px; overflow: hidden; margin: 10px 0 5px; }
+        .taxa-bar-fill { background: var(--p); height: 100%; transition: 1s ease; }
+
+        /* NOVO: aba de chats */
+        .chat-msg { padding: 8px 12px; border-radius: 10px; margin: 6px 0; max-width: 85%; font-size: 13px; line-height: 1.4; }
+        .chat-msg.recebida { background: #2a3942; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .chat-msg.enviada { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.2); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
+        .chat-container { display: flex; flex-direction: column; max-height: 420px; overflow-y: auto; padding: 5px; }
+        .chat-de { font-size: 11px; font-weight: bold; color: var(--p); margin-bottom: 2px; }
+        .chat-hora { font-size: 10px; opacity: 0.4; margin-top: 3px; text-align: right; }
+        .chat-empty { text-align: center; opacity: 0.4; font-size: 13px; padding: 30px 0; }
     </style>
 </head>
 <body>
 
+    <!-- INALTERADA: área de autenticação -->
     <div id="authArea" style="height:95vh; display:flex; align-items:center; justify-content:center">
         <div class="card" style="width:320px">
             <h2 style="text-align:center; color:var(--p); margin-top:0">Money Partner</h2>
@@ -43,6 +71,8 @@
     </div>
 
     <div id="dashArea" style="display:none">
+
+        <!-- TAB 1: Monitor — INALTERADA -->
         <div id="tab1" class="tab active">
             <div class="card">
                 <h3>⚙️ Treinamento da IA</h3>
@@ -58,30 +88,129 @@
             </div>
         </div>
 
+        <!-- TAB 2: Disparo — MELHORADA: imagem, agendamento, pausar/cancelar -->
         <div id="tab2" class="tab">
             <div class="card">
                 <h3>🚀 Disparo Inteligente</h3>
                 <textarea id="numM" rows="5" placeholder="Números (Um por linha com 55...)"></textarea>
                 <textarea id="msgM" rows="3" placeholder="Mensagem {Oi|Olá} tudo bem?"></textarea>
-                <div style="font-size:12px; margin-bottom:10px">Intervalo entre envios (segundos):</div>
+
+                <!-- NOVO: upload de imagem opcional -->
+                <label class="upload-label">
+                    <input type="file" id="imgInput" accept="image/*" onchange="carregarImagem(this)">
+                    🖼️ <span id="imgLabel">Adicionar imagem (opcional)</span>
+                </label>
+                <img id="previewImg" />
+
+                <div style="font-size:12px; margin-bottom:6px">Intervalo entre envios (segundos):</div>
                 <input type="number" id="intM" value="30">
+
+                <!-- NOVO: agendamento -->
+                <div style="font-size:12px; margin-bottom:6px">⏰ Agendar para (deixe vazio para enviar agora):</div>
+                <input type="datetime-local" id="agendarEm">
+
                 <button onclick="disparar()">INICIAR DISPARO</button>
+
+                <!-- NOVO: botões pausar e cancelar -->
+                <div class="btn-row">
+                    <button class="btn-sec" onclick="pausar()" id="btnPausar" style="display:none">⏸️ Pausar</button>
+                    <button class="btn-danger" onclick="cancelar()" id="btnCancelar" style="display:none">⛔ Cancelar</button>
+                </div>
+
                 <div id="progBar" class="prog-bg"><div id="progFill" class="prog-fill"></div></div>
                 <div id="progTxt" style="text-align:center; font-size:12px; color:var(--p); margin-top:5px"></div>
             </div>
             <div id="logs" class="card" style="font-size:11px; max-height:200px; overflow-y:auto"></div>
         </div>
 
+        <!-- TAB 3: NOVO — Chats em tempo real -->
+        <div id="tab3" class="tab">
+            <div class="card">
+                <h3>💬 Conversas em Tempo Real</h3>
+                <div id="chatContainer" class="chat-container">
+                    <div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: NOVO — Dashboard de estatísticas -->
+        <div id="tab4" class="tab">
+            <div class="card">
+                <h3>📊 Dashboard</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-num" id="stTotal">—</div>
+                        <div class="stat-label">Total Enviado</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stTaxa" style="color:var(--p)">—</div>
+                        <div class="stat-label">Taxa de Sucesso</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stSucesso" style="color:#00ff88">—</div>
+                        <div class="stat-label">Sucessos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stErro" style="color:#ff4d4d">—</div>
+                        <div class="stat-label">Erros</div>
+                    </div>
+                </div>
+                <div style="font-size:12px; opacity:0.6; margin-bottom:4px">Taxa de entrega</div>
+                <div class="taxa-bar-bg"><div class="taxa-bar-fill" id="taxaBar" style="width:0%"></div></div>
+                <div id="taxaPct" style="text-align:right; font-size:12px; color:var(--p)">0%</div>
+            </div>
+        </div>
+
+        <!-- NOVA nav com 4 itens -->
         <nav>
-            <div class="nav-item active" onclick="tab('tab1', this)">⚙️ Monitor</div>
-            <div class="nav-item" onclick="tab('tab2', this)">🚀 Enviar Massa</div>
+            <div class="nav-item active" onclick="tab('tab1', this)">⚙️<span>Monitor</span></div>
+            <div class="nav-item" onclick="tab('tab2', this)">🚀<span>Enviar</span></div>
+            <div class="nav-item" onclick="tab('tab3', this)">💬<span>Chats</span></div>
+            <div class="nav-item" onclick="tab('tab4', this)">📊<span>Stats</span></div>
         </nav>
     </div>
 
     <script>
+        // INALTERADO: QR Code
         const qrBox = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
         function showR(s){ boxL.style.display=s?'none':'block'; boxR.style.display=s?'block':'none'; }
-        
+
+        // NOVO: notificação sonora ao conectar
+        let statusAnterior = "";
+        function tocarSom() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.6);
+            } catch(e) {}
+        }
+
+        // NOVO: carregar imagem como base64
+        let imagemBase64 = null, imagemMime = null, imagemNome = null;
+        function carregarImagem(input) {
+            const file = input.files[0];
+            if (!file) return;
+            imagemNome = file.name;
+            imagemMime = file.type;
+            document.getElementById('imgLabel').innerText = file.name;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const dataUrl = e.target.result;
+                imagemBase64 = dataUrl.split(',')[1];
+                const prev = document.getElementById('previewImg');
+                prev.src = dataUrl;
+                prev.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // INALTERADOS: register e login
         async function register(){
             const r = await fetch("/register", { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:rEmail.value, password:rPass.value}) });
             if(r.ok) { alert("Cadastro realizado!"); showR(false); } else alert("Erro ao cadastrar.");
@@ -98,34 +227,118 @@
             const u = JSON.parse(localStorage.getItem("u"));
             iaT.value = u.iaResumo; baseT.value = u.baseAprendizado;
 
+            // INALTERADO + NOVO: som e chats
             setInterval(async () => {
                 const r = await fetch("/sync", { headers:{"Authorization": localStorage.getItem("tk")} });
                 const d = await r.json();
+
+                // NOVO: toca som quando conecta
+                if(d.status === "READY" && statusAnterior !== "READY") tocarSom();
+                statusAnterior = d.status;
+
                 if(d.status === "READY") { statusZap.innerText = "✅ ONLINE E BLINDADO"; qrcode.style.display='none'; }
                 else if(d.status.length > 50) { statusZap.innerText = "⏳ AGUARDANDO LEITURA QR"; qrcode.style.display='block'; qrBox.makeCode(d.status); }
                 else { statusZap.innerText = "❌ DESCONECTADO"; qrcode.style.display='none'; }
-                
+
+                // INALTERADO: progresso e logs do disparo
                 if(document.getElementById('tab2').classList.contains('active')) {
                     const pr = await fetch("/progresso", { headers:{"Authorization": localStorage.getItem("tk")} });
                     const p = await pr.json();
+
+                    const rodando = p.status === 'rodando' || p.status === 'agendado';
+                    document.getElementById('btnPausar').style.display = rodando ? 'block' : 'none';
+                    document.getElementById('btnCancelar').style.display = rodando ? 'block' : 'none';
+
                     if(p.status === 'rodando') {
                         progBar.style.display='block'; progFill.style.width = (p.atual/p.total*100)+'%';
                         progTxt.innerText = `Enviando ${p.atual} de ${p.total}`;
-                    } else if(p.status === 'finalizado') { progTxt.innerText = "Campanha Concluída!"; }
+                        document.getElementById('btnPausar').innerText = p.pausado ? '▶️ Retomar' : '⏸️ Pausar';
+                    } else if(p.status === 'agendado') {
+                        progTxt.innerText = "⏰ Aguardando horário agendado...";
+                    } else if(p.status === 'finalizado') {
+                        progTxt.innerText = "✅ Campanha Concluída!";
+                    } else if(p.status === 'cancelado') {
+                        progTxt.innerText = "⛔ Campanha Cancelada.";
+                    }
 
                     const l = await fetch("/logs-envio", { headers:{"Authorization": localStorage.getItem("tk")} });
                     const logs = await l.json();
                     document.getElementById('logs').innerHTML = logs.map(x => `<div style="padding:4px; border-bottom:1px solid #444">${x.numero}: ${x.status}</div>`).join('');
                 }
+
+                // NOVO: atualiza chats na aba 3
+                if(document.getElementById('tab3').classList.contains('active')) {
+                    carregarChats();
+                }
+
+                // NOVO: atualiza stats na aba 4
+                if(document.getElementById('tab4').classList.contains('active')) {
+                    carregarStats();
+                }
+
             }, 5000);
         }
 
+        // ALTERADA: suporte a imagem e agendamento
         async function disparar(){
-            const r = await fetch("/disparar", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify({numeros:numM.value, mensagem:msgM.value, intervalo:intM.value}) });
+            const body = {
+                numeros: numM.value,
+                mensagem: msgM.value,
+                intervalo: intM.value,
+                agendarEm: document.getElementById('agendarEm').value || null
+            };
+            if(imagemBase64) { body.imagemBase64 = imagemBase64; body.imagemMime = imagemMime; body.imagemNome = imagemNome; }
+
+            const r = await fetch("/disparar", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify(body) });
             const d = await r.json();
             if(d.msg) { progBar.style.display='block'; } else { alert(d.error); }
         }
 
+        // NOVO: pausar/retomar
+        async function pausar(){
+            const r = await fetch("/pausar", { method:'POST', headers:{'Authorization':localStorage.getItem("tk")} });
+            const d = await r.json();
+            document.getElementById('btnPausar').innerText = d.pausado ? '▶️ Retomar' : '⏸️ Pausar';
+        }
+
+        // NOVO: cancelar
+        async function cancelar(){
+            if(!confirm("Cancelar o disparo em andamento?")) return;
+            await fetch("/cancelar", { method:'POST', headers:{'Authorization':localStorage.getItem("tk")} });
+            document.getElementById('btnPausar').style.display='none';
+            document.getElementById('btnCancelar').style.display='none';
+            progTxt.innerText = "⛔ Campanha Cancelada.";
+        }
+
+        // NOVO: carregar chats
+        async function carregarChats(){
+            const r = await fetch("/chats", { headers:{"Authorization": localStorage.getItem("tk")} });
+            const msgs = await r.json();
+            const container = document.getElementById('chatContainer');
+            if(!msgs.length){ container.innerHTML = '<div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui.</div>'; return; }
+            container.innerHTML = msgs.map(m => `
+                <div class="chat-msg ${m.tipo}">
+                    <div class="chat-de">${m.tipo === 'recebida' ? '👤 ' + m.de : '🤖 IA'}</div>
+                    ${m.txt}
+                    <div class="chat-hora">${m.hora || ''}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // NOVO: carregar estatísticas
+        async function carregarStats(){
+            const r = await fetch("/stats", { headers:{"Authorization": localStorage.getItem("tk")} });
+            const s = await r.json();
+            document.getElementById('stTotal').innerText = s.total;
+            document.getElementById('stSucesso').innerText = s.sucesso;
+            document.getElementById('stErro').innerText = s.erro;
+            document.getElementById('stTaxa').innerText = s.taxa + '%';
+            document.getElementById('taxaBar').style.width = s.taxa + '%';
+            document.getElementById('taxaPct').innerText = s.taxa + '%';
+        }
+
+        // INALTERADOS
         async function save(){
             await fetch("/save-config", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify({iaResumo:iaT.value, baseAprendizado:baseT.value}) });
             alert("Inteligência Atualizada!");
@@ -136,7 +349,11 @@
             document.getElementById(t).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
             el.classList.add('active');
+            // NOVO: carrega dados ao trocar de aba
+            if(t === 'tab3') carregarChats();
+            if(t === 'tab4') carregarStats();
         }
+
         function logoutApp() { localStorage.clear(); location.reload(); }
     </script>
 </body>
