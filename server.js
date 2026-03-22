@@ -13,34 +13,30 @@ app.use(express.static(__dirname));
 const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
-const UserSchema = new mongoose.Schema({
+const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    iaResumo: { type: String, default: "Olá! Como posso ajudar?" },
-    baseAprendizado: { type: String, default: "" }, // Onde o conhecimento fica salvo
+    iaResumo: { type: String, default: "Olá!" },
+    baseAprendizado: { type: String, default: "" },
     msgFollowUp: { type: String, default: "Ainda está por aí?" },
-    followUpAtivo: { type: Boolean, default: false },
-    delayResponda: { type: Number, default: 3000 },
-    botAtivo: { type: Boolean, default: true }
-});
+    followUpAtivo: { type: Boolean, default: true },
+    delayResponda: { type: Number, default: 3000 }
+}));
 
-const ConversaSchema = new mongoose.Schema({
+const Conversas = mongoose.model("Conversas", new mongoose.Schema({
     userId: String,
     contato: String,
     ultimaMensagemDeles: Date,
     respondidoPelaIA: Boolean
-});
+}));
 
-const User = mongoose.model("User", UserSchema);
-const Conversas = mongoose.model("Conversas", ConversaSchema);
-
-mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA INTEGRADO E APRENDENDO"));
+mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA ONLINE"));
 
 const qrcodes = {};
 const clientes = {};
 const logsChat = {};
 
-// Lógica de Follow-up (15 min)
+// LÓGICA DE FOLLOW-UP (A cada 15 min de silêncio do cliente)
 setInterval(async () => {
     const limite = new Date(Date.now() - 15 * 60 * 1000);
     const pendentes = await Conversas.find({ respondidoPelaIA: true, ultimaMensagemDeles: { $lt: limite } });
@@ -64,30 +60,31 @@ async function engineWA(userId) {
 
     client.on('qr', qr => { qrcodes[userId] = qr; });
     client.on('ready', () => { qrcodes[userId] = "READY"; });
+    client.on('disconnected', () => { qrcodes[userId] = "OFF"; delete clientes[userId]; });
 
     client.on('message', async msg => {
+        // FILTRO DE GRUPOS ATIVADO
         if (msg.fromMe || msg.from.endsWith('@g.us')) return;
 
         const u = await User.findById(userId);
-        if (!u || !u.botAtivo) return;
+        if (!u) return;
 
+        // REGISTRO PARA FOLLOW-UP
         await Conversas.findOneAndUpdate(
             { userId, contato: msg.from },
             { ultimaMensagemDeles: new Date(), respondidoPelaIA: true },
             { upsert: true }
         );
 
-        // --- LÓGICA DE APRENDIZADO ---
-        // A IA agora combina a saudação com a base de conhecimento salva
-        const respostaFinal = `${u.iaResumo}\n\n*Informação adicional:* ${u.baseAprendizado}`;
+        // LÓGICA DE APRENDIZADO REAL
+        // A IA usa a saudação + a base de conhecimento que você salvou
+        const respostaIA = `${u.iaResumo}\n\n${u.baseAprendizado}`;
 
         if (!logsChat[userId]) logsChat[userId] = [];
-        logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body, hora: new Date().toLocaleTimeString() });
+        logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body });
 
         setTimeout(async () => {
-            try {
-                await msg.reply(respostaFinal);
-            } catch (e) { console.log("Erro ao responder"); }
+            try { await msg.reply(respostaIA); } catch (e) {}
         }, u.delayResponda);
     });
 
@@ -101,25 +98,19 @@ app.post("/disparar", async (req, res) => {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
         const { numeros, mensagem, intervalo } = req.body;
         const client = clientes[d.id];
-
-        if (!client || qrcodes[d.id] !== "READY") {
-            return res.status(400).json({ error: "WhatsApp não está pronto para disparos." });
-        }
+        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "Conecte o Zap primeiro!" });
 
         const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, ''));
-        res.json({ msg: "Disparos iniciados no servidor!" });
+        res.json({ msg: "Disparos em fila no servidor!" });
 
         for (let num of lista) {
             if (num.length < 10) continue;
             await new Promise(r => setTimeout(r, intervalo * 1000));
-            try {
-                await client.sendMessage(`${num}@c.us`, mensagem);
-            } catch (e) { console.log("Erro no disparo para " + num); }
+            try { await client.sendMessage(`${num}@c.us`, mensagem); } catch (e) {}
         }
     } catch (e) { res.status(401).send(); }
 });
 
-// ROTAS PADRÃO (Login, Sync, Save)
 app.post("/login", async (req, res) => {
     const u = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
     if (!u) return res.status(401).send();
