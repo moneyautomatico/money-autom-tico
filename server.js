@@ -30,7 +30,6 @@ const Conversas = mongoose.model("Conversas", new mongoose.Schema({
     respondidoPelaIA: Boolean
 }));
 
-// NOVA COLEÇÃO PARA DETALHES DE ENVIO
 const LogEnvio = mongoose.model("LogEnvio", new mongoose.Schema({
     userId: String,
     numero: String,
@@ -38,7 +37,7 @@ const LogEnvio = mongoose.model("LogEnvio", new mongoose.Schema({
     data: { type: Date, default: Date.now }
 }));
 
-mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA ONLINE E BLINDADO"));
+mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA ONLINE, MONITOR E DISPARO OTIMIZADOS"));
 
 const qrcodes = {};
 const clientes = {};
@@ -78,11 +77,16 @@ async function engineWA(userId) {
         await Conversas.findOneAndUpdate({ userId, contato: msg.from }, { ultimaMensagemDeles: new Date(), respondidoPelaIA: true }, { upsert: true });
         
         const respostaFinal = `${u.iaResumo}\n\n${u.baseAprendizado}`;
+        
+        // Logs de Monitor Modernos: Identifica quem mandou o quê
         if (!logsChat[userId]) logsChat[userId] = [];
-        logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body });
-
+        logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body, hora: new Date().toLocaleTimeString(), tipo: 'recebida' });
+        
         setTimeout(async () => {
-            try { await msg.reply(respostaFinal); } catch (e) {}
+            try { 
+                await msg.reply(respostaFinal); 
+                logsChat[userId].push({ de: "IA", txt: respostaFinal, hora: new Date().toLocaleTimeString(), tipo: 'enviada' });
+            } catch (e) {}
         }, u.delayResponda);
     });
 
@@ -90,7 +94,6 @@ async function engineWA(userId) {
     client.initialize();
 }
 
-// ROTAS DE AUTH (Mantidas)
 app.post("/register", async (req, res) => {
     try { const novo = new User(req.body); await novo.save(); res.json({ ok: true }); } 
     catch (e) { res.status(400).json({ error: "E-mail já existe" }); }
@@ -99,65 +102,4 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
     const u = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
     if (!u) return res.status(401).send();
-    engineWA(u._id.toString());
-    res.json({ token: jwt.sign({ id: u._id }, JWT_SECRET), user: u });
-});
-
-app.post("/logout-wa", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        if (clientes[d.id]) { await clientes[d.id].logout(); delete clientes[d.id]; qrcodes[d.id] = "OFF"; }
-        res.json({ ok: true });
-    } catch (e) { res.status(500).send(); }
-});
-
-// DISPARADOR COM LOG DE DETALHES (Acrescentado)
-app.post("/disparar", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const { numeros, mensagem, intervalo } = req.body;
-        const client = clientes[d.id];
-        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "Zap OFF" });
-        
-        const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, ''));
-        res.json({ msg: "Disparos iniciados!" });
-
-        for (let num of lista) {
-            if (num.length < 10) continue;
-            await new Promise(r => setTimeout(r, intervalo * 1000));
-            try { 
-                await client.sendMessage(`${num}@c.us`, mensagem);
-                await new LogEnvio({ userId: d.id, numero: num, status: "✅ Sucesso" }).save();
-            } catch (e) {
-                await new LogEnvio({ userId: d.id, numero: num, status: "❌ Erro" }).save();
-            }
-        }
-    } catch (e) { res.status(401).send(); }
-});
-
-// ROTA PARA BUSCAR DETALHES DE ENVIO
-app.get("/logs-envio", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const logs = await LogEnvio.find({ userId: d.id }).sort({ data: -1 }).limit(50);
-        res.json(logs);
-    } catch (e) { res.status(401).send(); }
-});
-
-app.post("/save-config", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        await User.findByIdAndUpdate(d.id, req.body);
-        res.json({ ok: true });
-    } catch (e) { res.status(401).send(); }
-});
-
-app.get("/sync", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json({ status: qrcodes[d.id] || "OFF", chats: logsChat[d.id] || [] });
-    } catch (e) { res.status(401).send(); }
-});
-
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.listen(process.env.PORT || 8080);
+    engineWA(u
