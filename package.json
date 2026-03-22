@@ -1,7 +1,7 @@
 {
   "name": "money-automatico",
   "version": "1.0.0",
-  "description": "Sistema SaaS de Automação",
+  "description": "Sistema de Automação WhatsApp",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -13,7 +13,8 @@
     "jsonwebtoken": "^9.0.0",
     "whatsapp-web.js": "^1.23.0",
     "qrcode-terminal": "^0.12.0",
-    "puppeteer": "^21.0.0"
+    "puppeteer": "^21.0.0",
+    "qrcode": "^1.5.3"
   },
   "engines": {
     "node": "18.x"
