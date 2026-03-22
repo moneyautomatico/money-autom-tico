@@ -3,90 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner | Dashboard Elite</title>
+    <title>Money Partner | Dashboard Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --p: #00ff88; --b: #0b0f1a; --c: #161b2c; }
-        body { background: var(--b); color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
-        .card { background: var(--c); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #2d334a; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-card { background: #0b0f1a; padding: 15px; border-radius: 10px; text-align: center; border-bottom: 3px solid var(--p); }
-        textarea, input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; background: #0b0f1a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: black; }
-        nav { position: fixed; bottom: 0; width: 100%; background: var(--c); display: flex; border-top: 1px solid #2d334a; }
-        .nav-btn { flex: 1; padding: 15px; text-align: center; cursor: pointer; }
+        :root { --p: #00ff88; --b: #0b141a; --c: #1d272e; --s: #25d366; }
+        body { background: var(--b); color: #e9edef; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding-bottom: 70px; }
+        .card { background: var(--c); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #303d45; }
+        
+        /* Banner Conexão */
+        #connStatus { display: none; background: var(--s); color: #000; padding: 12px; margin: 15px; border-radius: 8px; text-align: center; font-weight: bold; }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px; }
+        .stat-box { background: var(--c); padding: 15px; border-radius: 12px; text-align: center; border-bottom: 3px solid var(--p); }
+        
+        textarea, input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; background: #2a3942; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: #000; transition: 0.2s; }
+        
+        /* Espelhamento Total */
+        #mirrorView { position: fixed; inset: 0; background: #0b141a; display: none; flex-direction: column; z-index: 1000; }
+        .chat-top { padding: 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; }
+        .chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-opacity: 0.06; }
+        .msg { padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+        .m-ia { align-self: flex-end; background: #005c4b; color: #e9edef; }
+        .m-us { align-self: flex-start; background: #202c33; color: #e9edef; }
+        
+        nav { position: fixed; bottom: 0; width: 100%; background: #202c33; display: flex; height: 65px; border-top: 1px solid #303d45; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; opacity: 0.5; }
+        .nav-item.active { opacity: 1; color: var(--p); }
         .tab { display: none; } .tab.active { display: block; }
-        #waModal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; z-index: 1000; }
-        #qrcode { background: white; padding: 15px; border-radius: 10px; margin: 20px auto; width: fit-content; }
-        .chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .m-ia { align-self: flex-end; background: var(--p); color: black; padding: 10px; border-radius: 10px; font-size: 12px; }
-        .m-us { align-self: flex-start; background: #2d334a; padding: 10px; border-radius: 10px; font-size: 12px; }
     </style>
 </head>
 <body>
-    <div id="loginV" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
-        <div class="card" style="width: 300px; text-align:center;">
-            <h2 style="color:var(--p)">Money Partner 2026</h2>
+
+    <div id="loginV" style="height: 90vh; display: flex; align-items: center; justify-content: center;">
+        <div class="card" style="width: 320px; text-align: center;">
+            <h2 style="color: var(--p)">Money Partner</h2>
             <input id="lEmail" placeholder="E-mail">
             <input id="lPass" type="password" placeholder="Senha">
-            <button onclick="auth()">Entrar</button>
+            <button onclick="auth()">Entrar no Sistema</button>
         </div>
     </div>
 
     <div id="dashV" style="display: none;">
-        <div class="stat-grid" style="margin: 15px;">
-            <div class="stat-card"><small>Enviadas</small><h2 id="mTotal">0</h2></div>
-            <div class="stat-card"><small>Stop List</small><h2 id="mBlocks">0</h2></div>
+        <div id="connStatus">✅ Conexão estabelecida com sucesso!</div>
+
+        <div class="stat-grid">
+            <div class="stat-box"><small>Total de Envios</small><h2 id="mTotal">0</h2></div>
+            <div class="stat-box"><small>Contatos Bloqueados</small><h2 id="mBlocks">0</h2></div>
         </div>
 
-        <div id="configTab" class="tab active">
+        <div id="tab1" class="tab active">
             <div class="card">
-                <h3>⚙️ Configuração IA</h3>
-                <label>Personalidade:</label>
+                <h3>⚙️ Configurações da IA</h3>
+                <label>Como a IA deve falar:</label>
                 <textarea id="iaT" rows="2"></textarea>
-                <label>Aprendizado:</label>
+                <label>Fatos do Negócio (Aprendizado):</label>
                 <textarea id="baseT" rows="4"></textarea>
                 <div style="display: flex; gap: 10px;">
                     <div style="flex:1"><label>Delay (s):</label><input type="number" id="delayI" value="3"></div>
-                    <div style="flex:1"><label>Status:</label><button id="btnOnOff" onclick="toggleBot()">LIGADO</button></div>
+                    <div style="flex:1"><label>Robô:</label><button id="btnOnOff" onclick="toggleBot()">LIGADO</button></div>
                 </div>
-                <button onclick="save()" style="margin-top:15px; background:#25d366;">Salvar Mudanças</button>
+                <button onclick="save()" style="margin-top:15px; background: var(--s);">Salvar Configurações</button>
             </div>
         </div>
 
-        <div id="massaTab" class="tab">
+        <div id="tab2" class="tab">
             <div class="card">
-                <h3>🚀 Disparo Automático</h3>
-                <textarea id="numM" rows="5" placeholder="Lista de contatos..."></textarea>
-                <textarea id="msgM" rows="3" placeholder="Mensagem da campanha..."></textarea>
-                <label>Intervalo (s):</label>
+                <h3>🚀 Disparador em Massa</h3>
+                <textarea id="numM" rows="5" placeholder="Números (um por linha)"></textarea>
+                <textarea id="msgM" rows="3" placeholder="Mensagem..."></textarea>
+                <label>Intervalo entre envios (s):</label>
                 <input type="number" id="intM" value="30">
-                <button onclick="disparar()" style="background:white; color:black;">Lançar Campanha</button>
+                <button onclick="disparar()" style="background: white; color: black;">Iniciar Campanha</button>
             </div>
         </div>
 
-        <div id="waModal">
-            <div style="padding:15px; background:var(--c); display:flex; justify-content:space-between;">
-                <span>Live Monitor</span><button onclick="modal()" style="width:auto; padding:5px 10px; background:red; color:white;">X</button>
+        <div id="mirrorView">
+            <div class="chat-top">
+                <span><b>Live Monitor</b></span>
+                <button onclick="toggleMirror()" style="width: auto; padding: 5px 15px; background: #ff4b4b; color: white;">Fechar</button>
             </div>
-            <div id="qrcode"></div>
-            <div id="chatBox" class="chat"></div>
+            <div id="qrcode" style="display:none; text-align: center; background: white; padding: 15px; margin: 10px auto; width: fit-content; border-radius: 8px;"></div>
+            <div id="chatBox" class="chat-body"></div>
         </div>
 
         <nav>
-            <div class="nav-btn" onclick="nav('configTab')">⚙️ IA</div>
-            <div class="nav-btn" onclick="nav('massaTab')">🚀 Disparo</div>
-            <div class="nav-btn" onclick="modal()">📱 Chat</div>
+            <div class="nav-item active" onclick="nav('tab1', this)"><span>⚙️</span> IA</div>
+            <div class="nav-item" onclick="nav('tab2', this)"><span>🚀</span> Disparo</div>
+            <div class="nav-item" onclick="toggleMirror()"><span>📱</span> Espelhar</div>
         </nav>
     </div>
 
     <script>
         let botAtivo = true;
-        const qrG = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
+        const qrG = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
 
-        function nav(id) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        function modal() { const m = document.getElementById("waModal"); m.style.display = m.style.display === "flex" ? "none" : "flex"; }
-        function toggleBot() { botAtivo = !botAtivo; btnOnOff.innerText = botAtivo ? "LIGADO" : "DESLIGADO"; btnOnOff.style.background = botAtivo ? "var(--p)" : "red"; }
+        function nav(id, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+        }
+
+        function toggleMirror() {
+            const m = document.getElementById("mirrorView");
+            m.style.display = m.style.display === "flex" ? "none" : "flex";
+        }
+
+        function toggleBot() {
+            botAtivo = !botAtivo;
+            btnOnOff.innerText = botAtivo ? "LIGADO" : "DESLIGADO";
+            btnOnOff.style.background = botAtivo ? "var(--p)" : "red";
+        }
 
         async function auth() {
             const res = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:lEmail.value, password:lPass.value}) });
@@ -98,15 +126,27 @@
             const u = JSON.parse(localStorage.getItem("u"));
             loginV.style.display = "none"; dashV.style.display = "block";
             iaT.value = u.iaResumo; baseT.value = u.baseAprendizado;
-            
+
             setInterval(async () => {
                 const res = await fetch("/sync", { headers: {"Authorization": localStorage.getItem("tk")} });
                 const d = await res.json();
-                if(d.status === "READY") document.getElementById("qrcode").style.display = "none";
-                else if(d.status.length > 50) { document.getElementById("qrcode").style.display = "block"; qrG.makeCode(d.status); }
-                chatBox.innerHTML = d.chats.map(c => `<div class="${c.de==='IA'?'m-ia':'m-us'}"><b>${c.de}:</b> ${c.txt}</div>`).join('');
+                
+                if(d.status === "READY") {
+                    document.getElementById("connStatus").style.display = "block";
+                    document.getElementById("qrcode").style.display = "none";
+                } else if(d.status.length > 50) {
+                    document.getElementById("connStatus").style.display = "none";
+                    document.getElementById("qrcode").style.display = "block";
+                    qrG.makeCode(d.status);
+                }
+
                 mTotal.innerText = d.metricas.total;
                 mBlocks.innerText = d.metricas.blocks;
+                chatBox.innerHTML = d.chats.map(c => `
+                    <div class="msg ${c.de==='IA'?'m-ia':'m-us'}">
+                        <small style="opacity: 0.5; font-size: 9px;">${c.de} • ${c.hora}</small><br>${c.txt}
+                    </div>
+                `).join('');
             }, 4000);
         }
 
@@ -115,7 +155,7 @@
                 method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
                 body: JSON.stringify({ iaResumo: iaT.value, baseAprendizado: baseT.value, botAtivo, delayResponda: delayI.value * 1000 }) 
             });
-            alert("Sistema Atualizado!");
+            alert("Configurações salvas!");
         }
 
         async function disparar() {
