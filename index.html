@@ -6,103 +6,106 @@
     <title>Money Partner | Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #00ff88; --bg: #0b0f1a; --card: #161b2c; --accent: #3b82f6; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+        :root { --primary: #00ff88; --bg: #0b0f1a; --card: #161b2c; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; }
         .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid #2d334a; margin: 15px; }
-        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #2d334a; background: #0b0f1a; color: white; box-sizing: border-box; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; background: #0b0f1a; color: white; border: 1px solid #2d334a; box-sizing: border-box; }
         button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: #000; font-weight: bold; cursor: pointer; }
         
-        /* Sistema de Abas */
-        .tabs-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #2d334a; padding: 10px 0; z-index: 1000; }
-        .tab-link { flex: 1; text-align: center; font-size: 11px; color: #64748b; background: none; border: none; }
+        /* Menu Inferior */
+        .tabs-nav { position: fixed; bottom: 0; width: 100%; display: flex; background: var(--card); border-top: 1px solid #2d334a; z-index: 1000; }
+        .tab-link { flex: 1; text-align: center; font-size: 11px; padding: 15px 0; color: #64748b; background: none; border: none; }
         .tab-link.active { color: var(--primary); }
         .tab-content { display: none; padding-bottom: 80px; }
         .tab-content.active { display: block; }
+
+        /* Widget Flutuante do WhatsApp */
+        #waWidget { position: fixed; right: 20px; bottom: 85px; background: #25d366; width: 55px; height: 55px; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; z-index: 999; }
+        #waBadge { position: absolute; top: 0; right: 0; background: #ef4444; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; display: none; }
         
-        .ticket-card { background: #0b0f1a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
+        /* Modal do QR Code */
+        #waModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-body { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; max-width: 300px; }
     </style>
 </head>
 <body>
 
     <div id="loginView" style="height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
-        <div class="card" style="width: 100%; max-width: 400px;">
+        <div class="card" style="width: 100%; max-width: 350px;">
             <h2 style="color: var(--primary); text-align: center;">Money Partner 🚀</h2>
             <div id="regExtra" style="display: none;">
                 <input id="uNome" type="text" placeholder="Nome Completo">
-                <input id="uTel" type="text" placeholder="Telefone">
+                <input id="uTel" type="text" placeholder="WhatsApp">
             </div>
             <input id="uEmail" type="email" placeholder="E-mail">
             <input id="uPass" type="password" placeholder="Senha">
-            <button onclick="authAction()" id="btnAuth">Entrar</button>
-            <p onclick="toggleReg()" style="font-size: 12px; color: #64748b; text-align: center; margin-top: 15px; cursor: pointer;">Novo aqui? Criar conta</p>
+            <button onclick="authAction()" id="btnAuth">Acessar Sistema</button>
+            <p onclick="toggleReg()" style="text-align:center; font-size:12px; margin-top:15px; color:#64748b; cursor:pointer;">Criar Conta / Entrar</p>
         </div>
     </div>
 
     <div id="dashView" style="display: none;">
+        
         <div id="home" class="tab-content active">
             <div class="card">
                 <h3 id="welcomeMsg">Olá!</h3>
-                <p id="planLabel" style="font-size: 13px; color: #64748b;"></p>
-                <div id="waStatus" style="font-weight: bold; margin: 20px 0;">Verificando conexão...</div>
-                <div id="qrcode" style="background: white; padding: 10px; border-radius: 8px; display: none; margin: auto; width: fit-content;"></div>
+                <p id="planLabel" style="color: #64748b; font-size: 13px;"></p>
+                <div style="background: #0b0f1a; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                    <p style="margin:0; font-size: 12px; color: var(--primary);">Instrução:</p>
+                    <small>Clique no ícone flutuante do WhatsApp para conectar seu robô.</small>
+                </div>
             </div>
         </div>
 
         <div id="support" class="tab-content">
             <div class="card">
-                <h3>🎫 Abrir Ticket</h3>
-                <input id="tkAssunto" type="text" placeholder="Assunto (ex: Ativação)">
-                <textarea id="tkMsg" placeholder="Descreva seu problema..."></textarea>
-                <button onclick="sendTicket()" style="background: var(--accent); color: #fff;">Enviar Chamado</button>
+                <h3>🎫 Suporte</h3>
+                <input id="tkAssunto" type="text" placeholder="Assunto">
+                <textarea id="tkMsg" placeholder="Sua mensagem..."></textarea>
+                <button onclick="sendTicket()" style="background: #3b82f6; color: white;">Abrir Chamado</button>
             </div>
-            <div id="myTickets" style="padding: 15px;"></div>
+            <div id="myTickets" style="padding: 10px;"></div>
         </div>
 
         <div id="admin" class="tab-content">
             <div class="card">
-                <h3 style="color: var(--primary);">👑 Painel Master</h3>
-                <h4>Usuários Recentes</h4>
-                <div id="admUsers"></div>
-                <hr style="border: 0; border-top: 1px solid #2d334a; margin: 20px 0;">
-                <h4>Tickets Pendentes</h4>
-                <div id="admTickets"></div>
+                <h3 style="color: var(--primary);">👑 Admin</h3>
+                <div id="admList"></div>
             </div>
         </div>
 
         <nav class="tabs-nav">
-            <button class="tab-link active" onclick="navTo('home')">🏠 Início</button>
+            <button class="tab-link active" onclick="navTo('home')">🏠 Home</button>
             <button class="tab-link" onclick="navTo('support')">🎫 Suporte</button>
             <button id="navAdmin" class="tab-link" onclick="navTo('admin')" style="display: none;">👑 Admin</button>
-            <button class="tab-link" onclick="logout()" style="color: #ef4444;">🚪 Sair</button>
+            <button class="tab-link" onclick="logout()" style="color:#ef4444">Sair</button>
         </nav>
     </div>
 
+    <div id="waWidget" onclick="openWaModal()">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="white"><path d="M12.031 6.172c-2.203 0-4.007 1.797-4.007 3.992 0 1.633.985 3.033 2.395 3.633l-.527 1.957 1.933-.521c.068.006.136.009.206.009 2.203 0 4.007-1.797 4.007-3.992 0-2.195-1.804-3.978-4.007-3.978zm0 7.184c-.104 0-.206-.008-.309-.023l-1.127.304.307-1.14c-.958-.521-1.579-1.531-1.579-2.653 0-1.708 1.397-3.101 3.125-3.101s3.125 1.393 3.125 3.101c0 1.709-1.397 3.112-3.125 3.112zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+        <div id="waBadge"></div>
+    </div>
+
+    <div id="waModal" onclick="closeWaModal(event)">
+        <div class="modal-body" onclick="event.stopPropagation()">
+            <h4 id="waModalTitle">Conectar Robô</h4>
+            <div id="waModalStatus" style="font-size: 12px; margin-bottom: 15px; color: #64748b;">Verificando...</div>
+            <div id="qrcode" style="background: white; padding: 10px; border-radius: 8px; margin: auto; display: none;"></div>
+            <button onclick="closeWaModal(null)" style="margin-top: 20px; background: #334155; color: white;">Fechar</button>
+        </div>
+    </div>
+
     <script>
-        let isRegMode = false;
-
-        function toggleReg() {
-            isRegMode = !isRegMode;
-            document.getElementById("regExtra").style.display = isRegMode ? "block" : "none";
-            document.getElementById("btnAuth").innerText = isRegMode ? "Criar Conta" : "Entrar";
-        }
-
+        let reg = false;
+        function toggleReg() { reg = !reg; document.getElementById("regExtra").style.display = reg ? "block" : "none"; document.getElementById("btnAuth").innerText = reg ? "Criar Conta" : "Acessar Sistema"; }
+        
         async function authAction() {
-            const body = { email: document.getElementById("uEmail").value, password: document.getElementById("uPass").value };
-            if(isRegMode) {
-                body.usuario = document.getElementById("uNome").value;
-                body.telefone = document.getElementById("uTel").value;
-            }
-            const res = await fetch(isRegMode ? '/register' : '/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(body)
-            });
+            const body = { email: uEmail.value, password: uPass.value };
+            if(reg) { body.usuario = uNome.value; body.telefone = uTel.value; }
+            const res = await fetch(reg ? '/register' : '/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
             const data = await res.json();
-            if(data.token) {
-                localStorage.setItem("token", data.token);
-                localStorage.setItem("user", JSON.stringify(data.user));
-                location.reload();
-            } else { alert(data.error || "Erro de login"); }
+            if(data.token) { localStorage.setItem("token", data.token); localStorage.setItem("user", JSON.stringify(data.user)); location.reload(); } else { alert(data.error); }
         }
 
         function navTo(id) {
@@ -110,89 +113,56 @@
             document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             event.currentTarget.classList.add('active');
-            if(id === 'support') loadMyTickets();
-            if(id === 'admin') loadAdminData();
+            if(id === 'support') loadTickets();
+            if(id === 'admin') loadAdmin();
         }
 
-        async function sendTicket() {
-            const assunto = document.getElementById("tkAssunto").value;
-            const mensagem = document.getElementById("tkMsg").value;
-            await fetch("/tickets/novo", {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")},
-                body: JSON.stringify({ assunto, mensagem })
-            });
-            alert("Ticket enviado!"); loadMyTickets();
-        }
-
-        async function loadMyTickets() {
-            const res = await fetch("/tickets/meus", { headers: {"Authorization": localStorage.getItem("token")} });
-            const data = await res.json();
-            document.getElementById("myTickets").innerHTML = data.map(t => `
-                <div class="ticket-card">
-                    <b>${t.assunto}</b> [${t.status}]<br>
-                    <small>${t.mensagem}</small>
-                    ${t.resposta ? `<div style="color: var(--primary); margin-top:5px;">Resp: ${t.resposta}</div>` : ""}
-                </div>
-            `).join('');
-        }
-
-        async function loadAdminData() {
-            const res = await fetch("/admin/dados", { headers: {"Authorization": localStorage.getItem("token")} });
-            const data = await res.json();
-            document.getElementById("admUsers").innerHTML = data.users.map(u => `
-                <div class="ticket-card" style="border-color: var(--primary)">
-                    ${u.usuario} (${u.email})<br>
-                    <input type="number" id="d_${u._id}" value="30" style="width: 50px; padding: 5px;">
-                    <button onclick="liberar('${u._id}')" style="width: auto; padding: 5px 10px; font-size: 11px;">Ativar</button>
-                </div>
-            `).join('');
-            document.getElementById("admTickets").innerHTML = data.tickets.map(t => `
-                <div class="ticket-card">
-                    <b>De: ${t.userName}</b><br>${t.mensagem}
-                    <input id="res_${t._id}" type="text" placeholder="Resposta...">
-                    <button onclick="respTicket('${t._id}')" style="width: auto; padding: 5px 10px; font-size: 11px;">Responder</button>
-                </div>
-            `).join('');
-        }
-
-        async function liberar(id) {
-            const dias = document.getElementById(`d_${id}`).value;
-            await fetch("/admin/liberar-flex", {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")},
-                body: JSON.stringify({id, dias})
-            });
-            alert("Ativado!"); loadAdminData();
-        }
-
-        async function respTicket(id) {
-            const resposta = document.getElementById(`res_${id}`).value;
-            await fetch("/admin/tickets/responder", {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")},
-                body: JSON.stringify({id, resposta})
-            });
-            alert("Respondido!"); loadAdminData();
-        }
+        function openWaModal() { document.getElementById("waModal").style.display = "flex"; }
+        function closeWaModal(e) { if(!e || e.target.id === "waModal") document.getElementById("waModal").style.display = "none"; }
 
         if(localStorage.getItem("token")) {
             const user = JSON.parse(localStorage.getItem("user"));
             document.getElementById("loginView").style.display = "none";
             document.getElementById("dashView").style.display = "block";
-            document.getElementById("welcomeMsg").innerText = `Olá, ${user.usuario}!`;
-            document.getElementById("planLabel").innerText = user.role === 'admin' ? 'Acesso Master' : (user.ativo ? 'Conta Partner Ativa' : 'Teste Grátis (2h)');
-            if(user.role === 'admin') document.getElementById("navAdmin").style.display = "block";
+            document.getElementById("waWidget").style.display = "flex";
+            welcomeMsg.innerText = `Olá, ${user.usuario}!`;
+            planLabel.innerText = user.role === 'admin' ? 'Acesso Master' : (user.ativo ? 'Conta Partner Ativa' : 'Teste Grátis (2h)');
+            if(user.role === 'admin') navAdmin.style.display = "block";
 
+            // Monitor de Status Flutuante
             setInterval(async () => {
-                const r = await fetch("/status-whatsapp", { headers: {"Authorization": localStorage.getItem("token")} });
-                const d = await r.json();
-                const s = document.getElementById("waStatus");
-                const q = document.getElementById("qrcode");
-                if(d.status === "CONECTADO") { s.innerHTML = "✅ Conectado"; q.style.display = "none"; }
-                else if(d.status.length > 50) { s.innerHTML = "Escaneie para conectar:"; q.style.display = "block"; q.innerHTML = ""; new QRCode(q, {text: d.status, width: 180, height: 180}); }
-                else { s.innerHTML = "Iniciando servidor..."; }
-            }, 10000);
+                const res = await fetch("/status-whatsapp", { headers: {"Authorization": localStorage.getItem("token")} });
+                const data = await res.json();
+                const badge = document.getElementById("waBadge");
+                const modalStatus = document.getElementById("waModalStatus");
+                const qrc = document.getElementById("qrcode");
+                
+                if(data.status === "CONECTADO") {
+                    badge.style.display = "none";
+                    modalStatus.innerText = "✅ Robô Conectado e Ativo";
+                    qrc.style.display = "none";
+                } else if(data.status.length > 50) {
+                    badge.style.display = "block";
+                    modalStatus.innerText = "⚠️ Escaneie o QR Code abaixo:";
+                    qrc.style.display = "block";
+                    qrc.innerHTML = ""; new QRCode(qrc, {text: data.status, width: 200, height: 200});
+                } else {
+                    badge.style.display = "block";
+                    modalStatus.innerText = "🔌 Robô Desconectado";
+                    qrc.style.display = "none";
+                }
+            }, 5000);
+        }
+
+        async function loadTickets() {
+            const res = await fetch("/tickets/meus", { headers: {"Authorization": localStorage.getItem("token")} });
+            const data = await res.json();
+            myTickets.innerHTML = data.map(t => `<div class="card" style="font-size:12px; border-left:4px solid #3b82f6;"><b>${t.assunto}</b> [${t.status}]<br>${t.mensagem}${t.resposta ? `<div style="color:var(--primary);margin-top:5px;">R: ${t.resposta}</div>` : ""}</div>`).join('');
+        }
+
+        async function sendTicket() {
+            await fetch("/tickets/novo", { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")}, body: JSON.stringify({assunto: tkAssunto.value, mensagem: tkMsg.value}) });
+            alert("Enviado!"); loadTickets();
         }
 
         function logout() { localStorage.clear(); location.reload(); }
