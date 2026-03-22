@@ -1,4 +1,4 @@
-        const express = require('express');
+const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -12,19 +12,20 @@ app.use(cors());
 const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
+// SCHEMA BLINDADO - Mantém todas as suas configurações salvas
 const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true },
     usuario: String,
     password: { type: String, required: true },
     botAtivo: { type: Boolean, default: true },
     delayResponda: { type: Number, default: 3000 },
-    iaResumo: { type: String, default: "Olá!" },
+    iaResumo: { type: String, default: "Olá! Sou seu assistente virtual." },
     baseAprendizado: { type: String, default: "" },
-    mensagensEnviadas: { type: Number, default: 0 }, // NOVA: Métrica
-    contatosBloqueados: [String] // NOVA: Stop List
+    mensagensEnviadas: { type: Number, default: 0 },
+    contatosBloqueados: [String]
 }));
 
-mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA TOTALMENTE UNIFICADO"));
+mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA MONETIZADO E CONECTADO"));
 
 const qrcodes = {};
 const clientes = {};
@@ -49,27 +50,25 @@ async function engineWA(userId) {
         const u = await User.findById(userId);
         if (!u || !u.botAtivo) return;
 
-        // FUNÇÃO: STOP WORD (Sair da Automação)
-        const textoUser = msg.body.toLowerCase();
-        if (textoUser.includes("sair") || textoUser.includes("parar") || textoUser.includes("humano")) {
+        // Lógica de Stop Word (Sair/Parar)
+        const txt = msg.body.toLowerCase();
+        if (txt.includes("sair") || txt.includes("parar") || txt.includes("humano")) {
             if (!u.contatosBloqueados.includes(msg.from)) {
                 u.contatosBloqueados.push(msg.from);
                 await u.save();
-                return msg.reply("Entendido. Minha automação foi desligada para você. Um humano falará contigo em breve.");
+                return msg.reply("Automação desligada. Um atendente falará com você em breve.");
             }
         }
-
         if (u.contatosBloqueados.includes(msg.from)) return;
 
-        // CONTEXTO & RESPOSTA
+        // Resposta Inteligente com Delay
         setTimeout(async () => {
             await msg.reply(u.iaResumo);
-            u.mensagensEnviadas += 1; // Incrementa métrica
-            await u.save();
-
+            await User.findByIdAndUpdate(userId, { $inc: { mensagensEnviadas: 1 } });
+            
             if (!logsChat[userId]) logsChat[userId] = [];
-            logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body });
-            if (logsChat[userId].length > 15) logsChat[userId].shift();
+            logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body, hora: new Date().toLocaleTimeString() });
+            if (logsChat[userId].length > 20) logsChat[userId].shift();
         }, u.delayResponda);
     });
 
@@ -77,13 +76,13 @@ async function engineWA(userId) {
     client.initialize().catch(() => {});
 }
 
-// ROTA DISPARO EM MASSA (COM LOG DE SUCESSO)
+// ROTA DE DISPARO EM MASSA
 app.post("/disparar", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
         const { numeros, mensagem, intervalo } = req.body;
         const client = clientes[d.id];
-        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "WhatsApp Desconectado" });
+        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "WhatsApp não conectado" });
 
         const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, ''));
         res.json({ msg: `Campanha iniciada para ${lista.length} contatos.` });
@@ -94,16 +93,8 @@ app.post("/disparar", async (req, res) => {
             try { 
                 await client.sendMessage(`${num}@c.us`, mensagem);
                 await User.findByIdAndUpdate(d.id, { $inc: { mensagensEnviadas: 1 } });
-            } catch (e) { console.log("Erro no número " + num); }
+            } catch (e) {}
         }
-    } catch (e) { res.status(401).send(); }
-});
-
-app.post("/save-config", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        await User.findByIdAndUpdate(d.id, req.body);
-        res.json({ ok: true });
     } catch (e) { res.status(401).send(); }
 });
 
@@ -121,8 +112,16 @@ app.get("/sync", async (req, res) => {
         res.json({ 
             status: qrcodes[d.id] || "OFF", 
             chats: logsChat[d.id] || [], 
-            metricas: { total: u.mensagensEnviadas, blocks: u.contatosBloqueados.length } 
+            metricas: { total: u.mensagensEnviadas || 0, blocks: u.contatosBloqueados.length || 0 }
         });
+    } catch (e) { res.status(401).send(); }
+});
+
+app.post("/save-config", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        await User.findByIdAndUpdate(d.id, req.body);
+        res.json({ ok: true });
     } catch (e) { res.status(401).send(); }
 });
 
