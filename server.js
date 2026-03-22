@@ -26,6 +26,7 @@ const CHROME_PATH =
 // ─────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname));
 
 // ─────────────────────────────────────────────────
 // MONGODB — CONEXÃO
@@ -136,7 +137,8 @@ wppClient.on('message', msg => {
 // MIDDLEWARE JWT
 // ─────────────────────────────────────────────────
 function autenticar(req, res, next) {
-  const token = (req.headers['authorization'] || '').split(' ')[1];
+  const header = req.headers['authorization'] || '';
+  const token  = header.startsWith('Bearer ') ? header.slice(7) : header;
   if (!token) return res.status(401).json({ error: 'Token não fornecido.' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -150,15 +152,6 @@ function autenticar(req, res, next) {
 // ─────────────────────────────────────────────────
 // ROTAS — AUTH
 // ─────────────────────────────────────────────────
-
-// Health check
-app.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
-    app: 'Money Partner Pro 2026',
-    whatsapp: whatsappReady ? 'conectado' : 'aguardando',
-  });
-});
 
 // Cadastro
 app.post('/register', async (req, res) => {
