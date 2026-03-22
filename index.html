@@ -2,161 +2,139 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner | Command Center</title>
+    <title>Money Partner | Dashboard Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --p: #00ff88; --b: #0b141a; --c: #1d272e; --t: #e9edef; }
-        body { background: var(--b); color: var(--t); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; }
+        body { background: var(--b); color: var(--t); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
         .card { background: var(--c); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #303d45; }
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #303d45; background: #2a3942; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: #0b141a; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #2a3942; color: white; box-sizing: border-box; outline: none; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: #0b141a; transition: 0.3s; }
+        button:active { transform: scale(0.98); }
         .tab { display: none; } .tab.active { display: block; }
         nav { position: fixed; bottom: 0; width: 100%; background: #202c33; display: flex; height: 70px; border-top: 1px solid #303d45; }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; opacity: 0.4; }
-        .nav-item.active { opacity: 1; color: var(--p); }
-        .progress-container { background: #2a3942; border-radius: 10px; height: 12px; width: 100%; margin: 15px 0; overflow: hidden; display: none; }
-        .progress-bar { background: var(--p); height: 100%; width: 0%; transition: width 0.3s ease; }
-        #qrcode { background: white; padding: 10px; width: fit-content; margin: 10px auto; border-radius: 10px; }
-        .log-row { display: flex; justify-content: space-between; font-size: 11px; padding: 5px; border-bottom: 1px solid #444; }
+        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; opacity: 0.5; color: white; text-decoration: none; }
+        .nav-item.active { opacity: 1; color: var(--p); border-top: 3px solid var(--p); }
+        .prog-bg { background: #444; border-radius: 10px; height: 12px; margin: 15px 0; display: none; overflow: hidden; }
+        .prog-fill { background: var(--p); height: 100%; width: 0%; transition: 0.5s ease; }
+        #qrcode { background: white; padding: 15px; width: fit-content; margin: 10px auto; border-radius: 10px; display: none; }
+        .status-badge { font-size: 12px; padding: 5px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+        .status-on { background: rgba(0,255,136,0.1); color: var(--p); border: 1px solid var(--p); }
     </style>
 </head>
 <body>
 
-    <div id="authArea" style="height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-        <div id="loginBox" class="card" style="width: 320px;">
-            <h2 style="color:var(--p); text-align:center">Money Partner</h2>
-            <input id="lEmail" placeholder="E-mail">
-            <input id="lPass" type="password" placeholder="Senha">
-            <button onclick="login()">ACESSAR SISTEMA</button>
-            <p onclick="toggleReg(true)" style="text-align:center; font-size:12px; cursor:pointer; opacity:0.6; margin-top:15px;">Ainda não tem conta? Criar</p>
-        </div>
-        <div id="regBox" class="card" style="width: 320px; display:none">
-            <h2 style="color:var(--p); text-align:center">Novo Acesso</h2>
-            <input id="rEmail" placeholder="E-mail">
-            <input id="rPass" type="password" placeholder="Senha">
-            <button onclick="register()">CADASTRAR AGORA</button>
-            <p onclick="toggleReg(false)" style="text-align:center; font-size:12px; cursor:pointer; opacity:0.6; margin-top:15px;">Voltar ao Login</p>
+    <div id="authArea" style="height:95vh; display:flex; align-items:center; justify-content:center">
+        <div class="card" style="width:320px">
+            <h2 style="text-align:center; color:var(--p); margin-top:0">Money Partner</h2>
+            <div id="boxL">
+                <input id="lEmail" placeholder="Seu E-mail">
+                <input id="lPass" type="password" placeholder="Sua Senha">
+                <button onclick="login()">ENTRAR NO PAINEL</button>
+                <p onclick="showR(true)" style="text-align:center; cursor:pointer; font-size:12px; opacity:0.6; margin-top:15px">Criar Nova Conta</p>
+            </div>
+            <div id="boxR" style="display:none">
+                <input id="rEmail" placeholder="Cadastrar E-mail">
+                <input id="rPass" type="password" placeholder="Definir Senha">
+                <button onclick="register()">CADASTRAR</button>
+                <p onclick="showR(false)" style="text-align:center; cursor:pointer; font-size:12px; opacity:0.6; margin-top:15px">Voltar ao Login</p>
+            </div>
         </div>
     </div>
 
-    <div id="dashArea" style="display: none;">
+    <div id="dashArea" style="display:none">
         <div id="tab1" class="tab active">
             <div class="card">
-                <h3 style="color:var(--p)">⚙️ Configurações da IA</h3>
-                <textarea id="iaT" rows="2" placeholder="Ex: Olá! Sou o assistente virtual..."></textarea>
-                <textarea id="baseT" rows="5" placeholder="Instruções para a IA (Base de Conhecimento)"></textarea>
-                <button onclick="save()">SALVAR CONFIGURAÇÕES</button>
+                <h3>⚙️ Treinamento da IA</h3>
+                <textarea id="iaT" rows="2" placeholder="Saudação Inicial"></textarea>
+                <textarea id="baseT" rows="4" placeholder="Base de Conhecimento (Instruções)"></textarea>
+                <button onclick="save()">ATUALIZAR IA</button>
             </div>
-            <div class="card" style="text-align: center;">
-                <h3 style="color:var(--p)">📱 Status do WhatsApp</h3>
-                <div id="statusZap" style="margin-bottom: 10px;">Verificando...</div>
+            <div class="card" style="text-align:center">
+                <h3>📱 Monitor de Conexão</h3>
+                <div id="statusZap" class="status-badge status-on">Verificando...</div>
                 <div id="qrcode"></div>
-                <button onclick="logoutApp()" style="background:transparent; color:white; border:1px solid #444; margin-top:20px;">SAIR DO SISTEMA</button>
+                <button onclick="logoutApp()" style="margin-top:20px; background:transparent; color:white; border:1px solid #444; font-size:12px; padding:10px">Sair do Sistema</button>
             </div>
         </div>
 
         <div id="tab2" class="tab">
             <div class="card">
-                <h3 style="color:var(--p)">🚀 Disparo em Massa Anti-Ban</h3>
-                <textarea id="numM" rows="4" placeholder="Números (Um por linha com 55...)"></textarea>
-                <textarea id="msgM" rows="3" placeholder="Mensagem {Oi|Olá|Eae}!"></textarea>
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-                    <label style="font-size:12px">Intervalo (Seg):</label>
-                    <input type="number" id="intM" value="30" style="margin:0; width:80px">
-                </div>
-                <button onclick="disparar()">LANÇAR CAMPANHA</button>
-                <div id="progArea" class="progress-container"><div id="progBar" class="progress-bar"></div></div>
-                <div id="statusTxt" style="text-align:center; font-size:12px; margin-top:8px; color:var(--p)"></div>
+                <h3>🚀 Disparo Inteligente</h3>
+                <textarea id="numM" rows="5" placeholder="Números (Um por linha com 55...)"></textarea>
+                <textarea id="msgM" rows="3" placeholder="Mensagem {Oi|Olá} tudo bem?"></textarea>
+                <div style="font-size:12px; margin-bottom:10px">Intervalo entre envios (segundos):</div>
+                <input type="number" id="intM" value="30">
+                <button onclick="disparar()">INICIAR DISPARO</button>
+                <div id="progBar" class="prog-bg"><div id="progFill" class="prog-fill"></div></div>
+                <div id="progTxt" style="text-align:center; font-size:12px; color:var(--p); margin-top:5px"></div>
             </div>
-            <div class="card" style="max-height: 250px; overflow-y: auto;">
-                <h4 style="margin:0 0 10px 0">📋 Últimos Envios</h4>
-                <div id="logLista"></div>
-            </div>
+            <div id="logs" class="card" style="font-size:11px; max-height:200px; overflow-y:auto"></div>
         </div>
 
         <nav>
-            <div class="nav-item active" onclick="nav('tab1', this)">⚙️ Monitor</div>
-            <div class="nav-item" onclick="nav('tab2', this)">🚀 Disparo</div>
+            <div class="nav-item active" onclick="tab('tab1', this)">⚙️ Monitor</div>
+            <div class="nav-item" onclick="tab('tab2', this)">🚀 Enviar Massa</div>
         </nav>
     </div>
 
     <script>
-        const qrG = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
-
-        function toggleReg(show) { loginBox.style.display = show ? 'none' : 'block'; regBox.style.display = show ? 'block' : 'none'; }
+        const qrBox = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
+        function showR(s){ boxL.style.display=s?'none':'block'; boxR.style.display=s?'block':'none'; }
         
-        async function register() {
-            const res = await fetch("/register", { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: rEmail.value, password: rPass.value}) });
-            if(res.ok) { alert("Conta criada!"); toggleReg(false); } else alert("Erro: E-mail já existe.");
+        async function register(){
+            const r = await fetch("/register", { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:rEmail.value, password:rPass.value}) });
+            if(r.ok) { alert("Cadastro realizado!"); showR(false); } else alert("Erro ao cadastrar.");
         }
 
-        async function login() {
-            const res = await fetch("/login", { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: lEmail.value, password: lPass.value}) });
-            if(res.ok) {
-                const d = await res.json();
-                localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload();
-            } else alert("E-mail ou senha incorretos.");
+        async function login(){
+            const r = await fetch("/login", { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:lEmail.value, password:lPass.value}) });
+            if(r.ok) { const d = await r.json(); localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload(); }
+            else alert("E-mail ou senha incorretos.");
         }
 
-        if(localStorage.getItem("tk")) {
-            authArea.style.display = "none"; dashArea.style.display = "block";
+        if(localStorage.getItem("tk")){
+            authArea.style.display='none'; dashArea.style.display='block';
             const u = JSON.parse(localStorage.getItem("u"));
             iaT.value = u.iaResumo; baseT.value = u.baseAprendizado;
 
             setInterval(async () => {
-                const res = await fetch("/sync", { headers: {"Authorization": localStorage.getItem("tk")} });
-                const d = await res.json();
-                if(d.status === "READY") {
-                    statusZap.innerText = "✅ WhatsApp Conectado e Operando Offline"; qrcode.style.display = 'none';
-                } else if(d.status.length > 50) {
-                    statusZap.innerText = "⏳ Escaneie para ativar o Modo Offline"; qrcode.style.display = 'block'; qrG.makeCode(d.status);
-                } else {
-                    statusZap.innerText = "❌ Sistema Desconectado";
+                const r = await fetch("/sync", { headers:{"Authorization": localStorage.getItem("tk")} });
+                const d = await r.json();
+                if(d.status === "READY") { statusZap.innerText = "✅ ONLINE E BLINDADO"; qrcode.style.display='none'; }
+                else if(d.status.length > 50) { statusZap.innerText = "⏳ AGUARDANDO LEITURA QR"; qrcode.style.display='block'; qrBox.makeCode(d.status); }
+                else { statusZap.innerText = "❌ DESCONECTADO"; qrcode.style.display='none'; }
+                
+                if(document.getElementById('tab2').classList.contains('active')) {
+                    const pr = await fetch("/progresso", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    const p = await pr.json();
+                    if(p.status === 'rodando') {
+                        progBar.style.display='block'; progFill.style.width = (p.atual/p.total*100)+'%';
+                        progTxt.innerText = `Enviando ${p.atual} de ${p.total}`;
+                    } else if(p.status === 'finalizado') { progTxt.innerText = "Campanha Concluída!"; }
+
+                    const l = await fetch("/logs-envio", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    const logs = await l.json();
+                    document.getElementById('logs').innerHTML = logs.map(x => `<div style="padding:4px; border-bottom:1px solid #444">${x.numero}: ${x.status}</div>`).join('');
                 }
-                if(document.getElementById('tab2').classList.contains('active')) { monitorarProgresso(); atualizarLogs(); }
             }, 5000);
         }
 
-        async function disparar() {
-            const res = await fetch("/disparar", { 
-                method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
-                body: JSON.stringify({ numeros: numM.value, mensagem: msgM.value, intervalo: intM.value }) 
-            });
-            const d = await res.json();
-            if(d.error) alert(d.error); else progArea.style.display = 'block';
+        async function disparar(){
+            const r = await fetch("/disparar", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify({numeros:numM.value, mensagem:msgM.value, intervalo:intM.value}) });
+            const d = await r.json();
+            if(d.msg) { progBar.style.display='block'; } else { alert(d.error); }
         }
 
-        async function monitorarProgresso() {
-            const res = await fetch("/progresso", { headers: {"Authorization": localStorage.getItem("tk")} });
-            const p = await res.json();
-            if(p.status === 'rodando') {
-                progArea.style.display = 'block';
-                progBar.style.width = (p.atual / p.total * 100) + "%";
-                statusTxt.innerText = `Enviando: ${p.atual} de ${p.total}`;
-            } else if(p.status === 'finalizado') {
-                progBar.style.width = "100%"; statusTxt.innerText = "Campanha Finalizada!";
-            }
+        async function save(){
+            await fetch("/save-config", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify({iaResumo:iaT.value, baseAprendizado:baseT.value}) });
+            alert("Inteligência Atualizada!");
         }
 
-        async function atualizarLogs() {
-            const res = await fetch("/logs-envio", { headers: {"Authorization": localStorage.getItem("tk")} });
-            const logs = await res.json();
-            logLista.innerHTML = logs.map(l => `<div class="log-row"><span>${l.numero}</span><span>${l.status}</span></div>`).join('');
-        }
-
-        async function save() {
-            await fetch("/save-config", { 
-                method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
-                body: JSON.stringify({ iaResumo: iaT.value, baseAprendizado: baseT.value }) 
-            });
-            alert("Configurações Salvas!");
-        }
-
-        function nav(id, el) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        function tab(t, el){
+            document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+            document.getElementById(t).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
             el.classList.add('active');
         }
         function logoutApp() { localStorage.clear(); location.reload(); }
