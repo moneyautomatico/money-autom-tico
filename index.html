@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner 2026 | Full Control</title>
+    <title>Money Partner | Dashboard Elite</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --p: #00ff88; --b: #0b0f1a; --c: #161b2c; }
         body { background: var(--b); color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
         .card { background: var(--c); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #2d334a; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: #0b0f1a; padding: 15px; border-radius: 10px; text-align: center; border-bottom: 3px solid var(--p); }
         textarea, input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; background: #0b0f1a; color: white; box-sizing: border-box; }
         button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: black; }
-        .tab { display: none; } .tab.active { display: block; }
         nav { position: fixed; bottom: 0; width: 100%; background: var(--c); display: flex; border-top: 1px solid #2d334a; }
-        .nav-btn { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-size: 12px; }
+        .nav-btn { flex: 1; padding: 15px; text-align: center; cursor: pointer; }
+        .tab { display: none; } .tab.active { display: block; }
         #waModal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; z-index: 1000; }
         #qrcode { background: white; padding: 15px; border-radius: 10px; margin: 20px auto; width: fit-content; }
         .chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
@@ -22,54 +24,59 @@
     </style>
 </head>
 <body>
-    <div id="loginV" style="height: 80vh; display: flex; align-items: center; justify-content: center;">
-        <div class="card" style="width: 300px; text-align: center;">
-            <h2 style="color:var(--p)">Money Partner</h2>
+    <div id="loginV" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
+        <div class="card" style="width: 300px; text-align:center;">
+            <h2 style="color:var(--p)">Money Partner 2026</h2>
             <input id="lEmail" placeholder="E-mail">
             <input id="lPass" type="password" placeholder="Senha">
-            <button onclick="auth()">Acessar Painel</button>
+            <button onclick="auth()">Entrar</button>
         </div>
     </div>
 
     <div id="dashV" style="display: none;">
+        <div class="stat-grid" style="margin: 15px;">
+            <div class="stat-card"><small>Enviadas</small><h2 id="mTotal">0</h2></div>
+            <div class="stat-card"><small>Stop List</small><h2 id="mBlocks">0</h2></div>
+        </div>
+
         <div id="configTab" class="tab active">
             <div class="card">
-                <h3>🧠 Inteligência do Agente</h3>
+                <h3>⚙️ Configuração IA</h3>
                 <label>Personalidade:</label>
                 <textarea id="iaT" rows="2"></textarea>
-                <label>Lista de Aprendizagem:</label>
+                <label>Aprendizado:</label>
                 <textarea id="baseT" rows="4"></textarea>
                 <div style="display: flex; gap: 10px;">
                     <div style="flex:1"><label>Delay (s):</label><input type="number" id="delayI" value="3"></div>
                     <div style="flex:1"><label>Status:</label><button id="btnOnOff" onclick="toggleBot()">LIGADO</button></div>
                 </div>
-                <button onclick="save()" style="margin-top:15px; background: #25d366;">Salvar Configurações</button>
+                <button onclick="save()" style="margin-top:15px; background:#25d366;">Salvar Mudanças</button>
             </div>
         </div>
 
         <div id="massaTab" class="tab">
             <div class="card">
-                <h3>🚀 Disparo em Massa</h3>
-                <textarea id="numM" rows="5" placeholder="Números (um por linha)"></textarea>
-                <textarea id="msgM" rows="3" placeholder="Mensagem..."></textarea>
-                <label>Intervalo (segundos):</label>
+                <h3>🚀 Disparo Automático</h3>
+                <textarea id="numM" rows="5" placeholder="Lista de contatos..."></textarea>
+                <textarea id="msgM" rows="3" placeholder="Mensagem da campanha..."></textarea>
+                <label>Intervalo (s):</label>
                 <input type="number" id="intM" value="30">
-                <button onclick="disparar()" style="background: white; color: black;">Iniciar Campanha</button>
+                <button onclick="disparar()" style="background:white; color:black;">Lançar Campanha</button>
             </div>
         </div>
 
         <div id="waModal">
             <div style="padding:15px; background:var(--c); display:flex; justify-content:space-between;">
-                <span>Monitor WhatsApp</span><button onclick="modal()" style="width:auto; padding:5px 10px; background:red; color:white;">X</button>
+                <span>Live Monitor</span><button onclick="modal()" style="width:auto; padding:5px 10px; background:red; color:white;">X</button>
             </div>
             <div id="qrcode"></div>
             <div id="chatBox" class="chat"></div>
         </div>
 
         <nav>
-            <div class="nav-btn" onclick="nav('configTab')">⚙️ Config</div>
+            <div class="nav-btn" onclick="nav('configTab')">⚙️ IA</div>
             <div class="nav-btn" onclick="nav('massaTab')">🚀 Disparo</div>
-            <div class="nav-btn" onclick="modal()">📱 Monitor</div>
+            <div class="nav-btn" onclick="modal()">📱 Chat</div>
         </nav>
     </div>
 
@@ -91,12 +98,15 @@
             const u = JSON.parse(localStorage.getItem("u"));
             loginV.style.display = "none"; dashV.style.display = "block";
             iaT.value = u.iaResumo; baseT.value = u.baseAprendizado;
+            
             setInterval(async () => {
                 const res = await fetch("/sync", { headers: {"Authorization": localStorage.getItem("tk")} });
                 const d = await res.json();
                 if(d.status === "READY") document.getElementById("qrcode").style.display = "none";
                 else if(d.status.length > 50) { document.getElementById("qrcode").style.display = "block"; qrG.makeCode(d.status); }
                 chatBox.innerHTML = d.chats.map(c => `<div class="${c.de==='IA'?'m-ia':'m-us'}"><b>${c.de}:</b> ${c.txt}</div>`).join('');
+                mTotal.innerText = d.metricas.total;
+                mBlocks.innerText = d.metricas.blocks;
             }, 4000);
         }
 
@@ -105,7 +115,7 @@
                 method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
                 body: JSON.stringify({ iaResumo: iaT.value, baseAprendizado: baseT.value, botAtivo, delayResponda: delayI.value * 1000 }) 
             });
-            alert("Salvo!");
+            alert("Sistema Atualizado!");
         }
 
         async function disparar() {
