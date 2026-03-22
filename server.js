@@ -1,4 +1,4 @@
-const express = require('express');
+        const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -12,22 +12,19 @@ app.use(cors());
 const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 
-// SCHEMA COMPLETO - NÃO REMOVER NENHUM CAMPO
 const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true },
     usuario: String,
     password: { type: String, required: true },
-    role: { type: String, default: "user" },
-    ativo: { type: Boolean, default: false },
     botAtivo: { type: Boolean, default: true },
     delayResponda: { type: Number, default: 3000 },
-    iaResumo: { type: String, default: "Olá! Sou seu assistente." },
+    iaResumo: { type: String, default: "Olá!" },
     baseAprendizado: { type: String, default: "" },
-    dataCadastro: { type: Date, default: Date.now },
-    validade: { type: Date }
+    mensagensEnviadas: { type: Number, default: 0 }, // NOVA: Métrica
+    contatosBloqueados: [String] // NOVA: Stop List
 }));
 
-mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA UNIFICADO CONECTADO"));
+mongoose.connect(MONGO_URI).then(() => console.log("🚀 SISTEMA TOTALMENTE UNIFICADO"));
 
 const qrcodes = {};
 const clientes = {};
@@ -52,12 +49,24 @@ async function engineWA(userId) {
         const u = await User.findById(userId);
         if (!u || !u.botAtivo) return;
 
-        // LÓGICA DE VISÃO TOTAL (CONTEXTO)
-        const chat = await msg.getChat();
-        const historico = await chat.fetchMessages({ limit: 15 });
-        
+        // FUNÇÃO: STOP WORD (Sair da Automação)
+        const textoUser = msg.body.toLowerCase();
+        if (textoUser.includes("sair") || textoUser.includes("parar") || textoUser.includes("humano")) {
+            if (!u.contatosBloqueados.includes(msg.from)) {
+                u.contatosBloqueados.push(msg.from);
+                await u.save();
+                return msg.reply("Entendido. Minha automação foi desligada para você. Um humano falará contigo em breve.");
+            }
+        }
+
+        if (u.contatosBloqueados.includes(msg.from)) return;
+
+        // CONTEXTO & RESPOSTA
         setTimeout(async () => {
             await msg.reply(u.iaResumo);
+            u.mensagensEnviadas += 1; // Incrementa métrica
+            await u.save();
+
             if (!logsChat[userId]) logsChat[userId] = [];
             logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body });
             if (logsChat[userId].length > 15) logsChat[userId].shift();
@@ -68,7 +77,7 @@ async function engineWA(userId) {
     client.initialize().catch(() => {});
 }
 
-// ROTA DE DISPARO EM MASSA
+// ROTA DISPARO EM MASSA (COM LOG DE SUCESSO)
 app.post("/disparar", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
@@ -77,17 +86,19 @@ app.post("/disparar", async (req, res) => {
         if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "WhatsApp Desconectado" });
 
         const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, ''));
-        res.json({ msg: "Disparo iniciado..." });
+        res.json({ msg: `Campanha iniciada para ${lista.length} contatos.` });
 
         for (let num of lista) {
             if (num.length < 10) continue;
             await new Promise(r => setTimeout(r, intervalo * 1000));
-            try { await client.sendMessage(`${num}@c.us`, mensagem); } catch (e) {}
+            try { 
+                await client.sendMessage(`${num}@c.us`, mensagem);
+                await User.findByIdAndUpdate(d.id, { $inc: { mensagensEnviadas: 1 } });
+            } catch (e) { console.log("Erro no número " + num); }
         }
     } catch (e) { res.status(401).send(); }
 });
 
-// ROTAS DE CONFIGURAÇÃO E SYNC
 app.post("/save-config", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
@@ -106,7 +117,12 @@ app.post("/login", async (req, res) => {
 app.get("/sync", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json({ status: qrcodes[d.id] || "OFF", chats: logsChat[d.id] || [] });
+        const u = await User.findById(d.id);
+        res.json({ 
+            status: qrcodes[d.id] || "OFF", 
+            chats: logsChat[d.id] || [], 
+            metricas: { total: u.mensagensEnviadas, blocks: u.contatosBloqueados.length } 
+        });
     } catch (e) { res.status(401).send(); }
 });
 
