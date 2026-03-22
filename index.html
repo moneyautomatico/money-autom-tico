@@ -3,32 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner | Painel</title>
+    <title>Money Partner | Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --p: #00ff88; --b: #0b0f1a; --c: #161b2c; }
-        body { background: var(--b); color: white; font-family: sans-serif; margin: 0; padding-bottom: 70px; }
+        body { background: var(--b); color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
         .card { background: var(--c); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #2d334a; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; background: #0b0f1a; color: white; box-sizing: border-box; }
         button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: black; }
         .tab { display: none; } .tab.active { display: block; }
         nav { position: fixed; bottom: 0; width: 100%; background: var(--c); display: flex; border-top: 1px solid #2d334a; }
         .nav-btn { flex: 1; padding: 15px; text-align: center; font-size: 12px; color: #64748b; cursor: pointer; }
-        .nav-btn.active { color: var(--p); }
+        .nav-btn.active { color: var(--p); border-top: 2px solid var(--p); }
         #waModal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; z-index: 1000; }
         #qrcode { background: white; padding: 15px; border-radius: 10px; margin: 20px auto; width: fit-content; }
         .chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .m-ia { align-self: flex-end; background: var(--p); color: black; padding: 10px; border-radius: 10px; }
-        .m-us { align-self: flex-start; background: #2d334a; padding: 10px; border-radius: 10px; }
+        .m-ia { align-self: flex-end; background: var(--p); color: black; padding: 10px; border-radius: 10px; font-size: 13px; }
+        .m-us { align-self: flex-start; background: #2d334a; padding: 10px; border-radius: 10px; font-size: 13px; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="loginV" style="height: 100vh; display: flex; align-items: center; justify-content: center;">
-        <div class="card" style="width: 320px;">
-            <h2 style="color:var(--p); text-align:center;">Money Partner</h2>
+        <div class="card" style="width: 320px; text-align:center;">
+            <h2 style="color:var(--p)">Money Partner 🚀</h2>
             <input id="lEmail" placeholder="E-mail">
             <input id="lPass" type="password" placeholder="Senha">
-            <button onclick="auth()">Entrar</button>
+            <button onclick="auth()">Acessar Painel</button>
         </div>
     </div>
 
@@ -36,49 +37,66 @@
         <div id="home" class="tab active">
             <div class="card">
                 <h3 id="uNome">Olá!</h3>
-                <p>Status: <span id="st">Verificando...</span></p>
+                <p>Status: <span id="st" class="status-badge" style="background:#444">Verificando...</span></p>
             </div>
+            
             <div class="card">
-                <h3>Treinar IA</h3>
-                <textarea id="iaT"></textarea>
-                <button onclick="saveT()">Salvar Treino</button>
+                <h3>⚙️ Configurações do Robô</h3>
+                <label>Treinamento da IA:</label>
+                <textarea id="iaT" rows="3"></textarea>
+                
+                <div style="display: flex; gap: 10px; margin: 10px 0;">
+                    <div style="flex:1">
+                        <label>Delay (seg):</label>
+                        <input type="number" id="delayI" value="3" min="1">
+                    </div>
+                    <div style="flex:1">
+                        <label>Robô Ativo:</label>
+                        <button id="btnOnOff" onclick="toggleBot()" style="padding:10px; margin-top:8px;">LIGADO</button>
+                    </div>
+                </div>
+                <button onclick="saveAll()" style="background:#25d366">Salvar Alterações</button>
             </div>
         </div>
 
         <div id="admin" class="tab">
-            <div class="card"><h3>Admin</h3><div id="admUsers"></div></div>
+            <div class="card"><h3>👑 Usuários do Sistema</h3><div id="admUsers"></div></div>
         </div>
 
         <div id="waModal">
             <div style="padding:20px; display:flex; justify-content:space-between; background:var(--c)">
-                <span>WhatsApp</span><button onclick="modal()">Fechar</button>
+                <span>Monitor em Tempo Real</span><button onclick="modal()" style="width:auto; padding:5px 15px; background:red; color:white;">Fechar</button>
             </div>
             <div id="qrcode"></div>
             <div id="chatBox" class="chat"></div>
         </div>
 
-        <div onclick="modal()" style="position:fixed; right:20px; bottom:85px; background:#25d366; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+        <div onclick="modal()" style="position:fixed; right:20px; bottom:85px; background:#25d366; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:100; cursor:pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="30">
         </div>
 
         <nav>
             <div class="nav-btn active" onclick="nav('home')">Home</div>
             <div id="btnA" class="nav-btn" style="display:none;" onclick="nav('admin')">Admin</div>
-            <div class="nav-btn" onclick="localStorage.clear(); location.reload();">Sair</div>
+            <div class="nav-btn" onclick="localStorage.clear(); location.reload();" style="color:#ff4444">Sair</div>
         </nav>
     </div>
 
     <script>
-        const qrG = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
-        function nav(id) { 
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if(id === 'admin') loadUsers();
-        }
+        let botAtivo = true;
+        const qrG = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
+
+        function nav(id) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'admin') loadUsers(); }
         function modal() { const m = document.getElementById("waModal"); m.style.display = m.style.display === "flex" ? "none" : "flex"; }
+        function toggleBot() { 
+            botAtivo = !botAtivo; 
+            const b = document.getElementById("btnOnOff");
+            b.innerText = botAtivo ? "LIGADO" : "DESLIGADO";
+            b.style.background = botAtivo ? "var(--p)" : "#ff4444";
+        }
 
         async function auth() {
-            const res = await fetch('/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: lEmail.value, password: lPass.value}) });
+            const res = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:lEmail.value, password:lPass.value}) });
             const d = await res.json();
             if(d.token) { localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload(); }
         }
@@ -86,25 +104,35 @@
         if(localStorage.getItem("tk")) {
             const u = JSON.parse(localStorage.getItem("u"));
             loginV.style.display = "none"; dashV.style.display = "block";
-            uNome.innerText = "Olá, " + u.usuario;
+            uNome.innerText = "Bem-vindo, " + u.usuario;
+            iaT.value = u.iaResumo;
             if(u.role === 'admin') btnA.style.display = "block";
 
             setInterval(async () => {
                 const res = await fetch("/sync", { headers: {"Authorization": localStorage.getItem("tk")} });
                 const d = await res.json();
-                if(d.status === "READY") { st.innerText = "Conectado ✅"; document.getElementById("qrcode").style.display = "none"; }
-                else if(d.status.length > 50) { st.innerText = "Escanear QR Code ⚠️"; document.getElementById("qrcode").style.display = "block"; qrG.makeCode(d.status); }
+                const st = document.getElementById("st");
+                if(d.status === "READY") { st.innerText = "CONECTADO"; st.style.background = "#25d366"; document.getElementById("qrcode").style.display = "none"; }
+                else if(d.status.length > 50) { st.innerText = "AGUARDANDO LEITURA"; st.style.background = "#ff9800"; document.getElementById("qrcode").style.display = "block"; qrG.makeCode(d.status); }
                 chatBox.innerHTML = d.chats.map(c => `<div class="${c.de==='IA'?'m-ia':'m-us'}"><b>${c.de}:</b> ${c.txt}</div>`).join('');
             }, 4000);
+        }
+
+        async function saveAll() {
+            await fetch("/update-settings", { 
+                method:'POST', 
+                headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
+                body: JSON.stringify({txt: iaT.value, botAtivo, delay: delayI.value * 1000}) 
+            });
+            alert("Configurações Salvas!");
         }
 
         async function loadUsers() {
             const res = await fetch("/admin/users");
             const us = await res.json();
-            admUsers.innerHTML = us.map(u => `<div class="card">${u.usuario}<br><button onclick="liberar('${u._id}')">Liberar 30 Dias</button></div>`).join('');
+            admUsers.innerHTML = us.map(u => `<div class="card">${u.usuario} (${u.email})<br>Expira: ${u.validade?new Date(u.validade).toLocaleDateString():'Sem plano'}<br><button onclick="liberar('${u._id}')" style="padding:5px; margin-top:5px;">Liberar 30 Dias</button></div>`).join('');
         }
-        async function liberar(id) { await fetch("/admin/liberar", { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, dias:30}) }); alert("OK"); loadUsers(); }
-        async function saveT() { await fetch("/set-ia", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body: JSON.stringify({txt: iaT.value}) }); alert("Salvo!"); }
+        async function liberar(id) { await fetch("/admin/liberar", { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, dias:30}) }); loadUsers(); }
     </script>
 </body>
 </html>
