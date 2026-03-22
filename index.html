@@ -3,30 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner | Dashboard Pro</title>
+    <title>Money Partner | Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --p: #00ff88; --b: #0b141a; --c: #1d272e; --s: #25d366; }
-        body { background: var(--b); color: #e9edef; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding-bottom: 70px; }
+        body { background: var(--b); color: #e9edef; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 75px; overflow-x: hidden; }
         .card { background: var(--c); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #303d45; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; background: #2a3942; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: #000; transition: 0.3s; }
         
-        /* Banner Conexão */
-        #connStatus { display: none; background: var(--s); color: #000; padding: 12px; margin: 15px; border-radius: 8px; text-align: center; font-weight: bold; }
-        
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px; }
-        .stat-box { background: var(--c); padding: 15px; border-radius: 12px; text-align: center; border-bottom: 3px solid var(--p); }
-        
-        textarea, input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; background: #2a3942; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: #000; transition: 0.2s; }
-        
-        /* Espelhamento Total */
-        #mirrorView { position: fixed; inset: 0; background: #0b141a; display: none; flex-direction: column; z-index: 1000; }
-        .chat-top { padding: 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; }
-        .chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-opacity: 0.06; }
-        .msg { padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+        /* Monitor de Conversas (Espelhamento) */
+        #mirrorView { position: fixed; inset: 0; background: #0b141a; display: none; flex-direction: column; z-index: 9999; }
+        .chat-header { padding: 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #303d45; }
+        .chat-scroll { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; background-color: rgba(11,20,26,0.9); }
+        .msg { padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
         .m-ia { align-self: flex-end; background: #005c4b; color: #e9edef; }
         .m-us { align-self: flex-start; background: #202c33; color: #e9edef; }
         
+        #connStatus { display: none; background: var(--s); color: #000; padding: 12px; margin: 15px; border-radius: 8px; text-align: center; font-weight: bold; }
         nav { position: fixed; bottom: 0; width: 100%; background: #202c33; display: flex; height: 65px; border-top: 1px solid #303d45; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; opacity: 0.5; }
         .nav-item.active { opacity: 1; color: var(--p); }
@@ -35,134 +29,129 @@
 </head>
 <body>
 
-    <div id="loginV" style="height: 90vh; display: flex; align-items: center; justify-content: center;">
-        <div class="card" style="width: 320px; text-align: center;">
-            <h2 style="color: var(--p)">Money Partner</h2>
-            <input id="lEmail" placeholder="E-mail">
-            <input id="lPass" type="password" placeholder="Senha">
-            <button onclick="auth()">Entrar no Sistema</button>
+    <div id="authV" style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div id="loginBox" class="card" style="width: 310px; text-align: center;">
+            <h2 style="color: var(--p); margin-bottom: 20px;">Money Partner</h2>
+            <input id="lEmail" placeholder="Seu E-mail">
+            <input id="lPass" type="password" placeholder="Sua Senha">
+            <button onclick="login()">Entrar no Sistema</button>
+            <p onclick="toggleAuth(true)" style="font-size: 11px; margin-top: 20px; cursor: pointer; opacity: 0.7;">Não tem conta? <b>Cadastre-se</b></p>
+        </div>
+        <div id="regBox" class="card" style="width: 310px; text-align: center; display: none;">
+            <h2 style="color: var(--p); margin-bottom: 20px;">Nova Conta</h2>
+            <input id="rName" placeholder="Seu Nome">
+            <input id="rEmail" placeholder="E-mail">
+            <input id="rPass" type="password" placeholder="Senha">
+            <button onclick="register()">Criar Conta Agora</button>
+            <p onclick="toggleAuth(false)" style="font-size: 11px; margin-top: 20px; cursor: pointer; opacity: 0.7;">Já sou cliente? <b>Login</b></p>
         </div>
     </div>
 
     <div id="dashV" style="display: none;">
-        <div id="connStatus">✅ Conexão estabelecida com sucesso!</div>
-
-        <div class="stat-grid">
-            <div class="stat-box"><small>Total de Envios</small><h2 id="mTotal">0</h2></div>
-            <div class="stat-box"><small>Contatos Bloqueados</small><h2 id="mBlocks">0</h2></div>
-        </div>
+        <div id="connStatus">✅ Conexão Ativa! <button onclick="openMonitor()" style="width:auto; padding:5px 10px; font-size:10px; margin-left:10px;">ABRIR CHAT</button></div>
 
         <div id="tab1" class="tab active">
             <div class="card">
-                <h3>⚙️ Configurações da IA</h3>
-                <label>Como a IA deve falar:</label>
-                <textarea id="iaT" rows="2"></textarea>
-                <label>Fatos do Negócio (Aprendizado):</label>
+                <h3>⚙️ Configuração da IA</h3>
+                <label>Comportamento do Robô:</label>
+                <textarea id="iaT" rows="3"></textarea>
+                <label>Base de Conhecimento:</label>
                 <textarea id="baseT" rows="4"></textarea>
                 <div style="display: flex; gap: 10px;">
                     <div style="flex:1"><label>Delay (s):</label><input type="number" id="delayI" value="3"></div>
                     <div style="flex:1"><label>Robô:</label><button id="btnOnOff" onclick="toggleBot()">LIGADO</button></div>
                 </div>
-                <button onclick="save()" style="margin-top:15px; background: var(--s);">Salvar Configurações</button>
+                <button onclick="save()" style="margin-top:20px; background: var(--s);">Atualizar Robô</button>
+                <button onclick="logoutWA()" style="margin-top:10px; background: #ff4b4b; color: white;">Desconectar WhatsApp</button>
+                <button onclick="logoutApp()" style="margin-top:10px; background: transparent; border: 1px solid white; color: white;">Sair do Painel</button>
             </div>
         </div>
 
         <div id="tab2" class="tab">
             <div class="card">
                 <h3>🚀 Disparador em Massa</h3>
-                <textarea id="numM" rows="5" placeholder="Números (um por linha)"></textarea>
-                <textarea id="msgM" rows="3" placeholder="Mensagem..."></textarea>
-                <label>Intervalo entre envios (s):</label>
-                <input type="number" id="intM" value="30">
-                <button onclick="disparar()" style="background: white; color: black;">Iniciar Campanha</button>
+                <textarea id="numM" rows="6" placeholder="Números (um por linha)"></textarea>
+                <textarea id="msgM" rows="3" placeholder="Mensagem do disparo..."></textarea>
+                <label>Intervalo de Segurança (s):</label>
+                <input type="number" id="intM" value="35">
+                <button onclick="disparar()">Iniciar Campanha</button>
             </div>
         </div>
 
         <div id="mirrorView">
-            <div class="chat-top">
-                <span><b>Live Monitor</b></span>
-                <button onclick="toggleMirror()" style="width: auto; padding: 5px 15px; background: #ff4b4b; color: white;">Fechar</button>
+            <div class="chat-header">
+                <b>Monitor de Conversas</b>
+                <button onclick="closeMonitor()" style="width:auto; background:red; color:white; padding:5px 15px;">Fechar</button>
             </div>
-            <div id="qrcode" style="display:none; text-align: center; background: white; padding: 15px; margin: 10px auto; width: fit-content; border-radius: 8px;"></div>
-            <div id="chatBox" class="chat-body"></div>
+            <div id="qrcode" style="display:none; margin: 30px auto; background:white; padding:15px; border-radius:12px; width:fit-content;"></div>
+            <div id="chatBox" class="chat-scroll"></div>
         </div>
 
         <nav>
-            <div class="nav-item active" onclick="nav('tab1', this)"><span>⚙️</span> IA</div>
-            <div class="nav-item" onclick="nav('tab2', this)"><span>🚀</span> Disparo</div>
-            <div class="nav-item" onclick="toggleMirror()"><span>📱</span> Espelhar</div>
+            <div class="nav-item active" onclick="nav('tab1', this)">⚙️ Robô</div>
+            <div class="nav-item" onclick="nav('tab2', this)">🚀 Disparos</div>
+            <div class="nav-item" onclick="openMonitor()">📱 Monitor</div>
         </nav>
     </div>
 
     <script>
         let botAtivo = true;
-        const qrG = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
+        const qrG = new QRCode(document.getElementById("qrcode"), { width: 220, height: 220 });
 
-        function nav(id, el) {
+        function toggleAuth(reg) { loginBox.style.display = reg ? 'none' : 'block'; regBox.style.display = reg ? 'block' : 'none'; }
+        function openMonitor() { document.getElementById("mirrorView").style.display = 'flex'; }
+        function closeMonitor() { document.getElementById("mirrorView").style.display = 'none'; }
+        function nav(id, el) { 
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             el.classList.add('active');
         }
 
-        function toggleMirror() {
-            const m = document.getElementById("mirrorView");
-            m.style.display = m.style.display === "flex" ? "none" : "flex";
+        async function register() {
+            const res = await fetch("/register", { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({usuario: rName.value, email: rEmail.value, password: rPass.value}) });
+            if(res.ok) { alert("Conta criada! Faça o login."); toggleAuth(false); } else { alert("E-mail já cadastrado."); }
         }
 
-        function toggleBot() {
-            botAtivo = !botAtivo;
-            btnOnOff.innerText = botAtivo ? "LIGADO" : "DESLIGADO";
-            btnOnOff.style.background = botAtivo ? "var(--p)" : "red";
+        async function login() {
+            const res = await fetch("/login", { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: lEmail.value, password: lPass.value}) });
+            if(res.ok) {
+                const d = await res.json();
+                localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload();
+            } else { alert("Login inválido."); }
         }
 
-        async function auth() {
-            const res = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:lEmail.value, password:lPass.value}) });
-            const d = await res.json();
-            if(d.token) { localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload(); }
-        }
+        function logoutApp() { localStorage.clear(); location.reload(); }
+        async function logoutWA() { if(confirm("Desconectar o WhatsApp?")) { await fetch("/logout-wa", { headers: {"Authorization": localStorage.getItem("tk")}, method: 'POST' }); location.reload(); } }
 
         if(localStorage.getItem("tk")) {
+            authV.style.display = "none"; dashV.style.display = "block";
             const u = JSON.parse(localStorage.getItem("u"));
-            loginV.style.display = "none"; dashV.style.display = "block";
             iaT.value = u.iaResumo; baseT.value = u.baseAprendizado;
 
             setInterval(async () => {
                 const res = await fetch("/sync", { headers: {"Authorization": localStorage.getItem("tk")} });
-                const d = await res.json();
-                
-                if(d.status === "READY") {
-                    document.getElementById("connStatus").style.display = "block";
-                    document.getElementById("qrcode").style.display = "none";
-                } else if(d.status.length > 50) {
-                    document.getElementById("connStatus").style.display = "none";
-                    document.getElementById("qrcode").style.display = "block";
-                    qrG.makeCode(d.status);
+                if(res.ok) {
+                    const d = await res.json();
+                    if(d.status === "READY") { connStatus.style.display = 'block'; qrcode.style.display = 'none'; }
+                    else if(d.status.length > 50) { connStatus.style.display = 'none'; qrcode.style.display = 'block'; qrG.makeCode(d.status); }
+                    
+                    chatBox.innerHTML = d.chats.map(c => `
+                        <div class="msg ${c.tipo==='ia'?'m-ia':'m-us'}">
+                            <small style="font-size:9px; opacity:0.6">${c.de} • ${c.hora}</small><br>${c.txt}
+                        </div>
+                    `).join('');
                 }
-
-                mTotal.innerText = d.metricas.total;
-                mBlocks.innerText = d.metricas.blocks;
-                chatBox.innerHTML = d.chats.map(c => `
-                    <div class="msg ${c.de==='IA'?'m-ia':'m-us'}">
-                        <small style="opacity: 0.5; font-size: 9px;">${c.de} • ${c.hora}</small><br>${c.txt}
-                    </div>
-                `).join('');
             }, 4000);
         }
 
         async function save() {
-            await fetch("/save-config", { 
-                method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
-                body: JSON.stringify({ iaResumo: iaT.value, baseAprendizado: baseT.value, botAtivo, delayResponda: delayI.value * 1000 }) 
-            });
-            alert("Configurações salvas!");
+            await fetch("/save-config", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body: JSON.stringify({ iaResumo: iaT.value, baseAprendizado: baseT.value, delayResponda: delayI.value * 1000 }) });
+            alert("Configurações Salvas!");
         }
 
         async function disparar() {
-            const res = await fetch("/disparar", {
-                method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, 
-                body: JSON.stringify({ numeros: numM.value, mensagem: msgM.value, intervalo: intM.value })
-            });
+            const res = await fetch("/disparar", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body: JSON.stringify({ numeros: numM.value, mensagem: msgM.value, intervalo: intM.value }) });
             const d = await res.json(); alert(d.msg || d.error);
         }
     </script>
