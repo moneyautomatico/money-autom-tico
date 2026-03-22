@@ -13,15 +13,14 @@ const JWT_SECRET = "chave_mestra_2026";
 const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
 const ADMIN_EMAIL = "tiagoscosta.business@gmail.com";
 
-// SCHEMA COMPLETO
 const User = mongoose.model("User", new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true },
     usuario: String,
     password: { type: String, required: true },
     role: { type: String, default: "user" },
     ativo: { type: Boolean, default: false },
-    botAtivo: { type: Boolean, default: true },
-    delayResponda: { type: Number, default: 3000 },
+    botAtivo: { type: Boolean, default: true },      // Botão On/Off
+    delayResponda: { type: Number, default: 3000 },  // Tempo de envio
     dataCadastro: { type: Date, default: Date.now },
     validade: { type: Date },
     iaResumo: { type: String, default: "Olá! Sou sua IA de vendas." }
@@ -60,7 +59,7 @@ async function engineWA(userId) {
         const planoValido = u.validade && agora < u.validade;
 
         if (u.role === 'admin' || u.ativo || emTeste || planoValido) {
-            // IMPLEMENTAÇÃO DO DELAY (TEMPO DE ENVIO)
+            // TEMPO DE ENVIO (DELAY) IMPLEMENTADO
             setTimeout(async () => {
                 await msg.reply(u.iaResumo);
                 if (!logsChat[userId]) logsChat[userId] = [];
@@ -75,7 +74,6 @@ async function engineWA(userId) {
     client.initialize().catch(() => {});
 }
 
-// ROTAS
 app.post("/login", async (req, res) => {
     const u = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
     if (!u) return res.status(401).send();
