@@ -1,260 +1,343 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
-const path = require('path');
-const bcrypt = require('bcryptjs');                                      // NOVO: hash de senhas
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js'); // NOVO: MessageMedia para imagens
+require('dotenv').config();
 
-const app = express();
-app.use(express.json({ limit: '20mb' })); // NOVO: limite aumentado para suportar imagens base64
+const express    = require('express');
+const mongoose   = require('mongoose');
+const cors       = require('cors');
+const bcrypt     = require('bcryptjs');
+const jwt        = require('jsonwebtoken');
+const qrcode     = require('qrcode-terminal');
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const puppeteer  = require('puppeteer-core');
+
+// ─────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────
+const app        = express();
+const PORT       = process.env.PORT       || 8080;
+const JWT_SECRET = process.env.JWT_SECRET || 'chave_secreta_troque';
+const MONGO_URI  = process.env.MONGO_URI  || 'mongodb://localhost:27017/money-partner';
+
+// Caminho do Chrome já instalado na imagem ghcr.io/puppeteer/puppeteer
+const CHROME_PATH =
+  process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
+
+// ─────────────────────────────────────────────────
+// MIDDLEWARES
+// ─────────────────────────────────────────────────
 app.use(cors());
-app.use(express.static(__dirname));
+app.use(express.json());
 
-const JWT_SECRET = "chave_mestra_blindada_2026";
-const MONGO_URI = "mongodb+srv://moneyautomatico_db_user:Milionario2026@moneyautomatico.5bbierw.mongodb.net/money?retryWrites=true&w=majority";
+// ─────────────────────────────────────────────────
+// MONGODB — CONEXÃO
+// ─────────────────────────────────────────────────
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log('✅ MongoDB conectado'))
+  .catch(err => console.error('❌ Erro MongoDB:', err));
 
-// Schemas de Dados — INALTERADOS
-const User = mongoose.model("User", new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    iaResumo: { type: String, default: "Olá! Como posso ajudar?" },
-    baseAprendizado: { type: String, default: "" },
-    delayResponda: { type: Number, default: 3000 }
-}));
+// ─────────────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────────────
+const UserSchema = new mongoose.Schema({
+  name:      { type: String, required: true },
+  email:     { type: String, required: true, unique: true },
+  password:  { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+const User = mongoose.model('User', UserSchema);
 
-const LogEnvio = mongoose.model("LogEnvio", new mongoose.Schema({
-    userId: String, numero: String, status: String, data: { type: Date, default: Date.now }
-}));
+const LeadSchema = new mongoose.Schema({
+  name:      String,
+  phone:     { type: String, required: true, unique: true },
+  status:    { type: String, enum: ['novo', 'contatado', 'convertido'], default: 'novo' },
+  createdAt: { type: Date, default: Date.now },
+});
+const Lead = mongoose.model('Lead', LeadSchema);
 
-// Conexão com Banco de Dados — INALTERADA
-mongoose.connect(MONGO_URI).then(() => {
-    console.log("🚀 SISTEMA CONECTADO AO BANCO");
-    User.find().then(users => users.forEach(u => engineWA(u._id.toString())));
-}).catch(err => console.log("❌ Erro Mongo:", err));
+const MensagemSchema = new mongoose.Schema({
+  leadId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
+  texto:     { type: String, required: true },
+  enviada:   { type: Boolean, default: false },
+  enviadaEm: { type: Date },
+  createdAt: { type: Date, default: Date.now },
+});
+const Mensagem = mongoose.model('Mensagem', MensagemSchema);
 
-const qrcodes = {};
-const clientes = {};
-const logsChat = {};
-const progressoDisparo = {};
+// ─────────────────────────────────────────────────
+// WHATSAPP — CLIENTE
+// ─────────────────────────────────────────────────
+let whatsappReady = false;
+let whatsappQR    = null;
 
-// Função Spintax — INALTERADA
-function processarSpintax(texto) {
-    if (!texto) return "";
-    return texto.replace(/{([^{}]+)}/g, (_, escolhas) => {
-        const opcoes = escolhas.split('|');
-        return opcoes[Math.floor(Math.random() * opcoes.length)];
-    });
+const wppClient = new Client({
+  authStrategy: new LocalAuth({ dataPath: '/app/.wpp_session' }),
+  puppeteer: {
+    executablePath: CHROME_PATH,
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+    ],
+  },
+});
+
+wppClient.on('qr', qr => {
+  whatsappQR = qr;
+  qrcode.generate(qr, { small: true });
+  console.log('📱 QR Code gerado — acesse GET /whatsapp/qr para visualizar');
+});
+
+wppClient.on('ready', () => {
+  whatsappReady = true;
+  whatsappQR    = null;
+  console.log('✅ WhatsApp conectado!');
+});
+
+wppClient.on('disconnected', reason => {
+  whatsappReady = false;
+  console.warn('⚠️  WhatsApp desconectado:', reason);
+  wppClient.initialize();
+});
+
+wppClient.initialize();
+
+// ─────────────────────────────────────────────────
+// MIDDLEWARE JWT
+// ─────────────────────────────────────────────────
+function autenticar(req, res, next) {
+  const token = (req.headers['authorization'] || '').split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token não fornecido.' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.userId = decoded.id;
+    next();
+  } catch {
+    return res.status(403).json({ error: 'Token inválido ou expirado.' });
+  }
 }
 
-// Motor WhatsApp — INALTERADO (exceto hora nos logs de chat)
-async function engineWA(userId) {
-    if (clientes[userId]) return;
+// ─────────────────────────────────────────────────
+// ROTAS — AUTH
+// ─────────────────────────────────────────────────
 
-    const client = new Client({
-        authStrategy: new LocalAuth({ clientId: userId, dataPath: './sessions' }),
-        puppeteer: {
-            headless: "new",
-            protocolTimeout: 120000,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--disable-gpu'
-            ]
-        }
+// Health check
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    app: 'Money Partner Pro 2026',
+    whatsapp: whatsappReady ? 'conectado' : 'aguardando',
+  });
+});
+
+// Cadastro
+app.post('/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password)
+      return res.status(400).json({ error: 'Preencha todos os campos.' });
+
+    if (await User.findOne({ email }))
+      return res.status(409).json({ error: 'E-mail já cadastrado.' });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user   = await User.create({ name, email, password: hashed });
+
+    return res.status(201).json({
+      message: 'Usuário criado!',
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
+// Login
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password)
+      return res.status(400).json({ error: 'Informe e-mail e senha.' });
+
+    const user = await User.findOne({ email });
+    if (!user || !(await bcrypt.compare(password, user.password)))
+      return res.status(401).json({ error: 'Credenciais inválidas.' });
+
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
+      expiresIn: '1d',
     });
 
-    client.on('qr', qr => { qrcodes[userId] = qr; });
-    client.on('ready', () => { qrcodes[userId] = "READY"; console.log(`✅ Conectado: ${userId}`); });
-    client.on('disconnected', () => { qrcodes[userId] = "OFF"; delete clientes[userId]; });
-
-    client.on('message', async msg => {
-        if (msg.fromMe || msg.from.endsWith('@g.us')) return;
-        try {
-            const u = await User.findById(userId);
-            if (!u) return;
-
-            const chat = await msg.getChat();
-            const respostaFinal = processarSpintax(`${u.iaResumo}\n\n${u.baseAprendizado}`);
-
-            if (!logsChat[userId]) logsChat[userId] = [];
-            // NOVO: hora no log para exibição na aba de Chats
-            logsChat[userId].push({ de: msg.from.split('@')[0], txt: msg.body, tipo: 'recebida', hora: new Date().toLocaleTimeString('pt-BR') });
-
-            await chat.sendStateTyping();
-            setTimeout(async () => {
-                try {
-                    await msg.reply(respostaFinal);
-                    logsChat[userId].push({ de: "IA", txt: respostaFinal, tipo: 'enviada', hora: new Date().toLocaleTimeString('pt-BR') });
-                    await chat.clearState();
-                } catch (e) {}
-            }, u.delayResponda);
-        } catch (e) { console.log("Erro no chat:", e); }
+    return res.json({
+      message: 'Login realizado!',
+      token,
+      user: { id: user._id, name: user.name, email: user.email },
     });
-
-    clientes[userId] = client;
-    client.initialize().catch(e => console.log("Erro Init:", e));
-}
-
-// --- ROTAS ---
-
-// ALTERADA: senha agora é hasheada com bcrypt
-app.post("/register", async (req, res) => {
-    try {
-        const hash = await bcrypt.hash(req.body.password, 10);
-        const novo = new User({ email: req.body.email, password: hash });
-        await novo.save();
-        res.json({ ok: true });
-    } catch (e) { res.status(400).json({ error: "E-mail já existe" }); }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro interno.' });
+  }
 });
 
-// ALTERADA: login com bcrypt + fallback para contas antigas (texto puro)
-app.post("/login", async (req, res) => {
-    try {
-        const u = await User.findOne({ email: req.body.email.toLowerCase() });
-        if (!u) return res.status(401).json({ error: "Acesso negado" });
-        const senhaCorreta = await bcrypt.compare(req.body.password, u.password).catch(() => false)
-                          || u.password === req.body.password;
-        if (!senhaCorreta) return res.status(401).json({ error: "Acesso negado" });
-        engineWA(u._id.toString());
-        res.json({ token: jwt.sign({ id: u._id }, JWT_SECRET), user: u });
-    } catch (e) { res.status(500).send(); }
+// Perfil
+app.get('/profile', autenticar, async (req, res) => {
+  const user = await User.findById(req.userId).select('-password');
+  if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
+  return res.json(user);
 });
 
-// ALTERADA: suporte a imagem, agendamento, pausar e cancelar
-app.post("/disparar", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const { numeros, mensagem, intervalo, imagemBase64, imagemMime, imagemNome, agendarEm } = req.body;
-        const client = clientes[d.id];
+// ─────────────────────────────────────────────────
+// ROTAS — LEADS
+// ─────────────────────────────────────────────────
 
-        if (!client || qrcodes[d.id] !== "READY") return res.status(400).json({ error: "WhatsApp Offline" });
-
-        const lista = numeros.split('\n').map(n => n.trim().replace(/\D/g, '')).filter(n => n.length > 8);
-        progressoDisparo[d.id] = { total: lista.length, atual: 0, status: 'agendado', pausado: false, cancelado: false };
-
-        res.json({ msg: "Campanha em execução!" });
-
-        (async () => {
-            // NOVO: espera até o horário agendado
-            if (agendarEm) {
-                const alvo = new Date(agendarEm).getTime();
-                const agora = Date.now();
-                if (alvo > agora) {
-                    progressoDisparo[d.id].status = 'agendado';
-                    await new Promise(r => setTimeout(r, alvo - agora));
-                }
-            }
-
-            progressoDisparo[d.id].status = 'rodando';
-
-            for (let i = 0; i < lista.length; i++) {
-                // NOVO: cancelar disparo
-                if (progressoDisparo[d.id].cancelado) {
-                    progressoDisparo[d.id].status = 'cancelado';
-                    break;
-                }
-                // NOVO: pausar disparo (fica esperando retomar)
-                while (progressoDisparo[d.id].pausado) {
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-
-                try {
-                    const msgVariada = processarSpintax(mensagem);
-                    // NOVO: envio com imagem se fornecida
-                    if (imagemBase64) {
-                        const media = new MessageMedia(imagemMime || 'image/jpeg', imagemBase64, imagemNome || 'imagem.jpg');
-                        await client.sendMessage(`${lista[i]}@c.us`, media, { caption: msgVariada });
-                    } else {
-                        await client.sendMessage(`${lista[i]}@c.us`, msgVariada);
-                    }
-                    await new LogEnvio({ userId: d.id, numero: lista[i], status: "✅ Sucesso" }).save();
-                    progressoDisparo[d.id].atual = i + 1;
-                } catch (e) {
-                    await new LogEnvio({ userId: d.id, numero: lista[i], status: "❌ Erro" }).save();
-                }
-                if (i < lista.length - 1) await new Promise(r => setTimeout(r, (intervalo || 30) * 1000));
-            }
-            if (!progressoDisparo[d.id].cancelado) progressoDisparo[d.id].status = 'finalizado';
-        })();
-    } catch (e) { res.status(401).send(); }
+// Listar leads
+app.get('/leads', autenticar, async (req, res) => {
+  const leads = await Lead.find().sort({ createdAt: -1 });
+  return res.json(leads);
 });
 
-// NOVO: pausar/retomar disparo
-app.post("/pausar", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        if (progressoDisparo[d.id]) {
-            progressoDisparo[d.id].pausado = !progressoDisparo[d.id].pausado;
-            res.json({ pausado: progressoDisparo[d.id].pausado });
-        } else res.json({ pausado: false });
-    } catch (e) { res.status(401).send(); }
+// Criar lead
+app.post('/leads', autenticar, async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Telefone obrigatório.' });
+
+    const lead = await Lead.create({ name, phone });
+    return res.status(201).json(lead);
+  } catch (err) {
+    if (err.code === 11000)
+      return res.status(409).json({ error: 'Telefone já cadastrado.' });
+    return res.status(500).json({ error: 'Erro interno.' });
+  }
 });
 
-// NOVO: cancelar disparo definitivamente
-app.post("/cancelar", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        if (progressoDisparo[d.id]) progressoDisparo[d.id].cancelado = true;
-        res.json({ ok: true });
-    } catch (e) { res.status(401).send(); }
+// Atualizar status do lead
+app.patch('/leads/:id/status', autenticar, async (req, res) => {
+  const { status } = req.body;
+  const lead = await Lead.findByIdAndUpdate(
+    req.params.id,
+    { status },
+    { new: true }
+  );
+  if (!lead) return res.status(404).json({ error: 'Lead não encontrado.' });
+  return res.json(lead);
 });
 
-// NOVO: estatísticas do usuário
-app.get("/stats", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const total = await LogEnvio.countDocuments({ userId: d.id });
-        const sucesso = await LogEnvio.countDocuments({ userId: d.id, status: "✅ Sucesso" });
-        const erro = await LogEnvio.countDocuments({ userId: d.id, status: "❌ Erro" });
-        res.json({ total, sucesso, erro, taxa: total > 0 ? Math.round((sucesso / total) * 100) : 0 });
-    } catch (e) { res.status(401).send(); }
+// ─────────────────────────────────────────────────
+// ROTAS — WHATSAPP
+// ─────────────────────────────────────────────────
+
+// Status do WhatsApp
+app.get('/whatsapp/status', autenticar, (req, res) => {
+  res.json({ conectado: whatsappReady });
 });
 
-// NOVO: chats completos para a aba de conversas
-app.get("/chats", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json(logsChat[d.id] || []);
-    } catch (e) { res.status(401).send(); }
+// QR Code (texto) para escanear
+app.get('/whatsapp/qr', (req, res) => {
+  if (whatsappReady) return res.json({ message: 'WhatsApp já está conectado.' });
+  if (!whatsappQR)   return res.json({ message: 'Aguardando geração do QR...' });
+  return res.json({ qr: whatsappQR });
 });
 
-// INALTERADAS
-app.get("/sync", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json({ status: qrcodes[d.id] || "OFF", chats: (logsChat[d.id] || []).slice(-10) });
-    } catch (e) { res.status(401).send(); }
+// Enviar mensagem avulsa
+app.post('/whatsapp/enviar', autenticar, async (req, res) => {
+  const { phone, message } = req.body;
+
+  if (!phone || !message)
+    return res.status(400).json({ error: 'Informe phone e message.' });
+
+  if (!whatsappReady)
+    return res.status(503).json({ error: 'WhatsApp não está conectado.' });
+
+  try {
+    // Formato: 5511999999999@c.us
+    const chatId = phone.replace(/\D/g, '') + '@c.us';
+    await wppClient.sendMessage(chatId, message);
+
+    // Salva no banco
+    const lead = await Lead.findOne({ phone });
+    if (lead) {
+      await Mensagem.create({ leadId: lead._id, texto: message, enviada: true, enviadaEm: new Date() });
+      await Lead.findByIdAndUpdate(lead._id, { status: 'contatado' });
+    }
+
+    return res.json({ success: true, message: 'Mensagem enviada!' });
+  } catch (err) {
+    console.error('Erro ao enviar mensagem:', err);
+    return res.status(500).json({ error: 'Falha ao enviar mensagem.' });
+  }
 });
 
-app.get("/progresso", async (req, res) => {
+// Disparo em massa para todos os leads "novo"
+app.post('/whatsapp/disparar', autenticar, async (req, res) => {
+  const { mensagem } = req.body;
+
+  if (!mensagem)
+    return res.status(400).json({ error: 'Informe o campo mensagem.' });
+
+  if (!whatsappReady)
+    return res.status(503).json({ error: 'WhatsApp não está conectado.' });
+
+  const leads = await Lead.find({ status: 'novo' });
+  if (!leads.length)
+    return res.json({ message: 'Nenhum lead novo para disparar.' });
+
+  let enviados = 0;
+  let erros    = 0;
+
+  for (const lead of leads) {
     try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json(progressoDisparo[d.id] || { status: 'parado' });
-    } catch (e) { res.status(401).send(); }
+      const chatId = lead.phone.replace(/\D/g, '') + '@c.us';
+      await wppClient.sendMessage(chatId, mensagem);
+      await Mensagem.create({ leadId: lead._id, texto: mensagem, enviada: true, enviadaEm: new Date() });
+      await Lead.findByIdAndUpdate(lead._id, { status: 'contatado' });
+      enviados++;
+      // Delay entre mensagens para evitar bloqueio
+      await new Promise(r => setTimeout(r, 2000));
+    } catch {
+      erros++;
+    }
+  }
+
+  return res.json({ enviados, erros, total: leads.length });
 });
 
-app.get("/logs-envio", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        const logs = await LogEnvio.find({ userId: d.id }).sort({ data: -1 }).limit(20);
-        res.json(logs);
-    } catch (e) { res.status(401).send(); }
+// Histórico de mensagens de um lead
+app.get('/leads/:id/mensagens', autenticar, async (req, res) => {
+  const msgs = await Mensagem.find({ leadId: req.params.id }).sort({ createdAt: 1 });
+  return res.json(msgs);
 });
 
-app.post("/save-config", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        await User.findByIdAndUpdate(d.id, req.body);
-        res.json({ ok: true });
-    } catch (e) { res.status(401).send(); }
+// ─────────────────────────────────────────────────
+// ROTA — PUPPETEER (screenshot)
+// ─────────────────────────────────────────────────
+app.post('/screenshot', autenticar, async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: 'Informe a URL.' });
+
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      executablePath: CHROME_PATH,
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    });
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    const screenshot = await page.screenshot({ encoding: 'base64', fullPage: true });
+    return res.json({ screenshot: `data:image/png;base64,${screenshot}` });
+  } catch (err) {
+    console.error('Puppeteer erro:', err);
+    return res.status(500).json({ error: 'Falha ao capturar screenshot.' });
+  } finally {
+    if (browser) await browser.close();
+  }
 });
 
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, "0.0.0.0", () => console.log(`🚀 SERVIDOR BLINDADO NA PORTA ${PORT}`));
+// ─────────────────────────────────────────────────
+// START
+// ─────────────────────────────────────────────────
+app.listen(PORT, () => {
+  console.log(`🚀 Money Partner Pro 2026 rodando na porta ${PORT}`);
+});
