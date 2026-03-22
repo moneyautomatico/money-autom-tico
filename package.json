@@ -1,6 +1,7 @@
 {
   "name": "money-partner-2026",
   "version": "1.1.0",
+  "description": "Sistema de Automação WhatsApp IA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
