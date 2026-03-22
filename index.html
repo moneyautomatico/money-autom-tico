@@ -1,79 +1,210 @@
-<div class="card" style="border-top: 4px solid #6366f1;">
-    <h3>🎫 Central de Suporte</h3>
-    
-    <div id="formTicket">
-        <input id="tkAssunto" type="text" placeholder="Assunto (ex: Ativação Pix)">
-        <textarea id="tkMensagem" placeholder="Descreva seu problema ou envie o comprovante..."></textarea>
-        <button onclick="enviarTicket()" style="background:#6366f1">Abrir Chamado</button>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Partner | Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --primary: #00ff88; --bg: #0b0f1a; --card: #161b2c; --text: #f0f2f5; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        .login-container { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); width: 100%; max-width: 400px; border: 1px solid #2d334a; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #2d334a; background: #0b0f1a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: var(--primary); color: #000; font-weight: bold; cursor: pointer; }
+        
+        /* Dashboard Layout */
+        .nav-tabs { display: flex; background: var(--card); position: fixed; bottom: 0; width: 100%; justify-content: space-around; padding: 12px 0; border-top: 1px solid #2d334a; z-index: 100; }
+        .tab-btn { background: none; border: none; color: #64748b; font-size: 12px; font-weight: bold; width: auto; }
+        .tab-btn.active { color: var(--primary); }
+        .content { padding: 20px; padding-bottom: 100px; display: none; max-width: 500px; margin: auto; }
+        .content.active { display: block; }
+        
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .ticket-item { background: #0b0f1a; border-radius: 10px; padding: 15px; margin-bottom: 12px; border: 1px solid #2d334a; }
+    </style>
+</head>
+<body>
+
+    <div id="loginPage" class="login-container">
+        <div class="card">
+            <h2 style="text-align: center; color: var(--primary);">Money Partner</h2>
+            <div id="regFields" style="display: none;">
+                <input id="regNome" type="text" placeholder="Nome Completo">
+                <input id="regTel" type="text" placeholder="Telefone">
+            </div>
+            <input id="email" type="email" placeholder="E-mail">
+            <input id="pass" type="password" placeholder="Senha">
+            <button id="btnMain" onclick="auth()">Entrar</button>
+            <p id="toggleTxt" onclick="toggleReg()" style="font-size: 12px; text-align: center; cursor: pointer; color: #64748b; margin-top: 15px;">Criar nova conta (Teste 2h)</p>
+        </div>
     </div>
 
-    <hr style="margin:20px 0; border:0; border-top:1px solid #334155;">
+    <div id="dashPage" style="display: none;">
+        <div id="tab1" class="content active">
+            <div class="card">
+                <h3 id="userName">Olá!</h3>
+                <p id="planInfo" style="color: #64748b; font-size: 13px;"></p>
+                <hr style="border: 0; border-top: 1px solid #2d334a; margin: 20px 0;">
+                <p>Status WhatsApp:</p>
+                <div id="statusWA" style="font-weight: bold; margin-bottom: 15px;">Iniciando...</div>
+                <div id="qrcode" style="background: #fff; padding: 10px; border-radius: 8px; display: none; width: fit-content; margin: auto;"></div>
+            </div>
+        </div>
 
-    <div id="listaTickets" style="text-align:left; font-size:12px;">
-        <p>Meus Chamados:</p>
-        <div id="meusTickets"></div>
+        <div id="tab2" class="content">
+            <h3>🎫 Suporte</h3>
+            <div class="card">
+                <input id="tkAssunto" type="text" placeholder="Assunto">
+                <textarea id="tkMsg" placeholder="Descreva sua dúvida ou envie o comprovante Pix..."></textarea>
+                <button onclick="novoTicket()" style="background: #3b82f6; color: white;">Enviar Ticket</button>
+            </div>
+            <h4>Meus Chamados</h4>
+            <div id="listaTickets"></div>
+        </div>
+
+        <div id="tab3" class="content">
+            <h3 style="color: var(--primary);">👑 Admin Master</h3>
+            <div id="adminArea">
+                <h4>Usuários</h4>
+                <div id="adminUsers"></div>
+                <h4>Tickets Pendentes</h4>
+                <div id="adminTickets"></div>
+            </div>
+        </div>
+
+        <nav class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab(1)">🏠 Início</button>
+            <button class="tab-btn" onclick="switchTab(2)">🎫 Suporte</button>
+            <button id="navAdmin" class="tab-btn" onclick="switchTab(3)" style="display: none;">👑 Admin</button>
+            <button class="tab-btn" onclick="logout()" style="color: #ef4444;">🚪 Sair</button>
+        </nav>
     </div>
-</div>
 
-<div id="adminTickets" class="card" style="border:2px solid #ef4444; display:none">
-    <h3 style="color:#ef4444">📥 Chamados Pendentes</h3>
-    <div id="adminListaTickets" style="text-align:left;"></div>
-</div>
+    <script>
+        let isReg = false;
 
-<script>
-async function enviarTicket() {
-    const assunto = document.getElementById("tkAssunto").value;
-    const mensagem = document.getElementById("tkMensagem").value;
-    const res = await fetch("/tickets/novo", {
-        method: 'POST',
-        headers: {'Content-Type':'application/json', 'Authorization': localStorage.getItem("token")},
-        body: JSON.stringify({ assunto, mensagem })
-    });
-    if(res.ok) { alert("Ticket enviado!"); carregarTickets(); }
-}
+        function toggleReg() {
+            isReg = !isReg;
+            document.getElementById("regFields").style.display = isReg ? "block" : "none";
+            document.getElementById("btnMain").innerText = isReg ? "Criar Conta" : "Entrar";
+            document.getElementById("toggleTxt").innerText = isReg ? "Já tenho conta" : "Criar nova conta (Teste 2h)";
+        }
 
-async function carregarTickets() {
-    const res = await fetch("/tickets/meus", { headers: {"Authorization": localStorage.getItem("token")} });
-    const data = await res.json();
-    document.getElementById("meusTickets").innerHTML = data.map(t => `
-        <div style="background:#0f172a; padding:10px; border-radius:8px; margin-bottom:8px; border-left: 3px solid ${t.status=='Aberto'?'#fbbf24':'#22c55e'}">
-            <b>${t.assunto}</b> <span class="badge" style="float:right">${t.status}</span><br>
-            <small>${t.mensagem}</small>
-            ${t.resposta ? `<div style="margin-top:5px; color:#22c55e;"><b>Resp:</b> ${t.resposta}</div>` : ""}
-        </div>
-    `).join('');
-}
+        async function auth() {
+            const body = { email: document.getElementById("email").value, password: document.getElementById("pass").value };
+            if(isReg) {
+                body.usuario = document.getElementById("regNome").value;
+                body.telefone = document.getElementById("regTel").value;
+            }
+            const res = await fetch(isReg ? '/register' : '/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if(data.token) {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("user", JSON.stringify(data.user));
+                location.reload();
+            } else { alert(data.error || "Erro de acesso"); }
+        }
 
-// Funções exclusivas do ADMIN
-async function carregarTicketsAdmin() {
-    const res = await fetch("/admin/tickets", { headers: {"Authorization": localStorage.getItem("token")} });
-    const data = await res.json();
-    document.getElementById("adminListaTickets").innerHTML = data.map(t => `
-        <div style="background:#1e293b; padding:10px; border-radius:8px; margin-bottom:10px;">
-            <p>De: <b>${t.userName}</b> | Assunto: ${t.assunto}</p>
-            <p style="font-size:12px;">"${t.mensagem}"</p>
-            <input id="resp_${t._id}" type="text" placeholder="Escreva a resposta..." style="padding:5px;">
-            <button onclick="responderTicket('${t._id}')" style="padding:5px; font-size:10px; width:auto;">Enviar Resposta</button>
-        </div>
-    `).join('');
-}
+        function switchTab(n) {
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab${n}`).classList.add('active');
+            event.currentTarget.classList.add('active');
+            if(n === 2) carregarTickets();
+            if(n === 3) carregarAdmin();
+        }
 
-async function responderTicket(id) {
-    const resposta = document.getElementById(`resp_${id}`).value;
-    await fetch("/admin/tickets/responder", {
-        method: 'POST',
-        headers: {'Content-Type':'application/json', 'Authorization': localStorage.getItem("token")},
-        body: JSON.stringify({ id, resposta })
-    });
-    alert("Respondido!"); carregarTicketsAdmin();
-}
+        async function novoTicket() {
+            const assunto = document.getElementById("tkAssunto").value;
+            const mensagem = document.getElementById("tkMsg").value;
+            await fetch("/tickets/novo", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem("token")},
+                body: JSON.stringify({ assunto, mensagem })
+            });
+            alert("Enviado!"); carregarTickets();
+        }
 
-// Chame estas funções no seu Update() inicial
-if(localStorage.getItem("token")) {
-    carregarTickets();
-    if(localStorage.getItem("role") === "admin") {
-        document.getElementById("adminTickets").style.display = "block";
-        carregarTicketsAdmin();
-    }
-}
-</script>
+        async function carregarTickets() {
+            const res = await fetch("/tickets/meus", { headers: {"Authorization": localStorage.getItem("token")} });
+            const data = await res.json();
+            document.getElementById("listaTickets").innerHTML = data.map(t => `
+                <div class="ticket-item">
+                    <small style="color:#64748b">${new Date(t.data).toLocaleDateString()}</small><br>
+                    <b>${t.assunto}</b> <span class="status-badge" style="background:#2d334a">${t.status}</span>
+                    <p style="font-size:13px;">${t.mensagem}</p>
+                    ${t.resposta ? `<div style="color:var(--primary); padding-top:10px; border-top:1px solid #2d334a;"><b>Resp:</b> ${t.resposta}</div>` : ""}
+                </div>
+            `).join('');
+        }
+
+        async function carregarAdmin() {
+            const res = await fetch("/admin/dados", { headers: {"Authorization": localStorage.getItem("token")} });
+            const data = await res.json();
+            document.getElementById("adminUsers").innerHTML = data.users.map(u => `
+                <div class="ticket-item">
+                    ${u.usuario} (${u.email})<br>
+                    Status: ${u.ativo ? '⭐ Partner' : '⏳ Teste'}
+                    <div style="display:flex; gap:5px; margin-top:5px;">
+                        <input type="number" id="dias_${u._id}" value="30" style="width:60px; margin:0; padding:5px;">
+                        <button onclick="ativarUser('${u._id}')" style="padding:5px; font-size:11px;">Ativar</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById("adminTickets").innerHTML = data.tickets.map(t => `
+                <div class="ticket-item">
+                    <b>De: ${t.userName}</b><br>Msg: ${t.mensagem}
+                    <input id="resp_${t._id}" type="text" placeholder="Resposta...">
+                    <button onclick="responderTicket('${t._id}')" style="padding:5px; font-size:11px;">Responder</button>
+                </div>
+            `).join('');
+        }
+
+        async function ativarUser(id) {
+            const dias = document.getElementById(`dias_${id}`).value;
+            await fetch("/admin/liberar-flex", {
+                method: 'POST',
+                headers: {'Content-Type':'application/json', 'Authorization':localStorage.getItem("token")},
+                body: JSON.stringify({id, dias})
+            });
+            alert("Ativado!"); carregarAdmin();
+        }
+
+        async function responderTicket(id) {
+            const resposta = document.getElementById(`resp_${id}`).value;
+            await fetch("/admin/tickets/responder", {
+                method: 'POST',
+                headers: {'Content-Type':'application/json', 'Authorization':localStorage.getItem("token")},
+                body: JSON.stringify({id, resposta})
+            });
+            alert("Respondido!"); carregarAdmin();
+        }
+
+        if(localStorage.getItem("token")) {
+            const user = JSON.parse(localStorage.getItem("user"));
+            document.getElementById("loginPage").style.display = "none";
+            document.getElementById("dashPage").style.display = "block";
+            document.getElementById("userName").innerText = `Olá, ${user.usuario}!`;
+            document.getElementById("planInfo").innerText = user.role === 'admin' ? 'Acesso Master' : (user.ativo ? 'Plano Partner Ativo' : 'Modo Teste (2h)');
+            if(user.role === 'admin') document.getElementById("navAdmin").style.display = "block";
+            
+            setInterval(async () => {
+                const r = await fetch("/status-whatsapp", { headers: {"Authorization": localStorage.getItem("token")} });
+                const d = await r.json();
+                const s = document.getElementById("statusWA");
+                const q = document.getElementById("qrcode");
+                if(d.status === "CONECTADO") { s.innerHTML = "✅ Conectado"; q.style.display = "none"; }
+                else if(d.status.length > 50) { s.innerHTML = "Escaneie o QR Code:"; q.style.display = "block"; q.innerHTML = ""; new QRCode(q, {text: d.status, width:180, height:180}); }
+                else { s.innerHTML = "Aguardando servidor..."; }
+            }, 10000);
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+    </script>
+</body>
+</html>
