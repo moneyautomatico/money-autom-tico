@@ -46,14 +46,13 @@ const TicketSchema = new mongoose.Schema({
 const Ticket = mongoose.model("Ticket", TicketSchema);
 
 mongoose.connect(MONGO_URI).then(async () => {
-    console.log("✅ Sistema Online");
+    console.log("🚀 Money Partner: Sistema Online e Limpo");
     await User.findOneAndUpdate({ email: ADMIN_EMAIL.toLowerCase() }, { role: "admin", ativo: true });
 });
 
 const qrcodes = {};
 const clientes = {};
 
-// FUNÇÕES AUXILIARES
 function checarAcesso(user) {
     if (user.role === 'admin') return { pode: true };
     const agora = new Date();
@@ -70,10 +69,10 @@ async function enviarEmailAtivacao(user, dias) {
     const mailOptions = {
         from: `"Money Partner 🚀" <${ADMIN_EMAIL}>`,
         to: user.email,
-        subject: '✅ Sua conta foi ativada!',
-        html: `<div style="font-family:sans-serif;"><h2>Olá, ${user.usuario}!</h2><p>Sua licença de <b>${dias} dias</b> está ativa até <b>${dataFim}</b>.</p></div>`
+        subject: '✅ Sua conta foi ATIVADA!',
+        html: `<div style="font-family:sans-serif; padding:20px;"><h2>Olá, ${user.usuario}!</h2><p>Seu acesso de <b>${dias} dias</b> foi liberado até <b>${dataFim}</b>.</p></div>`
     };
-    try { await transporter.sendMail(mailOptions); } catch (e) { console.log(e); }
+    try { await transporter.sendMail(mailOptions); } catch (e) { console.log("Erro e-mail:", e); }
 }
 
 async function initWA(userId) {
@@ -93,28 +92,32 @@ async function initWA(userId) {
     client.initialize().catch(() => {});
 }
 
-// ROTAS
+// ROTAS REGISTRO E LOGIN
 app.post("/register", async (req, res) => {
     try {
         const { email, usuario, telefone, password } = req.body;
         await User.create({ email: email.toLowerCase(), usuario, telefone, password });
         res.json({ ok: true });
-    } catch (e) { res.status(400).json({ error: "E-mail já cadastrado" }); }
+    } catch (e) { res.status(400).json({ error: "E-mail já existe." }); }
 });
 
 app.post("/login", async (req, res) => {
     const user = await User.findOne({ email: req.body.email.toLowerCase(), password: req.body.password });
-    if (!user) return res.status(400).json({ error: "Credenciais inválidas" });
+    if (!user) return res.status(400).json({ error: "Dados incorretos." });
     const acc = checarAcesso(user);
     if (!acc.pode) return res.status(403).json({ error: acc.motivo });
     initWA(user._id.toString());
     res.json({ token: jwt.sign({ id: user._id, role: user.role }, JWT_SECRET), user });
 });
 
-app.get("/status-whatsapp", async (req, res) => {
+// ROTAS ADMIN E TICKETS
+app.get("/admin/dados", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        res.json({ status: qrcodes[d.id] || "OFFLINE" });
+        if (d.role !== 'admin') return res.status(403).send();
+        const users = await User.find({}, 'usuario email ativo validade');
+        const tickets = await Ticket.find({ status: { $ne: "Fechado" } }).sort({ data: -1 });
+        res.json({ users, tickets });
     } catch (e) { res.status(401).send(); }
 });
 
@@ -129,7 +132,6 @@ app.post("/admin/liberar-flex", async (req, res) => {
     } catch (e) { res.status(401).send(); }
 });
 
-// ROTAS DE TICKETS
 app.post("/tickets/novo", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
@@ -147,22 +149,19 @@ app.get("/tickets/meus", async (req, res) => {
     } catch (e) { res.status(401).send(); }
 });
 
-app.get("/admin/dados", async (req, res) => {
-    try {
-        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
-        if (d.role !== 'admin') return res.status(403).send();
-        const users = await User.find({}, 'usuario email ativo validade');
-        const tickets = await Ticket.find({ status: { $ne: "Fechado" } });
-        res.json({ users, tickets });
-    } catch (e) { res.status(401).send(); }
-});
-
 app.post("/admin/tickets/responder", async (req, res) => {
     try {
         const d = jwt.verify(req.headers.authorization, JWT_SECRET);
         if (d.role !== 'admin') return res.status(403).send();
         await Ticket.findByIdAndUpdate(req.body.id, { resposta: req.body.resposta, status: "Respondido" });
         res.json({ ok: true });
+    } catch (e) { res.status(401).send(); }
+});
+
+app.get("/status-whatsapp", async (req, res) => {
+    try {
+        const d = jwt.verify(req.headers.authorization, JWT_SECRET);
+        res.json({ status: qrcodes[d.id] || "OFFLINE" });
     } catch (e) { res.status(401).send(); }
 });
 
