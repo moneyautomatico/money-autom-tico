@@ -1,7 +1,7 @@
 {
   "name": "money-automatico",
   "version": "1.0.0",
-  "description": "Sistema de Automação WhatsApp",
+  "description": "SaaS WhatsApp Automático",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
