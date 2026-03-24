@@ -91,7 +91,6 @@ const wppClient = new Client({
       '--disable-background-networking',
       '--disable-default-apps',
       '--no-first-run',
-      '--no-zygote',       // ✅ evita travamento de processos filhos
     ],
   },
 });
