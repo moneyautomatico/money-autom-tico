@@ -6,9 +6,7 @@ const cors       = require('cors');
 const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
 const qrcode     = require('qrcode-terminal');
-// ─── PATCH 2: require no topo, fora de qualquer loop ───────────────────────
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-// ───────────────────────────────────────────────────────────────────────────
 const puppeteer  = require('puppeteer-core');
 
 // ─────────────────────────────────────────────────
@@ -19,12 +17,10 @@ const PORT       = process.env.PORT       || 8080;
 const JWT_SECRET = process.env.JWT_SECRET || 'chave_secreta_troque';
 const MONGO_URI  = process.env.MONGO_URI  || 'mongodb://localhost:27017/money-partner';
 
-// ─── PATCH 4: Chrome path corrigido para imagem ghcr.io/puppeteer/puppeteer ─
 const CHROME_PATH =
   process.env.PUPPETEER_EXECUTABLE_PATH ||
-  '/usr/bin/google-chrome'              ||   // caminho real na imagem puppeteer
-  '/usr/bin/google-chrome-stable';           // fallback para outros ambientes
-// ────────────────────────────────────────────────────────────────────────────
+  '/usr/bin/google-chrome'              ||
+  '/usr/bin/google-chrome-stable';
 
 // ─────────────────────────────────────────────────
 // MIDDLEWARES
@@ -73,22 +69,30 @@ const Mensagem = mongoose.model('Mensagem', MensagemSchema);
 
 // ─────────────────────────────────────────────────
 // WHATSAPP — CLIENTE
+// ✅ CORREÇÃO: protocolTimeout, --single-process, --no-zygote
 // ─────────────────────────────────────────────────
 let whatsappReady = false;
 let whatsappQR    = null;
 
 const wppClient = new Client({
   authStrategy: new LocalAuth({
-    dataPath: '/tmp/.wpp_session',   // PATCH 5: /tmp sempre tem permissão de escrita no container
+    dataPath: '/tmp/.wpp_session',
   }),
   puppeteer: {
     executablePath: CHROME_PATH,
     headless: true,
+    protocolTimeout: 120000, // ✅ 120s — evita timeout em containers lentos
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-default-apps',
+      '--no-first-run',
+      '--single-process',  // ✅ essencial para containers com pouca RAM
+      '--no-zygote',       // ✅ evita travamento de processos filhos
     ],
   },
 });
@@ -348,7 +352,7 @@ app.post('/screenshot', autenticar, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────
-// ROTAS — FRONTEND (index.html)
+// ROTAS — FRONTEND
 // ─────────────────────────────────────────────────
 app.get('/sync', autenticar, (req, res) => {
   if (whatsappReady)  return res.json({ status: 'READY' });
@@ -362,14 +366,16 @@ app.post('/save-config', autenticar, async (req, res) => {
   return res.json({ ok: true });
 });
 
-// ─── PATCH 1 + 3: /disparar com guarda de status e sanitização de número ────
+// ─────────────────────────────────────────────────
+// ROTA — /disparar com retry automático
+// ✅ CORREÇÃO: 3 tentativas por número, backoff de 5s/10s
+// ─────────────────────────────────────────────────
 app.post('/disparar', autenticar, async (req, res) => {
   const { numeros, mensagem, intervalo, agendarEm, imagemBase64, imagemMime, imagemNome } = req.body;
 
   if (!numeros || !mensagem)
     return res.status(400).json({ error: 'Informe números e mensagem.' });
 
-  // PATCH 1: Informa estado real ao frontend em vez de bloquear com 503
   if (!whatsappReady)
     return res.status(503).json({ error: 'WhatsApp ainda não está conectado. Aguarde o QR ser escaneado e tente novamente.' });
 
@@ -392,7 +398,6 @@ app.post('/disparar', autenticar, async (req, res) => {
   executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemMime, imagemNome);
   return res.json({ msg: 'Disparo iniciado!' });
 });
-// ─────────────────────────────────────────────────────────────────────────────
 
 async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemMime, imagemNome) {
   disparo.status = 'rodando';
@@ -406,35 +411,51 @@ async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemM
       if (disparo.status === 'cancelado') break;
     }
 
-    const numero = lista[i];
-
-    // PATCH 3: Sanitização robusta — remove @c.us duplicado se já vier no número
+    const numero      = lista[i];
     const numeroLimpo = numero.replace('@c.us', '').replace(/\D/g, '');
-    const chatId = numeroLimpo + '@c.us';
+    const chatId      = numeroLimpo + '@c.us';
 
     const texto = mensagem.replace(/\{([^}]+)\}/g, (_, ops) => {
       const opcoes = ops.split('|');
       return opcoes[Math.floor(Math.random() * opcoes.length)];
     });
 
+    // ✅ CORREÇÃO: retry automático com 3 tentativas e backoff
     try {
-      if (imagemBase64) {
-        // PATCH 2: MessageMedia já importado no topo — sem require() dentro do loop
-        const media = new MessageMedia(imagemMime, imagemBase64, imagemNome);
-        await wppClient.sendMessage(chatId, media, { caption: texto });
-      } else {
-        await wppClient.sendMessage(chatId, texto);
+      let tentativas = 0;
+      let enviado    = false;
+
+      while (tentativas < 3 && !enviado) {
+        try {
+          if (imagemBase64) {
+            const media = new MessageMedia(imagemMime, imagemBase64, imagemNome);
+            await wppClient.sendMessage(chatId, media, { caption: texto });
+          } else {
+            await wppClient.sendMessage(chatId, texto);
+          }
+          enviado = true;
+        } catch (errTentativa) {
+          tentativas++;
+          if (tentativas >= 3) throw errTentativa;
+          console.warn(`⚠️ Tentativa ${tentativas} falhou para ${numero}. Aguardando ${5 * tentativas}s...`);
+          await new Promise(r => setTimeout(r, 5000 * tentativas)); // 5s, 10s
+        }
       }
 
       disparo.logs.push({ numero, status: '✅ Enviado' });
       disparo.stats.sucesso++;
-      chatsMemoria.push({ tipo: 'enviada', de: numero, txt: texto, hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) });
+      chatsMemoria.push({
+        tipo: 'enviada',
+        de:   numero,
+        txt:  texto,
+        hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      });
     } catch (err) {
       disparo.logs.push({ numero, status: `❌ Erro: ${err.message || 'falha'}` });
       disparo.stats.erro++;
     }
 
-    disparo.atual = i + 1;
+    disparo.atual       = i + 1;
     disparo.stats.total = disparo.atual;
     disparo.stats.taxa  = Math.round((disparo.stats.sucesso / disparo.atual) * 100);
 
