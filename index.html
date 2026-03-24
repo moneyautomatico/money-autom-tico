@@ -2,120 +2,633 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Money Partner | Dashboard Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --p: #00ff88; --b: #0b141a; --c: #1d272e; --t: #e9edef; }
-        body { background: var(--b); color: var(--t); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
-        .card { background: var(--c); border-radius: 12px; padding: 20px; margin: 15px; border: 1px solid #303d45; }
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #2a3942; color: white; box-sizing: border-box; outline: none; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--p); font-weight: bold; cursor: pointer; color: #0b141a; transition: 0.3s; }
-        button:active { transform: scale(0.98); }
-        .tab { display: none; } .tab.active { display: block; }
-        nav { position: fixed; bottom: 0; width: 100%; background: #202c33; display: flex; height: 70px; border-top: 1px solid #303d45; }
-        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; opacity: 0.5; color: white; text-decoration: none; flex-direction: column; gap: 2px; }
-        .nav-item.active { opacity: 1; color: var(--p); border-top: 3px solid var(--p); }
-        .prog-bg { background: #444; border-radius: 10px; height: 12px; margin: 15px 0; display: none; overflow: hidden; }
-        .prog-fill { background: var(--p); height: 100%; width: 0%; transition: 0.5s ease; }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+        :root {
+            --p: #00ff88;
+            --p2: #00cc6a;
+            --b: #080f12;
+            --c: #111a1f;
+            --c2: #182028;
+            --t: #e9edef;
+            --t2: #8a9ba8;
+            --danger: #ff4d4d;
+            --warn: #ffaa00;
+            --border: rgba(255,255,255,0.07);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--b);
+            color: var(--t);
+            font-family: 'Syne', sans-serif;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(0,255,136,0.04) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card {
+            background: var(--c);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,255,136,0.3), transparent);
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            color: var(--t);
+            text-transform: uppercase;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: var(--c2);
+            color: var(--t);
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: rgba(0,255,136,0.4);
+        }
+
+        textarea { resize: vertical; }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
+            background: var(--p);
+            font-weight: 800;
+            font-family: 'Syne', sans-serif;
+            cursor: pointer;
+            color: #080f12;
+            font-size: 13px;
+            letter-spacing: 0.08em;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        button:active::after { opacity: 0.1; }
+        button:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,255,136,0.25); }
+
+        .tab { display: none; }
+        .tab.active { display: block; }
+
+        nav {
+            position: fixed;
+            bottom: 0; width: 100%;
+            background: rgba(8,15,18,0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            height: 68px;
+            border-top: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            opacity: 0.4;
+            color: white;
+            text-decoration: none;
+            flex-direction: column;
+            gap: 4px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .nav-item .icon { font-size: 20px; }
+        .nav-item.active { opacity: 1; color: var(--p); }
+        .nav-item.active .icon { filter: drop-shadow(0 0 6px rgba(0,255,136,0.6)); }
+
+        /* ─── STATUS ─── */
         #qrcode { background: white; padding: 15px; width: fit-content; margin: 10px auto; border-radius: 10px; display: none; }
-        .status-badge { font-size: 12px; padding: 5px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
-        .status-on { background: rgba(0,255,136,0.1); color: var(--p); border: 1px solid var(--p); }
-        .btn-row { display: flex; gap: 8px; margin-top: 10px; }
-        .btn-sec { background: transparent; color: var(--t); border: 1px solid #444; font-size: 13px; padding: 10px; }
-        .btn-danger { background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; font-size: 13px; padding: 10px; }
-        .upload-label { display: flex; align-items: center; gap: 10px; background: #2a3942; border: 1px dashed #444; border-radius: 8px; padding: 12px; cursor: pointer; margin-bottom: 10px; font-size: 13px; color: #aaa; }
+        .status-badge { font-size: 12px; padding: 6px 14px; border-radius: 20px; display: inline-block; margin-bottom: 12px; font-weight: 700; letter-spacing: 0.05em; }
+        .status-on { background: rgba(0,255,136,0.08); color: var(--p); border: 1px solid rgba(0,255,136,0.3); }
+        .status-off { background: rgba(255,77,77,0.08); color: var(--danger); border: 1px solid rgba(255,77,77,0.3); }
+
+        /* ─── UPLOAD ─── */
+        .upload-label {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--c2); border: 1px dashed rgba(255,255,255,0.15);
+            border-radius: 10px; padding: 12px; cursor: pointer;
+            margin-bottom: 10px; font-size: 13px; color: var(--t2);
+            transition: border-color 0.2s;
+        }
+        .upload-label:hover { border-color: rgba(0,255,136,0.3); }
         .upload-label input { display: none; }
-        #previewImg { max-width: 100%; border-radius: 8px; margin-bottom: 10px; display: none; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-card { background: #2a3942; border-radius: 10px; padding: 15px; text-align: center; }
-        .stat-num { font-size: 28px; font-weight: bold; color: var(--p); }
-        .stat-label { font-size: 11px; opacity: 0.6; margin-top: 4px; }
-        .taxa-bar-bg { background: #444; border-radius: 10px; height: 10px; overflow: hidden; margin: 10px 0 5px; }
-        .taxa-bar-fill { background: var(--p); height: 100%; transition: 1s ease; }
-        .chat-msg { padding: 8px 12px; border-radius: 10px; margin: 6px 0; max-width: 85%; font-size: 13px; line-height: 1.4; }
-        .chat-msg.recebida { background: #2a3942; align-self: flex-start; border-bottom-left-radius: 2px; }
-        .chat-msg.enviada { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.2); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
-        .chat-container { display: flex; flex-direction: column; max-height: 420px; overflow-y: auto; padding: 5px; }
-        .chat-de { font-size: 11px; font-weight: bold; color: var(--p); margin-bottom: 2px; }
-        .chat-hora { font-size: 10px; opacity: 0.4; margin-top: 3px; text-align: right; }
-        .chat-empty { text-align: center; opacity: 0.4; font-size: 13px; padding: 30px 0; }
+        #previewImg { max-width: 100%; border-radius: 10px; margin-bottom: 10px; display: none; }
+
+        /* ─── DISPARADOR ─── */
+        .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+
+        .btn-action {
+            background: transparent;
+            color: var(--p);
+            border: 1px solid rgba(0,255,136,0.3);
+            font-size: 12px;
+            padding: 12px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: rgba(0,255,136,0.08);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn-danger-outline {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid rgba(255,77,77,0.3);
+            font-size: 12px;
+            padding: 12px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+
+        .btn-danger-outline:hover {
+            background: rgba(255,77,77,0.08);
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* ─── PAINEL DE DISPARO ─── */
+        #painelDisparo {
+            display: none;
+            background: var(--c2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            margin-top: 14px;
+        }
+
+        .disp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .disp-title {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--p);
+        }
+
+        .disp-status-pill {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(0,255,136,0.1);
+            color: var(--p);
+            border: 1px solid rgba(0,255,136,0.2);
+            letter-spacing: 0.05em;
+        }
+
+        /* Barra de progresso total */
+        .prog-total-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--t2);
+            margin-bottom: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .prog-total-bg {
+            background: rgba(255,255,255,0.06);
+            border-radius: 20px;
+            height: 10px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .prog-total-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--p2), var(--p));
+            border-radius: 20px;
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 12px rgba(0,255,136,0.4);
+        }
+
+        /* Barra de contagem regressiva */
+        .countdown-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--t2);
+            margin-bottom: 6px;
+        }
+
+        .countdown-timer {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--warn);
+        }
+
+        .countdown-bg {
+            background: rgba(255,255,255,0.06);
+            border-radius: 20px;
+            height: 6px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .countdown-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff8800, var(--warn));
+            border-radius: 20px;
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        /* Janelinha da última mensagem enviada */
+        .msg-preview {
+            background: var(--b);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+
+        .msg-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .msg-preview-title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--t2);
+        }
+
+        .msg-preview-status {
+            font-size: 12px;
+        }
+
+        .msg-preview-numero {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--p);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .msg-preview-texto {
+            font-size: 13px;
+            color: var(--t);
+            line-height: 1.5;
+            background: var(--c2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-left: 2px solid rgba(0,255,136,0.3);
+            font-style: italic;
+        }
+
+        .msg-preview-hora {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--t2);
+        }
+
+        .msg-preview-data {
+            font-size: 11px;
+            color: var(--t2);
+            margin-bottom: 4px;
+        }
+
+        /* Lista de logs estilizada */
+        .logs-lista {
+            max-height: 200px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,255,136,0.2) transparent;
+        }
+
+        .log-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            background: var(--b);
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-num { color: var(--t2); }
+        .log-ok { color: var(--p); }
+        .log-err { color: var(--danger); }
+        .log-hora { color: var(--t2); font-size: 10px; }
+
+        /* Stats grid */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .stat-card { background: var(--c2); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid var(--border); }
+        .stat-num { font-size: 30px; font-weight: 800; color: var(--p); font-family: 'JetBrains Mono', monospace; }
+        .stat-label { font-size: 10px; opacity: 0.5; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+        .taxa-bar-bg { background: rgba(255,255,255,0.06); border-radius: 10px; height: 10px; overflow: hidden; margin: 10px 0 5px; }
+        .taxa-bar-fill { background: linear-gradient(90deg, var(--p2), var(--p)); height: 100%; transition: 1s ease; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
+
+        /* Chats */
+        .chat-container { display: flex; flex-direction: column; max-height: 420px; overflow-y: auto; padding: 5px; scrollbar-width: thin; scrollbar-color: rgba(0,255,136,0.2) transparent; }
+        .chat-msg { padding: 10px 14px; border-radius: 12px; margin: 5px 0; max-width: 85%; font-size: 13px; line-height: 1.5; }
+        .chat-msg.recebida { background: var(--c2); border-bottom-left-radius: 2px; }
+        .chat-msg.enviada { background: rgba(0,255,136,0.07); border: 1px solid rgba(0,255,136,0.15); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
+        .chat-de { font-size: 11px; font-weight: 700; color: var(--p); margin-bottom: 3px; font-family: 'JetBrains Mono', monospace; }
+        .chat-hora { font-size: 10px; opacity: 0.4; margin-top: 4px; text-align: right; font-family: 'JetBrains Mono', monospace; }
+        .chat-empty { text-align: center; opacity: 0.3; font-size: 13px; padding: 40px 0; }
+
+        /* Auth */
+        #authArea { height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: var(--c); border-radius: 20px; padding: 32px 28px; width: 340px; border: 1px solid var(--border); }
+        .auth-logo { text-align: center; margin-bottom: 28px; }
+        .auth-logo h2 { font-size: 24px; font-weight: 800; color: var(--p); letter-spacing: -0.02em; }
+        .auth-logo p { font-size: 12px; color: var(--t2); margin-top: 4px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+        .label-field { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t2); margin-bottom: 6px; display: block; }
+
+        .divider { text-align: center; font-size: 12px; color: var(--t2); margin: 14px 0; }
+        .link-text { text-align: center; cursor: pointer; font-size: 12px; color: var(--t2); margin-top: 14px; transition: color 0.2s; }
+        .link-text:hover { color: var(--p); }
+
+        /* Agendado */
+        .agendado-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,170,0,0.08);
+            border: 1px solid rgba(255,170,0,0.3);
+            color: var(--warn);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .pulse {
+            width: 8px; height: 8px;
+            background: var(--warn);
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        .pulse-green {
+            width: 8px; height: 8px;
+            background: var(--p);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.2s infinite;
+            margin-right: 6px;
+        }
     </style>
 </head>
 <body>
 
-    <div id="authArea" style="height:95vh; display:flex; align-items:center; justify-content:center">
-        <div class="card" style="width:320px">
-            <h2 style="text-align:center; color:var(--p); margin-top:0">Money Partner</h2>
+    <!-- AUTH -->
+    <div id="authArea">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <h2>Money Partner</h2>
+                <p>Dashboard Pro 2026</p>
+            </div>
             <div id="boxL">
-                <input id="lEmail" placeholder="Seu E-mail">
-                <input id="lPass" type="password" placeholder="Sua Senha">
+                <label class="label-field">E-mail</label>
+                <input id="lEmail" placeholder="seu@email.com" type="email">
+                <label class="label-field">Senha</label>
+                <input id="lPass" type="password" placeholder="••••••••">
                 <button onclick="login()">ENTRAR NO PAINEL</button>
-                <p onclick="showR(true)" style="text-align:center; cursor:pointer; font-size:12px; opacity:0.6; margin-top:15px">Criar Nova Conta</p>
+                <p onclick="showR(true)" class="link-text">Criar nova conta →</p>
             </div>
             <div id="boxR" style="display:none">
-                <input id="rName" placeholder="Seu Nome">
-                <input id="rEmail" placeholder="Cadastrar E-mail">
-                <input id="rPass" type="password" placeholder="Definir Senha">
-                <button onclick="register()">CADASTRAR</button>
-                <p onclick="showR(false)" style="text-align:center; cursor:pointer; font-size:12px; opacity:0.6; margin-top:15px">Voltar ao Login</p>
+                <label class="label-field">Nome</label>
+                <input id="rName" placeholder="Seu nome completo">
+                <label class="label-field">E-mail</label>
+                <input id="rEmail" placeholder="seu@email.com" type="email">
+                <label class="label-field">Senha</label>
+                <input id="rPass" type="password" placeholder="••••••••">
+                <button onclick="register()">CRIAR CONTA</button>
+                <p onclick="showR(false)" class="link-text">← Voltar ao login</p>
             </div>
         </div>
     </div>
 
+    <!-- DASHBOARD -->
     <div id="dashArea" style="display:none">
 
+        <!-- TAB 1: Monitor -->
         <div id="tab1" class="tab active">
             <div class="card">
                 <h3>⚙️ Treinamento da IA</h3>
-                <textarea id="iaT" rows="2" placeholder="Saudação Inicial"></textarea>
-                <textarea id="baseT" rows="4" placeholder="Base de Conhecimento (Instruções)"></textarea>
-                <button onclick="save()">ATUALIZAR IA</button>
+                <label class="label-field">Saudação Inicial</label>
+                <textarea id="iaT" rows="2" placeholder="Ex: Olá! Seja bem-vindo..."></textarea>
+                <label class="label-field">Base de Conhecimento</label>
+                <textarea id="baseT" rows="5" placeholder="Instruções para a IA responder..."></textarea>
+                <button onclick="save()">ATUALIZAR INTELIGÊNCIA</button>
             </div>
             <div class="card" style="text-align:center">
-                <h3>📱 Monitor de Conexão</h3>
+                <h3>📱 Monitor de Conexão WhatsApp</h3>
                 <div id="statusZap" class="status-badge status-on">Verificando...</div>
                 <div id="qrcode"></div>
-                <button onclick="logoutApp()" style="margin-top:20px; background:transparent; color:white; border:1px solid #444; font-size:12px; padding:10px">Sair do Sistema</button>
+                <button onclick="logoutApp()" style="margin-top:20px; background:transparent; color:var(--t2); border:1px solid rgba(255,255,255,0.1); font-size:12px; padding:10px; box-shadow:none; transform:none">Sair do Sistema</button>
             </div>
         </div>
 
+        <!-- TAB 2: Disparador -->
         <div id="tab2" class="tab">
             <div class="card">
-                <h3>🚀 Disparo Inteligente</h3>
-                <textarea id="numM" rows="5" placeholder="Números (Um por linha com 55...)"></textarea>
-                <textarea id="msgM" rows="3" placeholder="Mensagem {Oi|Olá} tudo bem?"></textarea>
+                <h3>🚀 Disparador Inteligente</h3>
+
+                <label class="label-field">Números (um por linha, com 55...)</label>
+                <textarea id="numM" rows="5" placeholder="5511999999999&#10;5521888888888"></textarea>
+
+                <label class="label-field">Mensagem (use {Olá|Oi} para variações)</label>
+                <textarea id="msgM" rows="3" placeholder="{Oi|Olá|Hey} tudo bem? Tenho uma oportunidade incrível para você!"></textarea>
+
                 <label class="upload-label">
                     <input type="file" id="imgInput" accept="image/*" onchange="carregarImagem(this)">
                     🖼️ <span id="imgLabel">Adicionar imagem (opcional)</span>
                 </label>
                 <img id="previewImg" />
-                <div style="font-size:12px; margin-bottom:6px">Intervalo entre envios (segundos):</div>
-                <input type="number" id="intM" value="30">
-                <div style="font-size:12px; margin-bottom:6px">⏰ Agendar para (deixe vazio para enviar agora):</div>
+
+                <label class="label-field">Intervalo entre envios (segundos)</label>
+                <input type="number" id="intM" value="30" min="5">
+
+                <label class="label-field">⏰ Agendar para (deixe vazio para enviar agora)</label>
                 <input type="datetime-local" id="agendarEm">
-                <button onclick="disparar()">INICIAR DISPARO</button>
-                <div class="btn-row">
-                    <button class="btn-sec" onclick="pausar()" id="btnPausar" style="display:none">⏸️ Pausar</button>
-                    <button class="btn-danger" onclick="cancelar()" id="btnCancelar" style="display:none">⛔ Cancelar</button>
+
+                <button onclick="disparar()" id="btnDisparar">▶ INICIAR DISPARO</button>
+
+                <!-- Painel de status do disparo -->
+                <div id="painelDisparo">
+
+                    <div class="disp-header">
+                        <span class="disp-title">📡 Status do Disparo</span>
+                        <span class="disp-status-pill" id="dispStatusPill">INICIANDO</span>
+                    </div>
+
+                    <!-- Barra de progresso total -->
+                    <div class="prog-total-label">
+                        <span>Progresso geral</span>
+                        <span id="progContador" style="font-weight:700; color:var(--p)">0 / 0</span>
+                    </div>
+                    <div class="prog-total-bg">
+                        <div class="prog-total-fill" id="progTotalFill"></div>
+                    </div>
+
+                    <!-- Barra contagem regressiva -->
+                    <div id="countdownArea" style="display:none">
+                        <div class="countdown-label">
+                            <span>⏱ Próximo envio em</span>
+                            <span class="countdown-timer" id="countdownNum">--</span>
+                        </div>
+                        <div class="countdown-bg">
+                            <div class="countdown-fill" id="countdownFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- Info data/hora -->
+                    <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap">
+                        <div style="flex:1; background:var(--b); border-radius:8px; padding:10px; border:1px solid var(--border); font-size:11px;">
+                            <div style="color:var(--t2); margin-bottom:2px; text-transform:uppercase; letter-spacing:0.05em; font-size:10px;">Iniciado em</div>
+                            <div id="dispDataInicio" style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--t)">--</div>
+                        </div>
+                        <div style="flex:1; background:var(--b); border-radius:8px; padding:10px; border:1px solid var(--border); font-size:11px;">
+                            <div style="color:var(--t2); margin-bottom:2px; text-transform:uppercase; letter-spacing:0.05em; font-size:10px;">Sucesso / Erros</div>
+                            <div id="dispSucessoErro" style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--t)">-- / --</div>
+                        </div>
+                    </div>
+
+                    <!-- Janela de preview da última mensagem enviada -->
+                    <div class="msg-preview" id="msgPreviewBox" style="display:none">
+                        <div class="msg-preview-header">
+                            <span class="msg-preview-title">📨 Última Mensagem</span>
+                            <span class="msg-preview-status" id="msgPreviewStatus">✅</span>
+                        </div>
+                        <div class="msg-preview-numero" id="msgPreviewNumero">—</div>
+                        <div class="msg-preview-data" id="msgPreviewData">—</div>
+                        <div class="msg-preview-texto" id="msgPreviewTexto">—</div>
+                        <div class="msg-preview-hora" id="msgPreviewHora">—</div>
+                    </div>
+
+                    <!-- Botões parar/continuar/cancelar -->
+                    <div class="btn-row">
+                        <button class="btn-action" onclick="pausar()" id="btnPausar">⏸ PAUSAR</button>
+                        <button class="btn-danger-outline" onclick="cancelar()" id="btnCancelar">⛔ PARAR</button>
+                    </div>
                 </div>
-                <div id="progBar" class="prog-bg"><div id="progFill" class="prog-fill"></div></div>
-                <div id="progTxt" style="text-align:center; font-size:12px; color:var(--p); margin-top:5px"></div>
+
+                <!-- Agendado badge -->
+                <div id="agendadoBadge" style="display:none; text-align:center; margin-top:12px;">
+                    <div class="agendado-badge">
+                        <div class="pulse"></div>
+                        <span id="agendadoTxt">AGUARDANDO HORÁRIO AGENDADO</span>
+                    </div>
+                </div>
+
             </div>
-            <div id="logs" class="card" style="font-size:11px; max-height:200px; overflow-y:auto"></div>
+
+            <!-- Logs -->
+            <div class="card">
+                <h3>📋 Log de Envios</h3>
+                <div class="logs-lista" id="logsLista">
+                    <div style="text-align:center; color:var(--t2); font-size:12px; padding:20px 0; opacity:0.5">Os logs aparecerão aqui durante o disparo</div>
+                </div>
+            </div>
         </div>
 
+        <!-- TAB 3: Chats -->
         <div id="tab3" class="tab">
             <div class="card">
                 <h3>💬 Conversas em Tempo Real</h3>
                 <div id="chatContainer" class="chat-container">
-                    <div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui.</div>
+                    <div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui em tempo real.</div>
                 </div>
             </div>
         </div>
 
+        <!-- TAB 4: Stats -->
         <div id="tab4" class="tab">
             <div class="card">
-                <h3>📊 Dashboard</h3>
+                <h3>📊 Estatísticas</h3>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-num" id="stTotal">—</div>
@@ -134,24 +647,38 @@
                         <div class="stat-label">Erros</div>
                     </div>
                 </div>
-                <div style="font-size:12px; opacity:0.6; margin-bottom:4px">Taxa de entrega</div>
+                <div style="font-size:11px; color:var(--t2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Taxa de entrega</div>
                 <div class="taxa-bar-bg"><div class="taxa-bar-fill" id="taxaBar" style="width:0%"></div></div>
-                <div id="taxaPct" style="text-align:right; font-size:12px; color:var(--p)">0%</div>
+                <div id="taxaPct" style="text-align:right; font-size:12px; color:var(--p); font-family:'JetBrains Mono',monospace; margin-top:4px">0%</div>
             </div>
         </div>
 
         <nav>
-            <div class="nav-item active" onclick="tab('tab1', this)">⚙️<span>Monitor</span></div>
-            <div class="nav-item" onclick="tab('tab2', this)">🚀<span>Enviar</span></div>
-            <div class="nav-item" onclick="tab('tab3', this)">💬<span>Chats</span></div>
-            <div class="nav-item" onclick="tab('tab4', this)">📊<span>Stats</span></div>
+            <div class="nav-item active" onclick="tab('tab1', this)">
+                <span class="icon">⚙️</span><span>Monitor</span>
+            </div>
+            <div class="nav-item" onclick="tab('tab2', this)">
+                <span class="icon">🚀</span><span>Enviar</span>
+            </div>
+            <div class="nav-item" onclick="tab('tab3', this)">
+                <span class="icon">💬</span><span>Chats</span>
+            </div>
+            <div class="nav-item" onclick="tab('tab4', this)">
+                <span class="icon">📊</span><span>Stats</span>
+            </div>
         </nav>
     </div>
 
     <script>
-        const qrBox = new QRCode(document.getElementById("qrcode"), { width: 180, height: 180 });
-        function showR(s){ boxL.style.display=s?'none':'block'; boxR.style.display=s?'block':'none'; }
+        // ─── QR Code ───
+        const qrBox = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
 
+        function showR(s) {
+            boxL.style.display = s ? 'none' : 'block';
+            boxR.style.display = s ? 'block' : 'none';
+        }
+
+        // ─── Som de conexão ───
         let statusAnterior = "";
         function tocarSom() {
             try {
@@ -167,6 +694,7 @@
             } catch(e) {}
         }
 
+        // ─── Imagem ───
         let imagemBase64 = null, imagemMime = null, imagemNome = null;
         function carregarImagem(input) {
             const file = input.files[0];
@@ -185,102 +713,269 @@
             reader.readAsDataURL(file);
         }
 
-        async function register(){
+        // ─── Auth ───
+        async function register() {
             const r = await fetch("/register", { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:rName.value, email:rEmail.value, password:rPass.value}) });
-            if(r.ok) { alert("Cadastro realizado!"); showR(false); } else alert("Erro ao cadastrar.");
+            if (r.ok) { alert("Cadastro realizado!"); showR(false); }
+            else alert("Erro ao cadastrar.");
         }
 
-        async function login(){
+        async function login() {
             const r = await fetch("/login", { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:lEmail.value, password:lPass.value}) });
-            if(r.ok) { const d = await r.json(); localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload(); }
-            else alert("E-mail ou senha incorretos.");
+            if (r.ok) {
+                const d = await r.json();
+                localStorage.setItem("tk", d.token);
+                localStorage.setItem("u", JSON.stringify(d.user));
+                location.reload();
+            } else alert("E-mail ou senha incorretos.");
         }
 
-        if(localStorage.getItem("tk")){
-            authArea.style.display='none'; dashArea.style.display='block';
+        // ─── Countdown controller ───
+        let countdownInterval = null;
+        let ultimoIntervalo = 30;
+        let ultimoLog = null;
+
+        function iniciarCountdown(segundos) {
+            clearInterval(countdownInterval);
+            const area = document.getElementById('countdownArea');
+            const fill = document.getElementById('countdownFill');
+            const num  = document.getElementById('countdownNum');
+            area.style.display = 'block';
+            let restante = segundos;
+            fill.style.transition = 'none';
+            fill.style.width = '100%';
+
+            setTimeout(() => {
+                fill.style.transition = `width ${segundos}s linear`;
+                fill.style.width = '0%';
+            }, 50);
+
+            num.innerText = restante + 's';
+            countdownInterval = setInterval(() => {
+                restante--;
+                if (restante <= 0) {
+                    clearInterval(countdownInterval);
+                    num.innerText = '0s';
+                    return;
+                }
+                num.innerText = restante + 's';
+            }, 1000);
+        }
+
+        function pararCountdown() {
+            clearInterval(countdownInterval);
+            document.getElementById('countdownArea').style.display = 'none';
+        }
+
+        // ─── Atualizar painel de disparo ───
+        function atualizarPainelDisparo(p, logs) {
+            const painel = document.getElementById('painelDisparo');
+            const pill   = document.getElementById('dispStatusPill');
+            const agBadge = document.getElementById('agendadoBadge');
+
+            if (p.status === 'idle') {
+                painel.style.display = 'none';
+                agBadge.style.display = 'none';
+                pararCountdown();
+                return;
+            }
+
+            painel.style.display = 'block';
+
+            // Status pill
+            const pillMap = {
+                'rodando':   '<span class="pulse-green"></span>ENVIANDO',
+                'pausado':   '⏸ PAUSADO',
+                'agendado':  '⏰ AGENDADO',
+                'finalizado':'✅ CONCLUÍDO',
+                'cancelado': '⛔ CANCELADO',
+            };
+            pill.innerHTML = pillMap[p.pausado ? 'pausado' : p.status] || p.status.toUpperCase();
+
+            // Badge agendado
+            agBadge.style.display = (p.status === 'agendado') ? 'block' : 'none';
+
+            // Progresso total
+            const pct = p.total > 0 ? Math.round((p.atual / p.total) * 100) : 0;
+            document.getElementById('progTotalFill').style.width = pct + '%';
+            document.getElementById('progContador').innerText = `${p.atual} / ${p.total} — ${pct}%`;
+
+            // Sucesso / Erros
+            if (p.stats) {
+                document.getElementById('dispSucessoErro').innerText = `${p.stats.sucesso} / ${p.stats.erro}`;
+            }
+
+            // Botão pausar
+            document.getElementById('btnPausar').innerHTML = p.pausado ? '▶ RETOMAR' : '⏸ PAUSAR';
+
+            // Countdown só quando estiver rodando e não pausado
+            if (p.status === 'rodando' && !p.pausado && p.atual < p.total) {
+                // Detecta novo envio pelo log
+                if (logs && logs.length > 0) {
+                    const ultimo = logs[logs.length - 1];
+                    if (!ultimoLog || ultimoLog.numero !== ultimo.numero) {
+                        ultimoLog = ultimo;
+                        iniciarCountdown(ultimoIntervalo);
+
+                        // Atualiza janelinha de preview
+                        const box = document.getElementById('msgPreviewBox');
+                        box.style.display = 'block';
+                        document.getElementById('msgPreviewNumero').innerText = '📱 ' + ultimo.numero;
+                        document.getElementById('msgPreviewStatus').innerText = ultimo.status.includes('✅') ? '✅' : '❌';
+                        const textoEnviado = document.getElementById('msgM').value || '—';
+                        document.getElementById('msgPreviewTexto').innerText = textoEnviado;
+                        const agora = new Date();
+                        document.getElementById('msgPreviewData').innerText =
+                            agora.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+                        document.getElementById('msgPreviewHora').innerText =
+                            '🕐 ' + agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+                    }
+                }
+            } else if (p.status !== 'rodando' || p.pausado) {
+                pararCountdown();
+            }
+
+            // Finalizado / cancelado
+            if (p.status === 'finalizado' || p.status === 'cancelado') {
+                pararCountdown();
+                document.getElementById('countdownArea').style.display = 'none';
+            }
+        }
+
+        // ─── Logs ───
+        function renderLogs(logs) {
+            const lista = document.getElementById('logsLista');
+            if (!logs || !logs.length) return;
+            lista.innerHTML = logs.slice(-50).reverse().map(x => {
+                const ok = x.status.includes('✅');
+                return `
+                    <div class="log-item">
+                        <span class="log-num">+${x.numero}</span>
+                        <span class="${ok ? 'log-ok' : 'log-err'}">${x.status}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ─── Init dashboard ───
+        if (localStorage.getItem("tk")) {
+            authArea.style.display = 'none';
+            dashArea.style.display = 'block';
             const u = JSON.parse(localStorage.getItem("u"));
-            iaT.value = u.iaResumo; baseT.value = u.baseAprendizado;
+            iaT.value   = u.iaResumo || '';
+            baseT.value = u.baseAprendizado || '';
+
+            // Guarda a data de início ao entrar no painel
+            document.getElementById('dispDataInicio').innerText =
+                new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
             setInterval(async () => {
-                const r = await fetch("/sync", { headers:{"Authorization": localStorage.getItem("tk")} });
-                const d = await r.json();
+                try {
+                    // Sync WhatsApp
+                    const r = await fetch("/sync", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    const d = await r.json();
 
-                if(d.status === "READY" && statusAnterior !== "READY") tocarSom();
-                statusAnterior = d.status;
+                    if (d.status === "READY" && statusAnterior !== "READY") tocarSom();
+                    statusAnterior = d.status;
 
-                if(d.status === "READY") { statusZap.innerText = "✅ ONLINE E BLINDADO"; qrcode.style.display='none'; }
-                else if(d.status.length > 50) { statusZap.innerText = "⏳ AGUARDANDO LEITURA QR"; qrcode.style.display='block'; qrBox.makeCode(d.status); }
-                else { statusZap.innerText = "❌ DESCONECTADO"; qrcode.style.display='none'; }
-
-                if(document.getElementById('tab2').classList.contains('active')) {
-                    const pr = await fetch("/progresso", { headers:{"Authorization": localStorage.getItem("tk")} });
-                    const p = await pr.json();
-
-                    const rodando = p.status === 'rodando' || p.status === 'agendado';
-                    document.getElementById('btnPausar').style.display = rodando ? 'block' : 'none';
-                    document.getElementById('btnCancelar').style.display = rodando ? 'block' : 'none';
-
-                    if(p.status === 'rodando') {
-                        progBar.style.display='block'; progFill.style.width = (p.atual/p.total*100)+'%';
-                        progTxt.innerText = `Enviando ${p.atual} de ${p.total}`;
-                        document.getElementById('btnPausar').innerText = p.pausado ? '▶️ Retomar' : '⏸️ Pausar';
-                    } else if(p.status === 'agendado') {
-                        progTxt.innerText = "⏰ Aguardando horário agendado...";
-                    } else if(p.status === 'finalizado') {
-                        progTxt.innerText = "✅ Campanha Concluída!";
-                    } else if(p.status === 'cancelado') {
-                        progTxt.innerText = "⛔ Campanha Cancelada.";
+                    if (d.status === "READY") {
+                        statusZap.className = 'status-badge status-on';
+                        statusZap.innerHTML = '<span class="pulse-green"></span>ONLINE E BLINDADO';
+                        qrcode.style.display = 'none';
+                    } else if (d.status.length > 50) {
+                        statusZap.className = 'status-badge status-off';
+                        statusZap.innerText = '⏳ AGUARDANDO LEITURA QR';
+                        qrcode.style.display = 'block';
+                        qrBox.makeCode(d.status);
+                    } else {
+                        statusZap.className = 'status-badge status-off';
+                        statusZap.innerText = '❌ DESCONECTADO';
+                        qrcode.style.display = 'none';
                     }
 
-                    const l = await fetch("/logs-envio", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    // Progresso + logs
+                    const pr = await fetch("/progresso", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    const p  = await pr.json();
+
+                    // Pega intervalo atual do input
+                    ultimoIntervalo = parseInt(document.getElementById('intM').value) || 30;
+
+                    const l    = await fetch("/logs-envio", { headers:{"Authorization": localStorage.getItem("tk")} });
                     const logs = await l.json();
-                    document.getElementById('logs').innerHTML = logs.map(x => `<div style="padding:4px; border-bottom:1px solid #444">${x.numero}: ${x.status}</div>`).join('');
-                }
 
-                if(document.getElementById('tab3').classList.contains('active')) {
-                    carregarChats();
-                }
+                    // Pega stats
+                    const st = await fetch("/stats", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    p.stats  = await st.json();
 
-                if(document.getElementById('tab4').classList.contains('active')) {
-                    carregarStats();
-                }
+                    atualizarPainelDisparo(p, logs);
+                    renderLogs(logs);
 
-            }, 5000);
+                    // Chats
+                    if (document.getElementById('tab3').classList.contains('active')) carregarChats();
+
+                    // Stats tab
+                    if (document.getElementById('tab4').classList.contains('active')) carregarStats();
+
+                } catch(e) {}
+            }, 4000);
         }
 
-        async function disparar(){
+        // ─── Disparar ───
+        async function disparar() {
             const body = {
-                numeros: numM.value,
-                mensagem: msgM.value,
-                intervalo: intM.value,
-                agendarEm: document.getElementById('agendarEm').value || null
+                numeros:    numM.value,
+                mensagem:   msgM.value,
+                intervalo:  intM.value,
+                agendarEm:  document.getElementById('agendarEm').value || null
             };
-            if(imagemBase64) { body.imagemBase64 = imagemBase64; body.imagemMime = imagemMime; body.imagemNome = imagemNome; }
+            if (imagemBase64) {
+                body.imagemBase64 = imagemBase64;
+                body.imagemMime   = imagemMime;
+                body.imagemNome   = imagemNome;
+            }
 
-            const r = await fetch("/disparar", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify(body) });
+            const r = await fetch("/disparar", {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk") },
+                body: JSON.stringify(body)
+            });
             const d = await r.json();
-            if(d.msg) { progBar.style.display='block'; } else { alert(d.error); }
+
+            if (d.msg) {
+                document.getElementById('painelDisparo').style.display = 'block';
+                document.getElementById('dispDataInicio').innerText =
+                    new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+                ultimoLog = null;
+            } else {
+                alert(d.error || 'Erro ao iniciar disparo.');
+            }
         }
 
-        async function pausar(){
+        // ─── Pausar ───
+        async function pausar() {
             const r = await fetch("/pausar", { method:'POST', headers:{'Authorization':localStorage.getItem("tk")} });
             const d = await r.json();
-            document.getElementById('btnPausar').innerText = d.pausado ? '▶️ Retomar' : '⏸️ Pausar';
+            document.getElementById('btnPausar').innerHTML = d.pausado ? '▶ RETOMAR' : '⏸ PAUSAR';
+            if (d.pausado) pararCountdown();
         }
 
-        async function cancelar(){
-            if(!confirm("Cancelar o disparo em andamento?")) return;
+        // ─── Cancelar ───
+        async function cancelar() {
+            if (!confirm("Confirma cancelar o disparo em andamento?")) return;
             await fetch("/cancelar", { method:'POST', headers:{'Authorization':localStorage.getItem("tk")} });
-            document.getElementById('btnPausar').style.display='none';
-            document.getElementById('btnCancelar').style.display='none';
-            progTxt.innerText = "⛔ Campanha Cancelada.";
+            pararCountdown();
+            document.getElementById('dispStatusPill').innerText = '⛔ CANCELADO';
         }
 
-        async function carregarChats(){
-            const r = await fetch("/chats", { headers:{"Authorization": localStorage.getItem("tk")} });
+        // ─── Chats ───
+        async function carregarChats() {
+            const r    = await fetch("/chats", { headers:{"Authorization": localStorage.getItem("tk")} });
             const msgs = await r.json();
             const container = document.getElementById('chatContainer');
-            if(!msgs.length){ container.innerHTML = '<div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui.</div>'; return; }
+            if (!msgs.length) {
+                container.innerHTML = '<div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui em tempo real.</div>';
+                return;
+            }
             container.innerHTML = msgs.map(m => `
                 <div class="chat-msg ${m.tipo}">
                     <div class="chat-de">${m.tipo === 'recebida' ? '👤 ' + m.de : '🤖 IA'}</div>
@@ -291,29 +986,36 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        async function carregarStats(){
+        // ─── Stats ───
+        async function carregarStats() {
             const r = await fetch("/stats", { headers:{"Authorization": localStorage.getItem("tk")} });
             const s = await r.json();
-            document.getElementById('stTotal').innerText = s.total;
-            document.getElementById('stSucesso').innerText = s.sucesso;
-            document.getElementById('stErro').innerText = s.erro;
-            document.getElementById('stTaxa').innerText = s.taxa + '%';
-            document.getElementById('taxaBar').style.width = s.taxa + '%';
-            document.getElementById('taxaPct').innerText = s.taxa + '%';
+            document.getElementById('stTotal').innerText   = s.total  || 0;
+            document.getElementById('stSucesso').innerText = s.sucesso || 0;
+            document.getElementById('stErro').innerText    = s.erro   || 0;
+            document.getElementById('stTaxa').innerText    = (s.taxa  || 0) + '%';
+            document.getElementById('taxaBar').style.width = (s.taxa  || 0) + '%';
+            document.getElementById('taxaPct').innerText   = (s.taxa  || 0) + '%';
         }
 
-        async function save(){
-            await fetch("/save-config", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify({iaResumo:iaT.value, baseAprendizado:baseT.value}) });
+        // ─── Save config ───
+        async function save() {
+            await fetch("/save-config", {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk") },
+                body: JSON.stringify({ iaResumo:iaT.value, baseAprendizado:baseT.value })
+            });
             alert("Inteligência Atualizada!");
         }
 
-        function tab(t, el){
+        // ─── Tabs ───
+        function tab(t, el) {
             document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
             document.getElementById(t).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
             el.classList.add('active');
-            if(t === 'tab3') carregarChats();
-            if(t === 'tab4') carregarStats();
+            if (t === 'tab3') carregarChats();
+            if (t === 'tab4') carregarStats();
         }
 
         function logoutApp() { localStorage.clear(); location.reload(); }
