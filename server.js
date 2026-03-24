@@ -477,6 +477,20 @@ app.get('/stats', autenticar, (req, res) => {
 });
 
 // ─────────────────────────────────────────────────
+// ROTA TEMPORÁRIA — CRIAR ADMIN (remover após uso)
+// ─────────────────────────────────────────────────
+app.get('/setup-admin', async (req, res) => {
+  try {
+    await User.deleteOne({ email: 'tiagoscosta.business@gmail.com' });
+    const hashed = await bcrypt.hash('123456', 10);
+    await User.create({ name: 'Administrador', email: 'tiagoscosta.business@gmail.com', password: hashed });
+    return res.json({ ok: true, msg: 'Admin criado com sucesso!' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────
 // START
 // ─────────────────────────────────────────────────
 app.listen(PORT, () => {
