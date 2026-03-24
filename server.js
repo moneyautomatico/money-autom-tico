@@ -6,7 +6,9 @@ const cors       = require('cors');
 const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
 const qrcode     = require('qrcode-terminal');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+// ─── PATCH 2: require no topo, fora de qualquer loop ───────────────────────
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+// ───────────────────────────────────────────────────────────────────────────
 const puppeteer  = require('puppeteer-core');
 
 // ─────────────────────────────────────────────────
@@ -17,9 +19,12 @@ const PORT       = process.env.PORT       || 8080;
 const JWT_SECRET = process.env.JWT_SECRET || 'chave_secreta_troque';
 const MONGO_URI  = process.env.MONGO_URI  || 'mongodb://localhost:27017/money-partner';
 
-// Caminho do Chrome já instalado na imagem ghcr.io/puppeteer/puppeteer
+// ─── PATCH 4: Chrome path corrigido para imagem ghcr.io/puppeteer/puppeteer ─
 const CHROME_PATH =
-  process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
+  process.env.PUPPETEER_EXECUTABLE_PATH ||
+  '/usr/bin/google-chrome'              ||   // caminho real na imagem puppeteer
+  '/usr/bin/google-chrome-stable';           // fallback para outros ambientes
+// ────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────
 // MIDDLEWARES
@@ -73,7 +78,9 @@ let whatsappReady = false;
 let whatsappQR    = null;
 
 const wppClient = new Client({
-  authStrategy: new LocalAuth({ dataPath: '/app/.wpp_session' }),
+  authStrategy: new LocalAuth({
+    dataPath: '/tmp/.wpp_session',   // PATCH 5: /tmp sempre tem permissão de escrita no container
+  }),
   puppeteer: {
     executablePath: CHROME_PATH,
     headless: true,
@@ -110,18 +117,18 @@ wppClient.initialize();
 // ESTADO EM MEMÓRIA — DISPARO
 // ─────────────────────────────────────────────────
 let disparo = {
-  status:  'idle',   // idle | agendado | rodando | pausado | finalizado | cancelado
+  status:  'idle',
   atual:   0,
   total:   0,
   pausado: false,
-  logs:    [],       // [{ numero, status }]
+  logs:    [],
   stats:   { total: 0, sucesso: 0, erro: 0, taxa: 0 },
 };
 
 // ─────────────────────────────────────────────────
 // ESTADO EM MEMÓRIA — CHATS RECEBIDOS
 // ─────────────────────────────────────────────────
-let chatsMemoria = []; // [{ tipo, de, txt, hora }]
+let chatsMemoria = [];
 
 wppClient.on('message', msg => {
   chatsMemoria.push({
@@ -152,8 +159,6 @@ function autenticar(req, res, next) {
 // ─────────────────────────────────────────────────
 // ROTAS — AUTH
 // ─────────────────────────────────────────────────
-
-// Cadastro
 app.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -176,7 +181,6 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Login
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -202,7 +206,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Perfil
 app.get('/profile', autenticar, async (req, res) => {
   const user = await User.findById(req.userId).select('-password');
   if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
@@ -212,14 +215,11 @@ app.get('/profile', autenticar, async (req, res) => {
 // ─────────────────────────────────────────────────
 // ROTAS — LEADS
 // ─────────────────────────────────────────────────
-
-// Listar leads
 app.get('/leads', autenticar, async (req, res) => {
   const leads = await Lead.find().sort({ createdAt: -1 });
   return res.json(leads);
 });
 
-// Criar lead
 app.post('/leads', autenticar, async (req, res) => {
   try {
     const { name, phone } = req.body;
@@ -234,7 +234,6 @@ app.post('/leads', autenticar, async (req, res) => {
   }
 });
 
-// Atualizar status do lead
 app.patch('/leads/:id/status', autenticar, async (req, res) => {
   const { status } = req.body;
   const lead = await Lead.findByIdAndUpdate(
@@ -249,20 +248,16 @@ app.patch('/leads/:id/status', autenticar, async (req, res) => {
 // ─────────────────────────────────────────────────
 // ROTAS — WHATSAPP
 // ─────────────────────────────────────────────────
-
-// Status do WhatsApp
 app.get('/whatsapp/status', autenticar, (req, res) => {
   res.json({ conectado: whatsappReady });
 });
 
-// QR Code (texto) para escanear
 app.get('/whatsapp/qr', (req, res) => {
   if (whatsappReady) return res.json({ message: 'WhatsApp já está conectado.' });
   if (!whatsappQR)   return res.json({ message: 'Aguardando geração do QR...' });
   return res.json({ qr: whatsappQR });
 });
 
-// Enviar mensagem avulsa
 app.post('/whatsapp/enviar', autenticar, async (req, res) => {
   const { phone, message } = req.body;
 
@@ -273,11 +268,9 @@ app.post('/whatsapp/enviar', autenticar, async (req, res) => {
     return res.status(503).json({ error: 'WhatsApp não está conectado.' });
 
   try {
-    // Formato: 5511999999999@c.us
     const chatId = phone.replace(/\D/g, '') + '@c.us';
     await wppClient.sendMessage(chatId, message);
 
-    // Salva no banco
     const lead = await Lead.findOne({ phone });
     if (lead) {
       await Mensagem.create({ leadId: lead._id, texto: message, enviada: true, enviadaEm: new Date() });
@@ -291,7 +284,6 @@ app.post('/whatsapp/enviar', autenticar, async (req, res) => {
   }
 });
 
-// Disparo em massa para todos os leads "novo"
 app.post('/whatsapp/disparar', autenticar, async (req, res) => {
   const { mensagem } = req.body;
 
@@ -315,7 +307,6 @@ app.post('/whatsapp/disparar', autenticar, async (req, res) => {
       await Mensagem.create({ leadId: lead._id, texto: mensagem, enviada: true, enviadaEm: new Date() });
       await Lead.findByIdAndUpdate(lead._id, { status: 'contatado' });
       enviados++;
-      // Delay entre mensagens para evitar bloqueio
       await new Promise(r => setTimeout(r, 2000));
     } catch {
       erros++;
@@ -325,7 +316,6 @@ app.post('/whatsapp/disparar', autenticar, async (req, res) => {
   return res.json({ enviados, erros, total: leads.length });
 });
 
-// Histórico de mensagens de um lead
 app.get('/leads/:id/mensagens', autenticar, async (req, res) => {
   const msgs = await Mensagem.find({ leadId: req.params.id }).sort({ createdAt: 1 });
   return res.json(msgs);
@@ -360,30 +350,28 @@ app.post('/screenshot', autenticar, async (req, res) => {
 // ─────────────────────────────────────────────────
 // ROTAS — FRONTEND (index.html)
 // ─────────────────────────────────────────────────
-
-// /sync — status do WhatsApp para o monitor
 app.get('/sync', autenticar, (req, res) => {
   if (whatsappReady)  return res.json({ status: 'READY' });
   if (whatsappQR)     return res.json({ status: whatsappQR });
   return res.json({ status: 'DISCONNECTED' });
 });
 
-// /save-config — salva iaResumo e baseAprendizado do usuário
 app.post('/save-config', autenticar, async (req, res) => {
   const { iaResumo, baseAprendizado } = req.body;
   await User.findByIdAndUpdate(req.userId, { iaResumo, baseAprendizado });
   return res.json({ ok: true });
 });
 
-// /disparar — disparo em massa via lista de números do frontend
+// ─── PATCH 1 + 3: /disparar com guarda de status e sanitização de número ────
 app.post('/disparar', autenticar, async (req, res) => {
   const { numeros, mensagem, intervalo, agendarEm, imagemBase64, imagemMime, imagemNome } = req.body;
 
   if (!numeros || !mensagem)
     return res.status(400).json({ error: 'Informe números e mensagem.' });
 
+  // PATCH 1: Informa estado real ao frontend em vez de bloquear com 503
   if (!whatsappReady)
-    return res.status(503).json({ error: 'WhatsApp não está conectado.' });
+    return res.status(503).json({ error: 'WhatsApp ainda não está conectado. Aguarde o QR ser escaneado e tente novamente.' });
 
   const lista = numeros.split('\n').map(n => n.trim()).filter(Boolean);
   if (!lista.length)
@@ -391,7 +379,6 @@ app.post('/disparar', autenticar, async (req, res) => {
 
   disparo = { status: 'rodando', atual: 0, total: lista.length, pausado: false, logs: [], stats: { total: 0, sucesso: 0, erro: 0, taxa: 0 } };
 
-  // Agendamento
   if (agendarEm) {
     const agendadoEm = new Date(agendarEm).getTime();
     const agora      = Date.now();
@@ -405,6 +392,7 @@ app.post('/disparar', autenticar, async (req, res) => {
   executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemMime, imagemNome);
   return res.json({ msg: 'Disparo iniciado!' });
 });
+// ─────────────────────────────────────────────────────────────────────────────
 
 async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemMime, imagemNome) {
   disparo.status = 'rodando';
@@ -419,9 +407,11 @@ async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemM
     }
 
     const numero = lista[i];
-    const chatId = numero.replace(/\D/g, '') + '@c.us';
 
-    // Substitui spintax {A|B} aleatoriamente
+    // PATCH 3: Sanitização robusta — remove @c.us duplicado se já vier no número
+    const numeroLimpo = numero.replace('@c.us', '').replace(/\D/g, '');
+    const chatId = numeroLimpo + '@c.us';
+
     const texto = mensagem.replace(/\{([^}]+)\}/g, (_, ops) => {
       const opcoes = ops.split('|');
       return opcoes[Math.floor(Math.random() * opcoes.length)];
@@ -429,7 +419,7 @@ async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemM
 
     try {
       if (imagemBase64) {
-        const { MessageMedia } = require('whatsapp-web.js');
+        // PATCH 2: MessageMedia já importado no topo — sem require() dentro do loop
         const media = new MessageMedia(imagemMime, imagemBase64, imagemNome);
         await wppClient.sendMessage(chatId, media, { caption: texto });
       } else {
@@ -439,8 +429,8 @@ async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemM
       disparo.logs.push({ numero, status: '✅ Enviado' });
       disparo.stats.sucesso++;
       chatsMemoria.push({ tipo: 'enviada', de: numero, txt: texto, hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) });
-    } catch {
-      disparo.logs.push({ numero, status: '❌ Erro' });
+    } catch (err) {
+      disparo.logs.push({ numero, status: `❌ Erro: ${err.message || 'falha'}` });
       disparo.stats.erro++;
     }
 
@@ -454,7 +444,6 @@ async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemM
   if (disparo.status !== 'cancelado') disparo.status = 'finalizado';
 }
 
-// /progresso — estado atual do disparo
 app.get('/progresso', autenticar, (req, res) => {
   return res.json({
     status:  disparo.status,
@@ -464,30 +453,25 @@ app.get('/progresso', autenticar, (req, res) => {
   });
 });
 
-// /logs-envio — logs do disparo atual
 app.get('/logs-envio', autenticar, (req, res) => {
   return res.json(disparo.logs.slice(-100));
 });
 
-// /pausar — alterna pause/retomar
 app.post('/pausar', autenticar, (req, res) => {
   disparo.pausado = !disparo.pausado;
   return res.json({ pausado: disparo.pausado });
 });
 
-// /cancelar — cancela disparo em andamento
 app.post('/cancelar', autenticar, (req, res) => {
   disparo.status  = 'cancelado';
   disparo.pausado = false;
   return res.json({ ok: true });
 });
 
-// /chats — mensagens recebidas e enviadas em memória
 app.get('/chats', autenticar, (req, res) => {
   return res.json(chatsMemoria.slice(-100));
 });
 
-// /stats — estatísticas do último disparo
 app.get('/stats', autenticar, (req, res) => {
   return res.json(disparo.stats);
 });
