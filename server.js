@@ -91,7 +91,6 @@ const wppClient = new Client({
       '--disable-background-networking',
       '--disable-default-apps',
       '--no-first-run',
-      '--single-process',  // ✅ essencial para containers com pouca RAM
       '--no-zygote',       // ✅ evita travamento de processos filhos
     ],
   },
