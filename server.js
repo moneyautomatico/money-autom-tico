@@ -141,13 +141,29 @@ function criarCliente() {
 
 const wppClient = criarCliente();
 
-// ✅ FIX: aguarda 10s antes de inicializar — dá tempo ao container subir completamente
-setTimeout(() => {
-  console.log('🔄 Iniciando WhatsApp...');
+// ✅ FIX: retry automático com até 5 tentativas e backoff crescente
+let tentativasWpp = 0;
+const MAX_TENTATIVAS_WPP = 5;
+
+function inicializarWhatsApp() {
+  tentativasWpp++;
+  console.log(`🔄 Iniciando WhatsApp... (tentativa ${tentativasWpp}/${MAX_TENTATIVAS_WPP})`);
+  console.log(`🔍 Chrome path: ${CHROME_PATH}`);
+
   wppClient.initialize().catch(err => {
-    console.error('❌ Erro ao inicializar WhatsApp:', err.message);
+    console.error(`❌ Erro ao inicializar WhatsApp (tentativa ${tentativasWpp}):`, err.message);
+    if (tentativasWpp < MAX_TENTATIVAS_WPP) {
+      const espera = tentativasWpp * 15000;
+      console.log(`⏳ Tentando novamente em ${espera / 1000}s...`);
+      setTimeout(inicializarWhatsApp, espera);
+    } else {
+      console.error('💀 WhatsApp não inicializou após todas as tentativas.');
+    }
   });
-}, 10000);
+}
+
+// Aguarda 10s para o container estabilizar antes da 1ª tentativa
+setTimeout(inicializarWhatsApp, 10000);
 
 // ─────────────────────────────────────────────────
 // ESTADO EM MEMÓRIA — DISPARO
