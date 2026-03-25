@@ -99,8 +99,10 @@ function criarCliente() {
         '--no-zygote',
         '--disable-accelerated-2d-canvas',
         '--disable-web-security',
-        // ✅ FIX NOVO: resolve "Requesting main frame too early" em containers
+        // ✅ FIX: resolve "Requesting main frame too early" em containers
         '--disable-features=site-per-process,TranslateUI',
+        '--renderer-process-limit=1',
+        '--disable-ipc-flooding-protection',
         '--memory-pressure-off',
         '--js-flags=--max-old-space-size=512',
       ],
@@ -139,12 +141,13 @@ function criarCliente() {
 
 const wppClient = criarCliente();
 
-// ✅ FIX NOVO: aguarda 3s antes de inicializar — dá tempo ao container subir
+// ✅ FIX: aguarda 10s antes de inicializar — dá tempo ao container subir completamente
 setTimeout(() => {
+  console.log('🔄 Iniciando WhatsApp...');
   wppClient.initialize().catch(err => {
     console.error('❌ Erro ao inicializar WhatsApp:', err.message);
   });
-}, 3000);
+}, 10000);
 
 // ─────────────────────────────────────────────────
 // ESTADO EM MEMÓRIA — DISPARO
