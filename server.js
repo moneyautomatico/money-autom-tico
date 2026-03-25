@@ -91,17 +91,14 @@ function criarCliente() {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
         '--disable-extensions',
         '--disable-background-networking',
         '--disable-default-apps',
-        '--no-first-run',
-        // ✅ FIX: essenciais para Railway/Docker com pouca RAM
-        '--no-zygote',
         '--disable-accelerated-2d-canvas',
         '--disable-web-security',
-        // ✅ FIX: resolve "Requesting main frame too early" em containers
-        '--disable-features=site-per-process,TranslateUI',
-        '--renderer-process-limit=1',
+        '--disable-features=VizDisplayCompositor,TranslateUI',
         '--disable-ipc-flooding-protection',
         '--memory-pressure-off',
         '--js-flags=--max-old-space-size=512',
@@ -161,7 +158,20 @@ function inicializarWhatsApp() {
     console.warn('⚠️ Não foi possível remover SingletonLock:', e.message);
   }
 
-  wppClient.initialize().catch(err => {
+  // ✅ FIX: timeout de 90s — se travar silenciosamente, tenta novamente
+  const initTimeout = setTimeout(() => {
+    console.error(`❌ Timeout: WhatsApp demorou mais de 90s para inicializar (tentativa ${tentativasWpp})`);
+    if (tentativasWpp < MAX_TENTATIVAS_WPP) {
+      const espera = tentativasWpp * 15000;
+      console.log(`⏳ Tentando novamente em ${espera / 1000}s...`);
+      setTimeout(inicializarWhatsApp, espera);
+    }
+  }, 90000);
+
+  wppClient.initialize().then(() => {
+    clearTimeout(initTimeout);
+  }).catch(err => {
+    clearTimeout(initTimeout);
     console.error(`❌ Erro ao inicializar WhatsApp (tentativa ${tentativasWpp}):`, err.message);
     if (tentativasWpp < MAX_TENTATIVAS_WPP) {
       const espera = tentativasWpp * 15000;
