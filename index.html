@@ -83,10 +83,7 @@
             transition: border-color 0.2s;
         }
 
-        input:focus, textarea:focus {
-            border-color: rgba(0,255,136,0.4);
-        }
-
+        input:focus, textarea:focus { border-color: rgba(0,255,136,0.4); }
         textarea { resize: vertical; }
 
         button {
@@ -106,15 +103,7 @@
             overflow: hidden;
         }
 
-        button::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: white;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
+        button::after { content: ''; position: absolute; inset: 0; background: white; opacity: 0; transition: opacity 0.2s; }
         button:active::after { opacity: 0.1; }
         button:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,255,136,0.25); }
 
@@ -154,13 +143,13 @@
         .nav-item.active { opacity: 1; color: var(--p); }
         .nav-item.active .icon { filter: drop-shadow(0 0 6px rgba(0,255,136,0.6)); }
 
-        /* ─── STATUS ─── */
+        /* STATUS */
         #qrcode { background: white; padding: 15px; width: fit-content; margin: 10px auto; border-radius: 10px; display: none; }
         .status-badge { font-size: 12px; padding: 6px 14px; border-radius: 20px; display: inline-block; margin-bottom: 12px; font-weight: 700; letter-spacing: 0.05em; }
         .status-on { background: rgba(0,255,136,0.08); color: var(--p); border: 1px solid rgba(0,255,136,0.3); }
         .status-off { background: rgba(255,77,77,0.08); color: var(--danger); border: 1px solid rgba(255,77,77,0.3); }
 
-        /* ─── UPLOAD ─── */
+        /* UPLOAD */
         .upload-label {
             display: flex; align-items: center; gap: 10px;
             background: var(--c2); border: 1px dashed rgba(255,255,255,0.15);
@@ -172,239 +161,79 @@
         .upload-label input { display: none; }
         #previewImg { max-width: 100%; border-radius: 10px; margin-bottom: 10px; display: none; }
 
-        /* ─── DISPARADOR ─── */
+        /* DISPARADOR */
         .btn-row { display: flex; gap: 8px; margin-top: 10px; }
 
         .btn-action {
-            background: transparent;
-            color: var(--p);
+            background: transparent; color: var(--p);
             border: 1px solid rgba(0,255,136,0.3);
-            font-size: 12px;
-            padding: 12px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            transition: all 0.2s;
+            font-size: 12px; padding: 12px; font-weight: 700; letter-spacing: 0.06em;
         }
-
-        .btn-action:hover {
-            background: rgba(0,255,136,0.08);
-            box-shadow: none;
-            transform: none;
-        }
+        .btn-action:hover { background: rgba(0,255,136,0.08); box-shadow: none; transform: none; }
 
         .btn-danger-outline {
-            background: transparent;
-            color: var(--danger);
+            background: transparent; color: var(--danger);
             border: 1px solid rgba(255,77,77,0.3);
-            font-size: 12px;
-            padding: 12px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
+            font-size: 12px; padding: 12px; font-weight: 700; letter-spacing: 0.06em;
         }
+        .btn-danger-outline:hover { background: rgba(255,77,77,0.08); box-shadow: none; transform: none; }
 
-        .btn-danger-outline:hover {
-            background: rgba(255,77,77,0.08);
-            box-shadow: none;
-            transform: none;
+        /* BOTÃO ESPELHO */
+        .btn-espelho {
+            background: transparent;
+            color: #00aaff;
+            border: 1px solid rgba(0,170,255,0.3);
+            font-size: 12px; padding: 12px; font-weight: 700; letter-spacing: 0.06em;
+            flex: 1;
         }
+        .btn-espelho:hover { background: rgba(0,170,255,0.08); box-shadow: none; transform: none; }
 
-        /* ─── PAINEL DE DISPARO ─── */
+        /* PAINEL DISPARO */
         #painelDisparo {
-            display: none;
-            background: var(--c2);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            margin-top: 14px;
+            display: none; background: var(--c2);
+            border: 1px solid var(--border); border-radius: 14px;
+            padding: 18px; margin-top: 14px;
         }
 
-        .disp-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-        }
-
-        .disp-title {
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--p);
-        }
-
+        .disp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .disp-title { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--p); }
         .disp-status-pill {
-            font-size: 10px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background: rgba(0,255,136,0.1);
-            color: var(--p);
-            border: 1px solid rgba(0,255,136,0.2);
-            letter-spacing: 0.05em;
+            font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+            background: rgba(0,255,136,0.1); color: var(--p); border: 1px solid rgba(0,255,136,0.2); letter-spacing: 0.05em;
         }
 
-        /* Barra de progresso total */
-        .prog-total-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: var(--t2);
-            margin-bottom: 6px;
-            font-family: 'JetBrains Mono', monospace;
-        }
+        .prog-total-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--t2); margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; }
+        .prog-total-bg { background: rgba(255,255,255,0.06); border-radius: 20px; height: 10px; overflow: hidden; margin-bottom: 16px; }
+        .prog-total-fill { height: 100%; background: linear-gradient(90deg, var(--p2), var(--p)); border-radius: 20px; width: 0%; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 12px rgba(0,255,136,0.4); }
 
-        .prog-total-bg {
-            background: rgba(255,255,255,0.06);
-            border-radius: 20px;
-            height: 10px;
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
+        .countdown-label { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--t2); margin-bottom: 6px; }
+        .countdown-timer { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: var(--warn); }
+        .countdown-bg { background: rgba(255,255,255,0.06); border-radius: 20px; height: 6px; overflow: hidden; margin-bottom: 16px; }
+        .countdown-fill { height: 100%; background: linear-gradient(90deg, #ff8800, var(--warn)); border-radius: 20px; width: 100%; transition: width 1s linear; }
 
-        .prog-total-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--p2), var(--p));
-            border-radius: 20px;
-            width: 0%;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 12px rgba(0,255,136,0.4);
-        }
+        .msg-preview { background: var(--b); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+        .msg-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .msg-preview-title { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--t2); }
+        .msg-preview-status { font-size: 12px; }
+        .msg-preview-numero { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--p); font-weight: 700; margin-bottom: 6px; }
+        .msg-preview-texto { font-size: 13px; color: var(--t); line-height: 1.5; background: var(--c2); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 2px solid rgba(0,255,136,0.3); font-style: italic; }
+        .msg-preview-hora { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--t2); }
+        .msg-preview-data { font-size: 11px; color: var(--t2); margin-bottom: 4px; }
 
-        /* Barra de contagem regressiva */
-        .countdown-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-            color: var(--t2);
-            margin-bottom: 6px;
-        }
-
-        .countdown-timer {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--warn);
-        }
-
-        .countdown-bg {
-            background: rgba(255,255,255,0.06);
-            border-radius: 20px;
-            height: 6px;
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-
-        .countdown-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff8800, var(--warn));
-            border-radius: 20px;
-            width: 100%;
-            transition: width 1s linear;
-        }
-
-        /* Janelinha da última mensagem enviada */
-        .msg-preview {
-            background: var(--b);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-
-        .msg-preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .msg-preview-title {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--t2);
-        }
-
-        .msg-preview-status {
-            font-size: 12px;
-        }
-
-        .msg-preview-numero {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--p);
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .msg-preview-texto {
-            font-size: 13px;
-            color: var(--t);
-            line-height: 1.5;
-            background: var(--c2);
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 8px;
-            border-left: 2px solid rgba(0,255,136,0.3);
-            font-style: italic;
-        }
-
-        .msg-preview-hora {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            color: var(--t2);
-        }
-
-        .msg-preview-data {
-            font-size: 11px;
-            color: var(--t2);
-            margin-bottom: 4px;
-        }
-
-        /* Lista de logs estilizada */
-        .logs-lista {
-            max-height: 200px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(0,255,136,0.2) transparent;
-        }
-
-        .log-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 10px;
-            border-radius: 8px;
-            margin-bottom: 4px;
-            background: var(--b);
-            font-size: 11px;
-            font-family: 'JetBrains Mono', monospace;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
+        .logs-lista { max-height: 200px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0,255,136,0.2) transparent; }
+        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 8px; margin-bottom: 4px; background: var(--b); font-size: 11px; font-family: 'JetBrains Mono', monospace; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         .log-num { color: var(--t2); }
         .log-ok { color: var(--p); }
         .log-err { color: var(--danger); }
-        .log-hora { color: var(--t2); font-size: 10px; }
 
-        /* Stats grid */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
         .stat-card { background: var(--c2); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid var(--border); }
         .stat-num { font-size: 30px; font-weight: 800; color: var(--p); font-family: 'JetBrains Mono', monospace; }
         .stat-label { font-size: 10px; opacity: 0.5; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
-
         .taxa-bar-bg { background: rgba(255,255,255,0.06); border-radius: 10px; height: 10px; overflow: hidden; margin: 10px 0 5px; }
         .taxa-bar-fill { background: linear-gradient(90deg, var(--p2), var(--p)); height: 100%; transition: 1s ease; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
 
-        /* Chats */
         .chat-container { display: flex; flex-direction: column; max-height: 420px; overflow-y: auto; padding: 5px; scrollbar-width: thin; scrollbar-color: rgba(0,255,136,0.2) transparent; }
         .chat-msg { padding: 10px 14px; border-radius: 12px; margin: 5px 0; max-width: 85%; font-size: 13px; line-height: 1.5; }
         .chat-msg.recebida { background: var(--c2); border-bottom-left-radius: 2px; }
@@ -413,51 +242,399 @@
         .chat-hora { font-size: 10px; opacity: 0.4; margin-top: 4px; text-align: right; font-family: 'JetBrains Mono', monospace; }
         .chat-empty { text-align: center; opacity: 0.3; font-size: 13px; padding: 40px 0; }
 
-        /* Auth */
         #authArea { height: 100vh; display: flex; align-items: center; justify-content: center; }
         .auth-card { background: var(--c); border-radius: 20px; padding: 32px 28px; width: 340px; border: 1px solid var(--border); }
         .auth-logo { text-align: center; margin-bottom: 28px; }
         .auth-logo h2 { font-size: 24px; font-weight: 800; color: var(--p); letter-spacing: -0.02em; }
         .auth-logo p { font-size: 12px; color: var(--t2); margin-top: 4px; letter-spacing: 0.08em; text-transform: uppercase; }
-
         .label-field { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t2); margin-bottom: 6px; display: block; }
-
-        .divider { text-align: center; font-size: 12px; color: var(--t2); margin: 14px 0; }
         .link-text { text-align: center; cursor: pointer; font-size: 12px; color: var(--t2); margin-top: 14px; transition: color 0.2s; }
         .link-text:hover { color: var(--p); }
 
-        /* Agendado */
-        .agendado-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: rgba(255,170,0,0.08);
-            border: 1px solid rgba(255,170,0,0.3);
-            color: var(--warn);
+        .agendado-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,170,0,0.08); border: 1px solid rgba(255,170,0,0.3); color: var(--warn); border-radius: 20px; padding: 6px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
+        .pulse { width: 8px; height: 8px; background: var(--warn); border-radius: 50%; animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+        .pulse-green { width: 8px; height: 8px; background: var(--p); border-radius: 50%; display: inline-block; animation: pulse 1.2s infinite; margin-right: 6px; }
+
+        /* ═══════════════════════════════════════════════
+           MODAL ESPELHO WHATSAPP
+        ═══════════════════════════════════════════════ */
+        #modalEspelho {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        #modalEspelho.open { display: flex; }
+
+        .espelho-wrap {
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
             border-radius: 20px;
-            padding: 6px 14px;
+            overflow: hidden;
+            box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,255,136,0.15);
+            animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Barra de status do sistema (acima do WhatsApp) */
+        .espelho-header {
+            background: #111;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .espelho-title {
             font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--p);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-
-        .pulse {
-            width: 8px; height: 8px;
-            background: var(--warn);
+        .espelho-close {
+            width: 28px; height: 28px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 50%;
-            animation: pulse 1.2s infinite;
+            cursor: pointer;
+            color: var(--t2);
+            font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .espelho-close:hover { background: rgba(255,77,77,0.2); color: var(--danger); border-color: rgba(255,77,77,0.3); }
+
+        /* Barra de progresso no topo do modal */
+        .espelho-prog-bar {
+            height: 3px;
+            background: rgba(255,255,255,0.06);
+        }
+        .espelho-prog-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--p2), var(--p));
+            width: 0%;
+            transition: width 0.8s ease;
+            box-shadow: 0 0 8px rgba(0,255,136,0.6);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.8); }
+        /* ─── WhatsApp Web simulado ─── */
+        .wpp-shell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0b141a;
+            overflow: hidden;
         }
 
-        .pulse-green {
-            width: 8px; height: 8px;
-            background: var(--p);
+        /* Topo do chat (header do contato) */
+        .wpp-top {
+            background: #202c33;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .wpp-avatar {
+            width: 40px; height: 40px;
             border-radius: 50%;
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .wpp-contact-info { flex: 1; }
+        .wpp-contact-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e9edef;
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            letter-spacing: 0;
+        }
+        .wpp-contact-status {
+            font-size: 12px;
+            color: #8696a0;
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+        }
+        .wpp-icons { display: flex; gap: 20px; color: #8696a0; font-size: 18px; }
+
+        /* Área de mensagens */
+        .wpp-messages {
+            flex: 1;
+            padding: 12px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 300px;
+            max-height: 380px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
+            /* Fundo com padrão WhatsApp */
+            background-color: #0b141a;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M0 0h60v60H0z' fill='%230b141a'/%3E%3Cpath d='M30 5 L55 25 L55 45 L30 55 L5 45 L5 25 Z' stroke='rgba(255,255,255,0.02)' fill='none' stroke-width='0.5'/%3E%3C/svg%3E");
+        }
+
+        /* Balão de data */
+        .wpp-date-sep {
+            text-align: center;
+            margin: 8px 0;
+        }
+        .wpp-date-pill {
             display: inline-block;
-            animation: pulse 1.2s infinite;
-            margin-right: 6px;
+            background: #182229;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            color: #8696a0;
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+        }
+
+        /* Balões enviados */
+        .wpp-bubble {
+            max-width: 75%;
+            align-self: flex-end;
+            background: #005c4b;
+            border-radius: 8px 8px 2px 8px;
+            padding: 8px 12px 22px;
+            position: relative;
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            font-size: 14px;
+            color: #e9edef;
+            line-height: 1.45;
+            animation: bubbleIn 0.25s ease;
+            word-break: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        @keyframes bubbleIn {
+            from { opacity: 0; transform: scale(0.9) translateY(8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .wpp-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: -8px;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 0 0 10px 10px;
+            border-color: transparent transparent #005c4b transparent;
+        }
+
+        .wpp-bubble-time {
+            position: absolute;
+            bottom: 4px; right: 8px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.45);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Ícone de check duplo */
+        .wpp-check { color: #53bdeb; font-size: 13px; }
+        .wpp-check.pending { color: rgba(255,255,255,0.4); }
+
+        /* Balão com imagem */
+        .wpp-bubble-img {
+            max-width: 75%;
+            align-self: flex-end;
+            background: #005c4b;
+            border-radius: 8px 8px 2px 8px;
+            overflow: hidden;
+            position: relative;
+            animation: bubbleIn 0.25s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .wpp-bubble-img img {
+            width: 100%;
+            display: block;
+            max-height: 200px;
+            object-fit: cover;
+        }
+        .wpp-bubble-img .caption {
+            padding: 6px 12px 22px;
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            font-size: 14px;
+            color: #e9edef;
+        }
+        .wpp-bubble-img .wpp-bubble-time {
+            position: absolute;
+            bottom: 4px; right: 8px;
+        }
+        .wpp-bubble-img::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: -8px;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 0 0 10px 10px;
+            border-color: transparent transparent #005c4b transparent;
+        }
+
+        /* Indicador "digitando" */
+        .wpp-typing {
+            align-self: flex-start;
+            background: #202c33;
+            border-radius: 8px 8px 8px 2px;
+            padding: 10px 14px;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .wpp-typing.show { display: flex; }
+        .wpp-typing-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #8696a0;
+            animation: typingDot 1.2s infinite;
+        }
+        .wpp-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .wpp-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingDot {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+            30% { transform: translateY(-5px); opacity: 1; }
+        }
+
+        /* Indicador de anexo sendo enviado */
+        .wpp-attach-preview {
+            align-self: flex-end;
+            background: #005c4b;
+            border-radius: 8px;
+            padding: 12px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            max-width: 75%;
+            opacity: 0.6;
+            animation: attachPulse 1s infinite alternate;
+        }
+        .wpp-attach-preview.show { display: flex; }
+        @keyframes attachPulse { from { opacity: 0.4; } to { opacity: 0.8; } }
+        .wpp-attach-icon { font-size: 24px; }
+        .wpp-attach-info { font-family: -apple-system, 'Segoe UI', sans-serif; font-size: 12px; color: #e9edef; }
+        .wpp-attach-name { font-weight: 600; margin-bottom: 2px; }
+        .wpp-attach-status { color: rgba(255,255,255,0.5); font-size: 11px; }
+
+        /* Barra de input simulada */
+        .wpp-input-area {
+            background: #202c33;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+        }
+        .wpp-input-icon { color: #8696a0; font-size: 22px; cursor: default; }
+        .wpp-input-box {
+            flex: 1;
+            background: #2a3942;
+            border-radius: 24px;
+            padding: 10px 16px;
+            font-size: 15px;
+            color: #e9edef;
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .wpp-input-text {
+            flex: 1;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .wpp-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 16px;
+            background: #e9edef;
+            margin-left: 1px;
+            animation: blink 0.8s infinite;
+            vertical-align: middle;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .wpp-send-btn {
+            width: 44px; height: 44px;
+            background: #00a884;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white;
+            font-size: 20px;
+            flex-shrink: 0;
+            transition: background 0.2s;
+            cursor: default;
+            border: none;
+            padding: 0;
+            box-shadow: none;
+            transform: none;
+        }
+        .wpp-send-btn.sending { background: #128c7e; animation: sendPulse 0.3s ease; }
+        @keyframes sendPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* Rodapé do modal com info de progresso */
+        .espelho-footer {
+            background: #111;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            gap: 12px;
+        }
+        .espelho-stat {
+            text-align: center;
+            flex: 1;
+        }
+        .espelho-stat-num {
+            font-size: 18px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--p);
+        }
+        .espelho-stat-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--t2);
+            margin-top: 1px;
+        }
+        .espelho-stat-divider {
+            width: 1px;
+            height: 30px;
+            background: rgba(255,255,255,0.06);
+        }
+
+        /* Countdown no footer */
+        .espelho-countdown {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--warn);
+            font-weight: 700;
         }
     </style>
 </head>
@@ -539,13 +716,11 @@
 
                 <!-- Painel de status do disparo -->
                 <div id="painelDisparo">
-
                     <div class="disp-header">
                         <span class="disp-title">📡 Status do Disparo</span>
                         <span class="disp-status-pill" id="dispStatusPill">INICIANDO</span>
                     </div>
 
-                    <!-- Barra de progresso total -->
                     <div class="prog-total-label">
                         <span>Progresso geral</span>
                         <span id="progContador" style="font-weight:700; color:var(--p)">0 / 0</span>
@@ -554,7 +729,6 @@
                         <div class="prog-total-fill" id="progTotalFill"></div>
                     </div>
 
-                    <!-- Barra contagem regressiva -->
                     <div id="countdownArea" style="display:none">
                         <div class="countdown-label">
                             <span>⏱ Próximo envio em</span>
@@ -565,7 +739,6 @@
                         </div>
                     </div>
 
-                    <!-- Info data/hora -->
                     <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap">
                         <div style="flex:1; background:var(--b); border-radius:8px; padding:10px; border:1px solid var(--border); font-size:11px;">
                             <div style="color:var(--t2); margin-bottom:2px; text-transform:uppercase; letter-spacing:0.05em; font-size:10px;">Iniciado em</div>
@@ -577,7 +750,6 @@
                         </div>
                     </div>
 
-                    <!-- Janela de preview da última mensagem enviada -->
                     <div class="msg-preview" id="msgPreviewBox" style="display:none">
                         <div class="msg-preview-header">
                             <span class="msg-preview-title">📨 Última Mensagem</span>
@@ -589,24 +761,22 @@
                         <div class="msg-preview-hora" id="msgPreviewHora">—</div>
                     </div>
 
-                    <!-- Botões parar/continuar/cancelar -->
+                    <!-- Botões parar/pausar/ESPELHO -->
                     <div class="btn-row">
                         <button class="btn-action" onclick="pausar()" id="btnPausar">⏸ PAUSAR</button>
+                        <button class="btn-espelho" onclick="abrirEspelho()">👁 ESPELHO</button>
                         <button class="btn-danger-outline" onclick="cancelar()" id="btnCancelar">⛔ PARAR</button>
                     </div>
                 </div>
 
-                <!-- Agendado badge -->
                 <div id="agendadoBadge" style="display:none; text-align:center; margin-top:12px;">
                     <div class="agendado-badge">
                         <div class="pulse"></div>
                         <span id="agendadoTxt">AGUARDANDO HORÁRIO AGENDADO</span>
                     </div>
                 </div>
-
             </div>
 
-            <!-- Logs -->
             <div class="card">
                 <h3>📋 Log de Envios</h3>
                 <div class="logs-lista" id="logsLista">
@@ -630,22 +800,10 @@
             <div class="card">
                 <h3>📊 Estatísticas</h3>
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-num" id="stTotal">—</div>
-                        <div class="stat-label">Total Enviado</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-num" id="stTaxa" style="color:var(--p)">—</div>
-                        <div class="stat-label">Taxa de Sucesso</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-num" id="stSucesso" style="color:#00ff88">—</div>
-                        <div class="stat-label">Sucessos</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-num" id="stErro" style="color:#ff4d4d">—</div>
-                        <div class="stat-label">Erros</div>
-                    </div>
+                    <div class="stat-card"><div class="stat-num" id="stTotal">—</div><div class="stat-label">Total Enviado</div></div>
+                    <div class="stat-card"><div class="stat-num" id="stTaxa" style="color:var(--p)">—</div><div class="stat-label">Taxa de Sucesso</div></div>
+                    <div class="stat-card"><div class="stat-num" id="stSucesso" style="color:#00ff88">—</div><div class="stat-label">Sucessos</div></div>
+                    <div class="stat-card"><div class="stat-num" id="stErro" style="color:#ff4d4d">—</div><div class="stat-label">Erros</div></div>
                 </div>
                 <div style="font-size:11px; color:var(--t2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Taxa de entrega</div>
                 <div class="taxa-bar-bg"><div class="taxa-bar-fill" id="taxaBar" style="width:0%"></div></div>
@@ -654,19 +812,116 @@
         </div>
 
         <nav>
-            <div class="nav-item active" onclick="tab('tab1', this)">
-                <span class="icon">⚙️</span><span>Monitor</span>
-            </div>
-            <div class="nav-item" onclick="tab('tab2', this)">
-                <span class="icon">🚀</span><span>Enviar</span>
-            </div>
-            <div class="nav-item" onclick="tab('tab3', this)">
-                <span class="icon">💬</span><span>Chats</span>
-            </div>
-            <div class="nav-item" onclick="tab('tab4', this)">
-                <span class="icon">📊</span><span>Stats</span>
-            </div>
+            <div class="nav-item active" onclick="tab('tab1', this)"><span class="icon">⚙️</span><span>Monitor</span></div>
+            <div class="nav-item" onclick="tab('tab2', this)"><span class="icon">🚀</span><span>Enviar</span></div>
+            <div class="nav-item" onclick="tab('tab3', this)"><span class="icon">💬</span><span>Chats</span></div>
+            <div class="nav-item" onclick="tab('tab4', this)"><span class="icon">📊</span><span>Stats</span></div>
         </nav>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         MODAL ESPELHO WHATSAPP
+    ═══════════════════════════════════════════ -->
+    <div id="modalEspelho">
+        <div class="espelho-wrap">
+
+            <!-- Header do modal -->
+            <div class="espelho-header">
+                <div class="espelho-title">
+                    <span class="pulse-green"></span>
+                    ESPELHO AO VIVO
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="espelhoStatusPill" style="font-size:10px; color:var(--t2); font-family:'JetBrains Mono',monospace;">aguardando...</span>
+                    <div class="espelho-close" onclick="fecharEspelho()">✕</div>
+                </div>
+            </div>
+
+            <!-- Barra de progresso -->
+            <div class="espelho-prog-bar">
+                <div class="espelho-prog-fill" id="espelhoProgFill"></div>
+            </div>
+
+            <!-- Shell do WhatsApp simulado -->
+            <div class="wpp-shell">
+
+                <!-- Topo do contato -->
+                <div class="wpp-top">
+                    <div class="wpp-avatar" id="wppAvatar">👤</div>
+                    <div class="wpp-contact-info">
+                        <div class="wpp-contact-name" id="wppContactName">Aguardando...</div>
+                        <div class="wpp-contact-status" id="wppContactStatus">online</div>
+                    </div>
+                    <div class="wpp-icons">
+                        <span>🔍</span>
+                        <span>⋮</span>
+                    </div>
+                </div>
+
+                <!-- Mensagens -->
+                <div class="wpp-messages" id="wppMessages">
+                    <div class="wpp-date-sep">
+                        <span class="wpp-date-pill" id="wppDatePill">HOJE</span>
+                    </div>
+
+                    <!-- Indicador de anexo -->
+                    <div class="wpp-attach-preview" id="wppAttach">
+                        <div class="wpp-attach-icon">🖼️</div>
+                        <div class="wpp-attach-info">
+                            <div class="wpp-attach-name" id="wppAttachName">imagem.jpg</div>
+                            <div class="wpp-attach-status">⬆️ Enviando anexo...</div>
+                        </div>
+                    </div>
+
+                    <!-- Indicador digitando -->
+                    <div class="wpp-typing" id="wppTyping">
+                        <div class="wpp-typing-dot"></div>
+                        <div class="wpp-typing-dot"></div>
+                        <div class="wpp-typing-dot"></div>
+                    </div>
+                </div>
+
+                <!-- Barra de input simulada -->
+                <div class="wpp-input-area">
+                    <span class="wpp-input-icon">😊</span>
+                    <div class="wpp-input-box">
+                        <span class="wpp-input-text" id="wppInputText"></span>
+                        <span class="wpp-cursor" id="wppCursor"></span>
+                    </div>
+                    <span class="wpp-input-icon">📎</span>
+                    <button class="wpp-send-btn" id="wppSendBtn">➤</button>
+                </div>
+            </div>
+
+            <!-- Footer com stats -->
+            <div class="espelho-footer">
+                <div class="espelho-stat">
+                    <div class="espelho-stat-num" id="espNAtual">0</div>
+                    <div class="espelho-stat-label">Atual</div>
+                </div>
+                <div class="espelho-stat-divider"></div>
+                <div class="espelho-stat">
+                    <div class="espelho-stat-num" id="espNTotal">0</div>
+                    <div class="espelho-stat-label">Total</div>
+                </div>
+                <div class="espelho-stat-divider"></div>
+                <div class="espelho-stat">
+                    <div class="espelho-stat-num" style="color:#00ff88" id="espOk">0</div>
+                    <div class="espelho-stat-label">Enviados</div>
+                </div>
+                <div class="espelho-stat-divider"></div>
+                <div class="espelho-stat">
+                    <div class="espelho-stat-num" style="color:#ff4d4d" id="espErr">0</div>
+                    <div class="espelho-stat-label">Erros</div>
+                </div>
+                <div class="espelho-stat-divider"></div>
+                <div class="espelho-countdown" id="espCountdown">
+                    <span>⏱</span>
+                    <span id="espCountdownNum">--</span>
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <script>
@@ -744,33 +999,30 @@
             let restante = segundos;
             fill.style.transition = 'none';
             fill.style.width = '100%';
-
             setTimeout(() => {
                 fill.style.transition = `width ${segundos}s linear`;
                 fill.style.width = '0%';
             }, 50);
-
             num.innerText = restante + 's';
             countdownInterval = setInterval(() => {
                 restante--;
-                if (restante <= 0) {
-                    clearInterval(countdownInterval);
-                    num.innerText = '0s';
-                    return;
-                }
+                if (restante <= 0) { clearInterval(countdownInterval); num.innerText = '0s'; return; }
                 num.innerText = restante + 's';
+                // Atualiza countdown no espelho também
+                document.getElementById('espCountdownNum').innerText = restante + 's';
             }, 1000);
         }
 
         function pararCountdown() {
             clearInterval(countdownInterval);
             document.getElementById('countdownArea').style.display = 'none';
+            document.getElementById('espCountdownNum').innerText = '--';
         }
 
         // ─── Atualizar painel de disparo ───
         function atualizarPainelDisparo(p, logs) {
-            const painel = document.getElementById('painelDisparo');
-            const pill   = document.getElementById('dispStatusPill');
+            const painel  = document.getElementById('painelDisparo');
+            const pill    = document.getElementById('dispStatusPill');
             const agBadge = document.getElementById('agendadoBadge');
 
             if (p.status === 'idle') {
@@ -782,42 +1034,30 @@
 
             painel.style.display = 'block';
 
-            // Status pill
             const pillMap = {
-                'rodando':   '<span class="pulse-green"></span>ENVIANDO',
-                'pausado':   '⏸ PAUSADO',
-                'agendado':  '⏰ AGENDADO',
-                'finalizado':'✅ CONCLUÍDO',
-                'cancelado': '⛔ CANCELADO',
+                'rodando':    '<span class="pulse-green"></span>ENVIANDO',
+                'pausado':    '⏸ PAUSADO',
+                'agendado':   '⏰ AGENDADO',
+                'finalizado': '✅ CONCLUÍDO',
+                'cancelado':  '⛔ CANCELADO',
             };
             pill.innerHTML = pillMap[p.pausado ? 'pausado' : p.status] || p.status.toUpperCase();
-
-            // Badge agendado
             agBadge.style.display = (p.status === 'agendado') ? 'block' : 'none';
 
-            // Progresso total
             const pct = p.total > 0 ? Math.round((p.atual / p.total) * 100) : 0;
             document.getElementById('progTotalFill').style.width = pct + '%';
             document.getElementById('progContador').innerText = `${p.atual} / ${p.total} — ${pct}%`;
 
-            // Sucesso / Erros
-            if (p.stats) {
-                document.getElementById('dispSucessoErro').innerText = `${p.stats.sucesso} / ${p.stats.erro}`;
-            }
-
-            // Botão pausar
+            if (p.stats) document.getElementById('dispSucessoErro').innerText = `${p.stats.sucesso} / ${p.stats.erro}`;
             document.getElementById('btnPausar').innerHTML = p.pausado ? '▶ RETOMAR' : '⏸ PAUSAR';
 
-            // Countdown só quando estiver rodando e não pausado
             if (p.status === 'rodando' && !p.pausado && p.atual < p.total) {
-                // Detecta novo envio pelo log
                 if (logs && logs.length > 0) {
                     const ultimo = logs[logs.length - 1];
                     if (!ultimoLog || ultimoLog.numero !== ultimo.numero) {
                         ultimoLog = ultimo;
                         iniciarCountdown(ultimoIntervalo);
 
-                        // Atualiza janelinha de preview
                         const box = document.getElementById('msgPreviewBox');
                         box.style.display = 'block';
                         document.getElementById('msgPreviewNumero').innerText = '📱 ' + ultimo.numero;
@@ -829,16 +1069,28 @@
                             agora.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
                         document.getElementById('msgPreviewHora').innerText =
                             '🕐 ' + agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+                        // ── Atualiza o Espelho ──
+                        atualizarEspelhoComEnvio(ultimo, textoEnviado, p);
                     }
                 }
             } else if (p.status !== 'rodando' || p.pausado) {
                 pararCountdown();
             }
 
-            // Finalizado / cancelado
             if (p.status === 'finalizado' || p.status === 'cancelado') {
                 pararCountdown();
                 document.getElementById('countdownArea').style.display = 'none';
+                if (espelhoAberto) atualizarEspelhoStatus(p.status);
+            }
+
+            // Atualiza stats do espelho
+            if (espelhoAberto && p.stats) {
+                document.getElementById('espNAtual').innerText = p.atual;
+                document.getElementById('espNTotal').innerText = p.total;
+                document.getElementById('espOk').innerText     = p.stats.sucesso;
+                document.getElementById('espErr').innerText    = p.stats.erro;
+                document.getElementById('espelhoProgFill').style.width = pct + '%';
             }
         }
 
@@ -848,12 +1100,7 @@
             if (!logs || !logs.length) return;
             lista.innerHTML = logs.slice(-50).reverse().map(x => {
                 const ok = x.status.includes('✅');
-                return `
-                    <div class="log-item">
-                        <span class="log-num">+${x.numero}</span>
-                        <span class="${ok ? 'log-ok' : 'log-err'}">${x.status}</span>
-                    </div>
-                `;
+                return `<div class="log-item"><span class="log-num">+${x.numero}</span><span class="${ok ? 'log-ok' : 'log-err'}">${x.status}</span></div>`;
             }).join('');
         }
 
@@ -865,13 +1112,11 @@
             iaT.value   = u.iaResumo || '';
             baseT.value = u.baseAprendizado || '';
 
-            // Guarda a data de início ao entrar no painel
             document.getElementById('dispDataInicio').innerText =
                 new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
             setInterval(async () => {
                 try {
-                    // Sync WhatsApp
                     const r = await fetch("/sync", { headers:{"Authorization": localStorage.getItem("tk")} });
                     const d = await r.json();
 
@@ -893,27 +1138,20 @@
                         qrcode.style.display = 'none';
                     }
 
-                    // Progresso + logs
-                    const pr = await fetch("/progresso", { headers:{"Authorization": localStorage.getItem("tk")} });
-                    const p  = await pr.json();
-
-                    // Pega intervalo atual do input
+                    const pr   = await fetch("/progresso", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    const p    = await pr.json();
                     ultimoIntervalo = parseInt(document.getElementById('intM').value) || 30;
 
                     const l    = await fetch("/logs-envio", { headers:{"Authorization": localStorage.getItem("tk")} });
                     const logs = await l.json();
 
-                    // Pega stats
                     const st = await fetch("/stats", { headers:{"Authorization": localStorage.getItem("tk")} });
                     p.stats  = await st.json();
 
                     atualizarPainelDisparo(p, logs);
                     renderLogs(logs);
 
-                    // Chats
                     if (document.getElementById('tab3').classList.contains('active')) carregarChats();
-
-                    // Stats tab
                     if (document.getElementById('tab4').classList.contains('active')) carregarStats();
 
                 } catch(e) {}
@@ -923,10 +1161,10 @@
         // ─── Disparar ───
         async function disparar() {
             const body = {
-                numeros:    numM.value,
-                mensagem:   msgM.value,
-                intervalo:  intM.value,
-                agendarEm:  document.getElementById('agendarEm').value || null
+                numeros:   numM.value,
+                mensagem:  msgM.value,
+                intervalo: intM.value,
+                agendarEm: document.getElementById('agendarEm').value || null
             };
             if (imagemBase64) {
                 body.imagemBase64 = imagemBase64;
@@ -946,20 +1184,19 @@
                 document.getElementById('dispDataInicio').innerText =
                     new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
                 ultimoLog = null;
+                resetarEspelho();
             } else {
                 alert(d.error || 'Erro ao iniciar disparo.');
             }
         }
 
-        // ─── Pausar ───
         async function pausar() {
             const r = await fetch("/pausar", { method:'POST', headers:{'Authorization':localStorage.getItem("tk")} });
             const d = await r.json();
             document.getElementById('btnPausar').innerHTML = d.pausado ? '▶ RETOMAR' : '⏸ PAUSAR';
-            if (d.pausado) pararCountdown();
+            if (d.pausado) { pararCountdown(); if (espelhoAberto) document.getElementById('espelhoStatusPill').innerText = '⏸ PAUSADO'; }
         }
 
-        // ─── Cancelar ───
         async function cancelar() {
             if (!confirm("Confirma cancelar o disparo em andamento?")) return;
             await fetch("/cancelar", { method:'POST', headers:{'Authorization':localStorage.getItem("tk")} });
@@ -967,7 +1204,6 @@
             document.getElementById('dispStatusPill').innerText = '⛔ CANCELADO';
         }
 
-        // ─── Chats ───
         async function carregarChats() {
             const r    = await fetch("/chats", { headers:{"Authorization": localStorage.getItem("tk")} });
             const msgs = await r.json();
@@ -986,7 +1222,6 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // ─── Stats ───
         async function carregarStats() {
             const r = await fetch("/stats", { headers:{"Authorization": localStorage.getItem("tk")} });
             const s = await r.json();
@@ -998,7 +1233,6 @@
             document.getElementById('taxaPct').innerText   = (s.taxa  || 0) + '%';
         }
 
-        // ─── Save config ───
         async function save() {
             await fetch("/save-config", {
                 method: 'POST',
@@ -1008,7 +1242,6 @@
             alert("Inteligência Atualizada!");
         }
 
-        // ─── Tabs ───
         function tab(t, el) {
             document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
             document.getElementById(t).classList.add('active');
@@ -1019,6 +1252,189 @@
         }
 
         function logoutApp() { localStorage.clear(); location.reload(); }
+
+        // ═══════════════════════════════════════════════
+        // ESPELHO WHATSAPP — LÓGICA COMPLETA
+        // ═══════════════════════════════════════════════
+        let espelhoAberto = false;
+        let digitandoTimeout = null;
+        let borbulhasEspelho = []; // histórico de balões no espelho
+
+        function abrirEspelho() {
+            document.getElementById('modalEspelho').classList.add('open');
+            espelhoAberto = true;
+            // Atualiza data
+            const hoje = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+            document.getElementById('wppDatePill').innerText = hoje.toUpperCase();
+        }
+
+        function fecharEspelho() {
+            document.getElementById('modalEspelho').classList.remove('open');
+            espelhoAberto = false;
+        }
+
+        // Fecha o modal clicando fora
+        document.getElementById('modalEspelho').addEventListener('click', function(e) {
+            if (e.target === this) fecharEspelho();
+        });
+
+        function resetarEspelho() {
+            borbulhasEspelho = [];
+            const msgs = document.getElementById('wppMessages');
+            // Remove balões antigos (mantém data e typing e attach)
+            msgs.querySelectorAll('.wpp-bubble, .wpp-bubble-img').forEach(el => el.remove());
+            document.getElementById('wppTyping').classList.remove('show');
+            document.getElementById('wppAttach').classList.remove('show');
+            document.getElementById('wppInputText').innerText = '';
+            document.getElementById('wppContactName').innerText = 'Iniciando...';
+            document.getElementById('wppContactStatus').innerText = 'online';
+            document.getElementById('espelhoStatusPill').innerText = '🟢 rodando';
+            document.getElementById('espNAtual').innerText = '0';
+            document.getElementById('espNTotal').innerText = '0';
+            document.getElementById('espOk').innerText = '0';
+            document.getElementById('espErr').innerText = '0';
+            document.getElementById('espelhoProgFill').style.width = '0%';
+        }
+
+        function atualizarEspelhoStatus(status) {
+            const pill = document.getElementById('espelhoStatusPill');
+            if (status === 'finalizado') pill.innerText = '✅ CONCLUÍDO';
+            else if (status === 'cancelado') pill.innerText = '⛔ CANCELADO';
+            else if (status === 'pausado') pill.innerText = '⏸ PAUSADO';
+        }
+
+        // Anima a digitação caractere por caractere no input simulado
+        function animarDigitacao(texto, callback) {
+            const el = document.getElementById('wppInputText');
+            el.innerText = '';
+            document.getElementById('wppCursor').style.display = 'inline-block';
+            let i = 0;
+            // Velocidade de digitação: simula humano (20-60ms por caractere)
+            function digitarChar() {
+                if (i < texto.length) {
+                    el.innerText += texto[i];
+                    i++;
+                    // Scroll da área de input
+                    const delay = Math.random() * 40 + 20;
+                    digitandoTimeout = setTimeout(digitarChar, delay);
+                } else {
+                    // Terminou de digitar — simula envio
+                    setTimeout(() => {
+                        document.getElementById('wppCursor').style.display = 'none';
+                        animarEnvio(texto, callback);
+                    }, 300);
+                }
+            }
+            digitarChar();
+        }
+
+        // Anima o botão de enviar e cria o balão
+        function animarEnvio(texto, callback) {
+            const sendBtn = document.getElementById('wppSendBtn');
+            sendBtn.classList.add('sending');
+            document.getElementById('wppInputText').innerText = '';
+            setTimeout(() => {
+                sendBtn.classList.remove('sending');
+                if (callback) callback();
+            }, 400);
+        }
+
+        // Cria um balão de mensagem no espelho
+        function criarBolha(texto, hora, status, comImagem) {
+            const msgs = document.getElementById('wppMessages');
+            let el;
+
+            if (comImagem && imagemBase64) {
+                // Balão com imagem
+                el = document.createElement('div');
+                el.className = 'wpp-bubble-img';
+                const checkClass = status === 'ok' ? 'wpp-check' : 'wpp-check pending';
+                el.innerHTML = `
+                    <img src="data:${imagemMime};base64,${imagemBase64}" alt="imagem">
+                    ${texto ? `<div class="caption">${texto}</div>` : ''}
+                    <div class="wpp-bubble-time">
+                        ${hora} <span class="${checkClass}">✓✓</span>
+                    </div>
+                `;
+            } else {
+                // Balão de texto
+                el = document.createElement('div');
+                el.className = 'wpp-bubble';
+                const checkClass = status === 'ok' ? 'wpp-check' : 'wpp-check pending';
+                el.innerHTML = `
+                    ${texto}
+                    <div class="wpp-bubble-time">
+                        ${hora} <span class="${checkClass}">✓✓</span>
+                    </div>
+                `;
+            }
+
+            // Insere antes do typing indicator
+            const typing = document.getElementById('wppTyping');
+            msgs.insertBefore(el, typing);
+
+            // Scroll para o final
+            setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 100);
+            return el;
+        }
+
+        // Função principal chamada quando um envio acontece
+        function atualizarEspelhoComEnvio(log, textoOriginal, progresso) {
+            if (!espelhoAberto) return;
+
+            const numero = log.numero;
+            const ok     = log.status.includes('✅');
+            const hora   = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+
+            // Atualiza o nome do contato no topo
+            document.getElementById('wppContactName').innerText = '+' + numero;
+            document.getElementById('wppContactStatus').innerText = 'online';
+
+            // Gera emoji aleatório para o avatar (simula foto do contato)
+            const emojis = ['👤','🙂','😊','👨','👩','🧑','👱','🧔'];
+            document.getElementById('wppAvatar').innerText = emojis[Math.floor(Math.random() * emojis.length)];
+
+            // Status pill
+            document.getElementById('espelhoStatusPill').innerText = `🟢 ${progresso.atual}/${progresso.total}`;
+
+            // Resolve variações {Oi|Olá} no texto para mostrar o texto real
+            const textoReal = textoOriginal.replace(/\{([^}]+)\}/g, (_, ops) => {
+                const opcoes = ops.split('|');
+                return opcoes[Math.floor(Math.random() * opcoes.length)];
+            });
+
+            // Sequência de animação
+            const typing = document.getElementById('wppTyping');
+            const attach = document.getElementById('wppAttach');
+
+            // 1) Se tem imagem, mostra preview do anexo
+            if (imagemBase64 && imagemNome) {
+                attach.classList.add('show');
+                document.getElementById('wppAttachName').innerText = imagemNome;
+                msgs_scroll();
+            }
+
+            // 2) Depois de um momento, mostra digitando
+            setTimeout(() => {
+                attach.classList.remove('show');
+                typing.classList.add('show');
+                msgs_scroll();
+            }, imagemBase64 ? 800 : 0);
+
+            // 3) Anima digitação no input
+            setTimeout(() => {
+                typing.classList.remove('show');
+                animarDigitacao(textoReal, () => {
+                    // 4) Cria o balão depois do envio
+                    criarBolha(textoReal, hora, ok ? 'ok' : 'err', !!imagemBase64);
+                });
+            }, imagemBase64 ? 1600 : 400);
+        }
+
+        function msgs_scroll() {
+            const msgs = document.getElementById('wppMessages');
+            setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
+        }
     </script>
 </body>
 </html>
