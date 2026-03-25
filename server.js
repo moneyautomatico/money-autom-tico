@@ -1,4 +1,5 @@
 require('dotenv').config();
+const fs = require('fs');
 
 const express    = require('express');
 const mongoose   = require('mongoose');
@@ -95,7 +96,6 @@ function criarCliente() {
         '--disable-default-apps',
         '--no-first-run',
         // ✅ FIX: essenciais para Railway/Docker com pouca RAM
-        '--single-process',
         '--no-zygote',
         '--disable-accelerated-2d-canvas',
         '--disable-web-security',
@@ -149,6 +149,17 @@ function inicializarWhatsApp() {
   tentativasWpp++;
   console.log(`🔄 Iniciando WhatsApp... (tentativa ${tentativasWpp}/${MAX_TENTATIVAS_WPP})`);
   console.log(`🔍 Chrome path: ${CHROME_PATH}`);
+
+  // ✅ FIX: remove o SingletonLock que bloqueia novas instâncias do Chrome
+  const lockPath = '/tmp/.wpp_session/session/SingletonLock';
+  try {
+    if (fs.existsSync(lockPath)) {
+      fs.unlinkSync(lockPath);
+      console.log('🧹 SingletonLock removido com sucesso.');
+    }
+  } catch (e) {
+    console.warn('⚠️ Não foi possível remover SingletonLock:', e.message);
+  }
 
   wppClient.initialize().catch(err => {
     console.error(`❌ Erro ao inicializar WhatsApp (tentativa ${tentativasWpp}):`, err.message);
