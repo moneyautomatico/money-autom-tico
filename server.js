@@ -1,5 +1,6 @@
 require('dotenv').config();
-const fs = require('fs');
+const fs           = require('fs');
+const { execSync } = require('child_process');
 
 const express    = require('express');
 const mongoose   = require('mongoose');
@@ -136,59 +137,11 @@ function criarCliente() {
   return client;
 }
 
-const wppClient = criarCliente();
-
-// ✅ FIX: retry automático com até 5 tentativas e backoff crescente
-let tentativasWpp = 0;
-const MAX_TENTATIVAS_WPP = 5;
-
-function inicializarWhatsApp() {
-  tentativasWpp++;
-  console.log(`🔄 Iniciando WhatsApp... (tentativa ${tentativasWpp}/${MAX_TENTATIVAS_WPP})`);
-  console.log(`🔍 Chrome path: ${CHROME_PATH}`);
-
-  // ✅ FIX: remove o SingletonLock que bloqueia novas instâncias do Chrome
-  const lockPath = '/tmp/.wpp_session/session/SingletonLock';
-  try {
-    if (fs.existsSync(lockPath)) {
-      fs.unlinkSync(lockPath);
-      console.log('🧹 SingletonLock removido com sucesso.');
-    }
-  } catch (e) {
-    console.warn('⚠️ Não foi possível remover SingletonLock:', e.message);
-  }
-
-  // ✅ FIX: timeout de 90s — se travar silenciosamente, tenta novamente
-  const initTimeout = setTimeout(() => {
-    console.error(`❌ Timeout: WhatsApp demorou mais de 90s para inicializar (tentativa ${tentativasWpp})`);
-    if (tentativasWpp < MAX_TENTATIVAS_WPP) {
-      const espera = tentativasWpp * 15000;
-      console.log(`⏳ Tentando novamente em ${espera / 1000}s...`);
-      setTimeout(inicializarWhatsApp, espera);
-    }
-  }, 90000);
-
-  wppClient.initialize().then(() => {
-    clearTimeout(initTimeout);
-  }).catch(err => {
-    clearTimeout(initTimeout);
-    console.error(`❌ Erro ao inicializar WhatsApp (tentativa ${tentativasWpp}):`, err.message);
-    if (tentativasWpp < MAX_TENTATIVAS_WPP) {
-      const espera = tentativasWpp * 15000;
-      console.log(`⏳ Tentando novamente em ${espera / 1000}s...`);
-      setTimeout(inicializarWhatsApp, espera);
-    } else {
-      console.error('💀 WhatsApp não inicializou após todas as tentativas.');
-    }
-  });
-}
-
-// Aguarda 10s para o container estabilizar antes da 1ª tentativa
-setTimeout(inicializarWhatsApp, 10000);
-
 // ─────────────────────────────────────────────────
-// ESTADO EM MEMÓRIA — DISPARO
+// ESTADO GLOBAL — declarado antes da inicialização
 // ─────────────────────────────────────────────────
+let wppClient    = null;
+let chatsMemoria = [];
 let disparo = {
   status:  'idle',
   atual:   0,
@@ -199,19 +152,82 @@ let disparo = {
 };
 
 // ─────────────────────────────────────────────────
-// ESTADO EM MEMÓRIA — CHATS RECEBIDOS
+// INICIALIZAÇÃO DO WHATSAPP COM RETRY ROBUSTO
+// Cria um novo Client a cada tentativa para evitar
+// estado corrompido entre tentativas falhas
 // ─────────────────────────────────────────────────
-let chatsMemoria = [];
+let tentativasWpp = 0;
+const MAX_TENTATIVAS_WPP = 5;
 
-wppClient.on('message', msg => {
-  chatsMemoria.push({
-    tipo: 'recebida',
-    de:   msg.from.replace('@c.us', ''),
-    txt:  msg.body,
-    hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+function limparChrome() {
+  // Mata qualquer processo Chrome/Chromium órfão
+  try { execSync('pkill -f chrome || true', { stdio: 'ignore' }); } catch (_) {}
+  try { execSync('pkill -f chromium || true', { stdio: 'ignore' }); } catch (_) {}
+  // Remove locks de sessão
+  const locks = [
+    '/tmp/.wpp_session/session/SingletonLock',
+    '/tmp/.wpp_session/session/SingletonCookie',
+  ];
+  locks.forEach(p => {
+    try { if (fs.existsSync(p)) { fs.unlinkSync(p); console.log(`🧹 Removido: ${p}`); } } catch (_) {}
   });
-  if (chatsMemoria.length > 200) chatsMemoria.shift();
-});
+}
+
+function inicializarWhatsApp() {
+  tentativasWpp++;
+  console.log(`🔄 Iniciando WhatsApp... (tentativa ${tentativasWpp}/${MAX_TENTATIVAS_WPP})`);
+
+  // Mata processos e limpa locks antes de criar novo cliente
+  limparChrome();
+  // Aguarda 2s para o pkill surtir efeito
+  setTimeout(() => _inicializar(), 2000);
+}
+
+function _inicializar() {
+  // Cria um novo cliente a cada tentativa
+  wppClient = criarCliente();
+
+  // Registra listeners de chat no novo cliente
+  wppClient.on('message', msg => {
+    chatsMemoria.push({
+      tipo: 'recebida',
+      de:   msg.from.replace('@c.us', ''),
+      txt:  msg.body,
+      hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    });
+    if (chatsMemoria.length > 200) chatsMemoria.shift();
+  });
+
+  const initTimeout = setTimeout(() => {
+    console.error(`❌ Timeout: Chrome travou na tentativa ${tentativasWpp}. Forçando nova tentativa...`);
+    if (tentativasWpp < MAX_TENTATIVAS_WPP) {
+      const espera = 20000;
+      console.log(`⏳ Próxima tentativa em ${espera / 1000}s...`);
+      setTimeout(inicializarWhatsApp, espera);
+    } else {
+      console.error('💀 WhatsApp não inicializou após todas as tentativas.');
+    }
+  }, 90000);
+
+  wppClient.initialize().then(() => {
+    clearTimeout(initTimeout);
+  }).catch(err => {
+    clearTimeout(initTimeout);
+    console.error(`❌ Erro na tentativa ${tentativasWpp}:`, err.message);
+    if (tentativasWpp < MAX_TENTATIVAS_WPP) {
+      const espera = 20000;
+      console.log(`⏳ Próxima tentativa em ${espera / 1000}s...`);
+      setTimeout(inicializarWhatsApp, espera);
+    } else {
+      console.error('💀 WhatsApp não inicializou após todas as tentativas.');
+    }
+  });
+}
+
+// Aguarda 10s para o container estabilizar
+setTimeout(inicializarWhatsApp, 10000);
+
+
 
 // ─────────────────────────────────────────────────
 // MIDDLEWARE JWT
