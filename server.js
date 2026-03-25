@@ -14,10 +14,13 @@ const PORT       = process.env.PORT       || 8080;
 const JWT_SECRET = process.env.JWT_SECRET || 'chave_secreta_troque';
 const MONGO_URI  = process.env.MONGO_URI  || 'mongodb://localhost:27017/money-partner';
 
+// A imagem ghcr.io/puppeteer/puppeteer usa o Chromium interno
+// O path correto é fornecido pela variável PUPPETEER_EXECUTABLE_PATH da própria imagem
 const CHROME_PATH =
   process.env.PUPPETEER_EXECUTABLE_PATH ||
   '/usr/bin/google-chrome-stable'       ||
-  '/usr/bin/google-chrome';
+  '/usr/bin/chromium-browser'           ||
+  '/usr/bin/chromium';
 
 app.use(cors());
 app.use(express.json());
@@ -72,15 +75,15 @@ function criarCliente() {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
         '--disable-extensions',
         '--disable-background-networking',
         '--disable-default-apps',
-        '--no-first-run',
-        '--single-process',
-        '--no-zygote',
         '--disable-accelerated-2d-canvas',
         '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
+        // ✅ site-per-process junto com no-zygote resolve "Requesting main frame too early"
+        '--disable-features=site-per-process,VizDisplayCompositor',
         '--memory-pressure-off',
         '--js-flags=--max-old-space-size=512',
       ],
