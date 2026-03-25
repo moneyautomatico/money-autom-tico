@@ -19,8 +19,8 @@ const MONGO_URI  = process.env.MONGO_URI  || 'mongodb://localhost:27017/money-pa
 
 const CHROME_PATH =
   process.env.PUPPETEER_EXECUTABLE_PATH ||
-  '/usr/bin/google-chrome'              ||
-  '/usr/bin/google-chrome-stable';
+  '/usr/bin/google-chrome-stable'       ||
+  '/usr/bin/google-chrome';
 
 // ─────────────────────────────────────────────────
 // MIDDLEWARES
@@ -69,51 +69,79 @@ const Mensagem = mongoose.model('Mensagem', MensagemSchema);
 
 // ─────────────────────────────────────────────────
 // WHATSAPP — CLIENTE
-// ✅ CORREÇÃO: protocolTimeout, --single-process, --no-zygote
+// ✅ FIX PRINCIPAL: protocolTimeout 300s + args extras para containers
 // ─────────────────────────────────────────────────
 let whatsappReady = false;
 let whatsappQR    = null;
+let wppInicializado = false;
 
-const wppClient = new Client({
-  authStrategy: new LocalAuth({
-    dataPath: '/tmp/.wpp_session',
-  }),
-  puppeteer: {
-    executablePath: CHROME_PATH,
-    headless: true,
-    protocolTimeout: 120000, // ✅ 120s — evita timeout em containers lentos
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--disable-extensions',
-      '--disable-background-networking',
-      '--disable-default-apps',
-      '--no-first-run',
-    ],
-  },
+function criarCliente() {
+  const client = new Client({
+    authStrategy: new LocalAuth({
+      dataPath: '/tmp/.wpp_session',
+    }),
+    puppeteer: {
+      executablePath: CHROME_PATH,
+      headless: true,
+      // ✅ FIX: aumentado para 300s — resolve o callFunctionOn timed out
+      protocolTimeout: 300000,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--no-first-run',
+        // ✅ FIX: essenciais para Railway/Docker com pouca RAM
+        '--single-process',
+        '--no-zygote',
+        '--disable-accelerated-2d-canvas',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--memory-pressure-off',
+        '--js-flags=--max-old-space-size=512',
+      ],
+    },
+  });
+
+  client.on('qr', qr => {
+    whatsappQR = qr;
+    qrcode.generate(qr, { small: true });
+    console.log('📱 QR Code gerado — acesse GET /whatsapp/qr para visualizar');
+  });
+
+  client.on('ready', () => {
+    whatsappReady = true;
+    whatsappQR    = null;
+    console.log('✅ WhatsApp conectado!');
+  });
+
+  client.on('disconnected', reason => {
+    whatsappReady = false;
+    console.warn('⚠️  WhatsApp desconectado:', reason);
+    // Aguarda 5s antes de tentar reconectar
+    setTimeout(() => {
+      console.log('🔄 Tentando reconectar WhatsApp...');
+      client.initialize().catch(e => console.error('Erro ao reinicializar:', e));
+    }, 5000);
+  });
+
+  client.on('auth_failure', msg => {
+    console.error('❌ Falha de autenticação WhatsApp:', msg);
+    whatsappReady = false;
+  });
+
+  return client;
+}
+
+const wppClient = criarCliente();
+
+// ✅ FIX: inicializa com tratamento de erro para não derrubar o processo
+wppClient.initialize().catch(err => {
+  console.error('❌ Erro ao inicializar WhatsApp:', err.message);
 });
-
-wppClient.on('qr', qr => {
-  whatsappQR = qr;
-  qrcode.generate(qr, { small: true });
-  console.log('📱 QR Code gerado — acesse GET /whatsapp/qr para visualizar');
-});
-
-wppClient.on('ready', () => {
-  whatsappReady = true;
-  whatsappQR    = null;
-  console.log('✅ WhatsApp conectado!');
-});
-
-wppClient.on('disconnected', reason => {
-  whatsappReady = false;
-  console.warn('⚠️  WhatsApp desconectado:', reason);
-  wppClient.initialize();
-});
-
-wppClient.initialize();
 
 // ─────────────────────────────────────────────────
 // ESTADO EM MEMÓRIA — DISPARO
@@ -335,7 +363,7 @@ app.post('/screenshot', autenticar, async (req, res) => {
     browser = await puppeteer.launch({
       executablePath: CHROME_PATH,
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--no-zygote'],
     });
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
@@ -366,7 +394,6 @@ app.post('/save-config', autenticar, async (req, res) => {
 
 // ─────────────────────────────────────────────────
 // ROTA — /disparar com retry automático
-// ✅ CORREÇÃO: 3 tentativas por número, backoff de 5s/10s
 // ─────────────────────────────────────────────────
 app.post('/disparar', autenticar, async (req, res) => {
   const { numeros, mensagem, intervalo, agendarEm, imagemBase64, imagemMime, imagemNome } = req.body;
@@ -418,7 +445,7 @@ async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemM
       return opcoes[Math.floor(Math.random() * opcoes.length)];
     });
 
-    // ✅ CORREÇÃO: retry automático com 3 tentativas e backoff
+    // Retry com 3 tentativas e backoff
     try {
       let tentativas = 0;
       let enviado    = false;
@@ -436,7 +463,7 @@ async function executarDisparo(lista, mensagem, intervalo, imagemBase64, imagemM
           tentativas++;
           if (tentativas >= 3) throw errTentativa;
           console.warn(`⚠️ Tentativa ${tentativas} falhou para ${numero}. Aguardando ${5 * tentativas}s...`);
-          await new Promise(r => setTimeout(r, 5000 * tentativas)); // 5s, 10s
+          await new Promise(r => setTimeout(r, 5000 * tentativas));
         }
       }
 
