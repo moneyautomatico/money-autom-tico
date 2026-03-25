@@ -139,28 +139,32 @@ let disparo = {
 let chatsMemoria = [];
 
 // ─────────────────────────────────────────────────
-// INICIALIZAÇÃO ROBUSTA DO WHATSAPP
+// INICIALIZAÇÃO DO WHATSAPP
 // ─────────────────────────────────────────────────
-function limparLocks() {
-  const locks = [
-    '/tmp/.wpp_session/session/SingletonLock',
-    '/tmp/.wpp_session/session/SingletonCookie',
-  ];
-  locks.forEach(p => {
-    try { if (fs.existsSync(p)) { fs.unlinkSync(p); console.log('🧹 Lock removido:', p); } } catch (_) {}
-  });
+function limparAmbiente() {
+  // Mata processos Chrome órfãos de deploys anteriores
+  try { execSync('pkill -9 -f "google-chrome" || true', { stdio: 'ignore' }); } catch (_) {}
+  try { execSync('pkill -9 -f "chromium" || true',      { stdio: 'ignore' }); } catch (_) {}
+  // Aguarda 1s para garantir que os processos morreram
+  return new Promise(r => setTimeout(r, 1000));
 }
 
-function inicializarWhatsApp() {
-  tentativasWpp++;
-  console.log(`🔄 Iniciando WhatsApp... (tentativa ${tentativasWpp}/${MAX_WPP})`);
+async function inicializarWhatsApp() {
+  console.log('🔄 Iniciando WhatsApp...');
   console.log(`🔍 Chrome: ${CHROME_PATH}`);
 
-  limparLocks();
+  await limparAmbiente();
+
+  // Remove locks após matar os processos
+  [
+    '/tmp/.wpp_session/session/SingletonLock',
+    '/tmp/.wpp_session/session/SingletonCookie',
+  ].forEach(p => {
+    try { if (fs.existsSync(p)) { fs.unlinkSync(p); console.log('🧹 Lock removido:', p); } } catch (_) {}
+  });
 
   wppClient = criarCliente();
 
-  // Listener de mensagens recebidas
   wppClient.on('message', msg => {
     chatsMemoria.push({
       tipo: 'recebida',
@@ -171,25 +175,9 @@ function inicializarWhatsApp() {
     if (chatsMemoria.length > 200) chatsMemoria.shift();
   });
 
-  // Timeout de segurança — se travar silenciosamente tenta novamente
-  const initTimeout = setTimeout(() => {
-    console.error(`❌ Timeout 90s na tentativa ${tentativasWpp} — tentando novamente...`);
-    if (tentativasWpp < MAX_WPP) setTimeout(inicializarWhatsApp, 15000);
-    else console.error('💀 WhatsApp não inicializou após todas as tentativas.');
-  }, 90000);
-
-  wppClient.initialize()
-    .then(() => clearTimeout(initTimeout))
-    .catch(err => {
-      clearTimeout(initTimeout);
-      console.error(`❌ Erro na tentativa ${tentativasWpp}:`, err.message);
-      if (tentativasWpp < MAX_WPP) {
-        console.log(`⏳ Próxima tentativa em 15s...`);
-        setTimeout(inicializarWhatsApp, 15000);
-      } else {
-        console.error('💀 WhatsApp não inicializou após todas as tentativas.');
-      }
-    });
+  wppClient.initialize().catch(err => {
+    console.error('❌ Erro ao inicializar WhatsApp:', err.message);
+  });
 }
 
 inicializarWhatsApp();
@@ -413,4 +401,5 @@ app.get('/stats', autenticar, (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Money Partner Pro 2026 rodando na porta ${PORT}`);
+});
 });
