@@ -99,7 +99,8 @@ function criarCliente() {
         '--no-zygote',
         '--disable-accelerated-2d-canvas',
         '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
+        // ✅ FIX NOVO: resolve "Requesting main frame too early" em containers
+        '--disable-features=site-per-process,TranslateUI',
         '--memory-pressure-off',
         '--js-flags=--max-old-space-size=512',
       ],
@@ -138,10 +139,12 @@ function criarCliente() {
 
 const wppClient = criarCliente();
 
-// ✅ FIX: inicializa com tratamento de erro para não derrubar o processo
-wppClient.initialize().catch(err => {
-  console.error('❌ Erro ao inicializar WhatsApp:', err.message);
-});
+// ✅ FIX NOVO: aguarda 3s antes de inicializar — dá tempo ao container subir
+setTimeout(() => {
+  wppClient.initialize().catch(err => {
+    console.error('❌ Erro ao inicializar WhatsApp:', err.message);
+  });
+}, 3000);
 
 // ─────────────────────────────────────────────────
 // ESTADO EM MEMÓRIA — DISPARO
@@ -523,18 +526,8 @@ app.get('/stats', autenticar, (req, res) => {
 });
 
 // ─────────────────────────────────────────────────
-// ROTA TEMPORÁRIA — CRIAR ADMIN (remover após uso)
+// ✅ SEGURANÇA: rota /setup-admin removida de produção
 // ─────────────────────────────────────────────────
-app.get('/setup-admin', async (req, res) => {
-  try {
-    await User.deleteOne({ email: 'tiagoscosta.business@gmail.com' });
-    const hashed = await bcrypt.hash('123456', 10);
-    await User.create({ name: 'Administrador', email: 'tiagoscosta.business@gmail.com', password: hashed });
-    return res.json({ ok: true, msg: 'Admin criado com sucesso!' });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
 
 // ─────────────────────────────────────────────────
 // START
