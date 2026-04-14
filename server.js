@@ -16,8 +16,6 @@ const PORT       = process.env.PORT       || 8080;
 const JWT_SECRET = process.env.JWT_SECRET || 'chave_secreta_troque';
 const MONGO_URI  = process.env.MONGO_URI  || 'mongodb://localhost:27017/money-partner';
 
-// A imagem ghcr.io/puppeteer/puppeteer usa o Chromium interno
-// O path correto é fornecido pela variável PUPPETEER_EXECUTABLE_PATH da própria imagem
 const CHROME_PATH =
   process.env.PUPPETEER_EXECUTABLE_PATH ||
   '/usr/bin/google-chrome-stable'       ||
@@ -39,6 +37,7 @@ const UserSchema = new mongoose.Schema({
   password:         { type: String, required: true },
   iaResumo:         { type: String, default: '' },
   baseAprendizado:  { type: String, default: '' },
+  temaConfig:       { type: Object, default: {} },
   createdAt:        { type: Date, default: Date.now },
 });
 const User = mongoose.model('User', UserSchema);
@@ -84,7 +83,6 @@ function criarCliente() {
         '--disable-default-apps',
         '--disable-accelerated-2d-canvas',
         '--disable-web-security',
-        // ✅ site-per-process junto com no-zygote resolve "Requesting main frame too early"
         '--disable-features=site-per-process,VizDisplayCompositor',
         '--memory-pressure-off',
         '--js-flags=--max-old-space-size=512',
@@ -120,9 +118,6 @@ function criarCliente() {
   return client;
 }
 
-// ─────────────────────────────────────────────────
-// ESTADO GLOBAL
-// ─────────────────────────────────────────────────
 let wppClient     = null;
 let tentativasWpp = 0;
 const MAX_WPP     = 5;
@@ -138,14 +133,9 @@ let disparo = {
 
 let chatsMemoria = [];
 
-// ─────────────────────────────────────────────────
-// INICIALIZAÇÃO DO WHATSAPP
-// ─────────────────────────────────────────────────
 function limparAmbiente() {
-  // Mata processos Chrome órfãos de deploys anteriores
   try { execSync('pkill -9 -f "google-chrome" || true', { stdio: 'ignore' }); } catch (_) {}
   try { execSync('pkill -9 -f "chromium" || true',      { stdio: 'ignore' }); } catch (_) {}
-  // Aguarda 1s para garantir que os processos morreram
   return new Promise(r => setTimeout(r, 1000));
 }
 
@@ -155,7 +145,6 @@ async function inicializarWhatsApp() {
 
   await limparAmbiente();
 
-  // Remove locks após matar os processos
   [
     '/tmp/.wpp_session/session/SingletonLock',
     '/tmp/.wpp_session/session/SingletonCookie',
@@ -399,7 +388,27 @@ app.get('/stats', autenticar, (req, res) => {
   return res.json(disparo.stats);
 });
 
+// ─────────────────────────────────────────────────
+// ROTAS — TEMA VISUAL
+// ─────────────────────────────────────────────────
+
+// Qualquer visitante pode carregar o tema (para aplicar ao carregar a página)
+app.get('/tema', async (req, res) => {
+  const user = await User.findOne({}).select('temaConfig');
+  return res.json(user?.temaConfig || {});
+});
+
+// Somente admin autenticado pode salvar
+app.post('/tema', autenticar, async (req, res) => {
+  const { corPrimaria, corFundo, corCard, corTexto, nomeApp, fonteBody } = req.body;
+  const temaConfig = { corPrimaria, corFundo, corCard, corTexto, nomeApp, fonteBody };
+  await User.findOneAndUpdate({}, { temaConfig });
+  return res.json({ ok: true });
+});
+
+// ─────────────────────────────────────────────────
+// START
+// ─────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 Money Partner Pro 2026 rodando na porta ${PORT}`);
-});
 });
