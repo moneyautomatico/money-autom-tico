@@ -3,22 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Partner | Dashboard Pro</title>
+    <title>Money Automático | Painel Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
-
         :root {
-            --p: #00ff88;
-            --p2: #00cc6a;
-            --b: #080f12;
-            --c: #111a1f;
-            --c2: #182028;
-            --t: #e9edef;
-            --t2: #8a9ba8;
-            --danger: #ff4d4d;
-            --warn: #ffaa00;
-            --border: rgba(255,255,255,0.07);
+            --p: #00c853;
+            --p2: #00e676;
+            --b: #0a0a0a;
+            --c: #141414;
+            --c2: #1e1e1e;
+            --t: #f0f0f0;
+            --t2: #888;
+            --border: #2a2a2a;
+            --danger: #ff4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,644 +24,347 @@
         body {
             background: var(--b);
             color: var(--t);
-            font-family: 'Syne', sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             padding-bottom: 80px;
             overflow-x: hidden;
             min-height: 100vh;
         }
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: -200px; left: -200px;
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(0,255,136,0.04) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
+        /* ── HEADER ── */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--c);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-logo img {
+            height: 36px;
+            width: auto;
+        }
+        .header-logo-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--p);
+            letter-spacing: -0.3px;
+        }
+        .header-badge {
+            font-size: 10px;
+            background: rgba(0,200,83,0.15);
+            color: var(--p);
+            border: 1px solid rgba(0,200,83,0.3);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-weight: 600;
         }
 
+        /* ── CARDS ── */
         .card {
             background: var(--c);
             border-radius: 16px;
             padding: 20px;
-            margin: 12px;
+            margin: 12px 14px;
             border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
         }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(0,255,136,0.3), transparent);
-        }
-
-        h3 {
+        .card h3 {
             font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            margin-bottom: 16px;
+            font-weight: 600;
             color: var(--t);
-            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card h3::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
         }
 
-        input, textarea {
+        /* ── INPUTS ── */
+        input, textarea, select {
             width: 100%;
-            padding: 12px 14px;
+            padding: 13px 14px;
             margin-bottom: 10px;
             border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid var(--border);
             background: var(--c2);
             color: var(--t);
-            font-family: 'Syne', sans-serif;
-            font-size: 13px;
+            font-family: inherit;
+            font-size: 14px;
             outline: none;
             transition: border-color 0.2s;
         }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--p);
+        }
+        input::placeholder, textarea::placeholder {
+            color: var(--t2);
+        }
 
-        input:focus, textarea:focus { border-color: rgba(0,255,136,0.4); }
-        textarea { resize: vertical; }
-
+        /* ── BUTTONS ── */
         button {
             width: 100%;
             padding: 14px;
             border-radius: 10px;
             border: none;
             background: var(--p);
-            font-weight: 800;
-            font-family: 'Syne', sans-serif;
-            cursor: pointer;
-            color: #080f12;
+            font-weight: 700;
             font-size: 13px;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            color: #000;
             transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
+            font-family: inherit;
         }
+        button:hover { background: var(--p2); transform: translateY(-1px); }
+        button:active { transform: scale(0.98) translateY(0); }
+        .btn-sec {
+            background: transparent;
+            color: var(--t);
+            border: 1px solid var(--border);
+            font-weight: 500;
+        }
+        .btn-sec:hover { background: var(--c2); }
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            font-weight: 500;
+        }
+        .btn-danger:hover { background: rgba(255,68,68,0.1); }
+        .btn-row { display: flex; gap: 8px; margin-top: 10px; }
 
-        button::after { content: ''; position: absolute; inset: 0; background: white; opacity: 0; transition: opacity 0.2s; }
-        button:active::after { opacity: 0.1; }
-        button:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,255,136,0.25); }
-
+        /* ── TABS ── */
         .tab { display: none; }
         .tab.active { display: block; }
 
+        /* ── NAV ── */
         nav {
             position: fixed;
-            bottom: 0; width: 100%;
-            background: rgba(8,15,18,0.95);
-            backdrop-filter: blur(20px);
+            bottom: 0;
+            width: 100%;
+            background: var(--c);
             display: flex;
-            height: 68px;
+            height: 65px;
             border-top: 1px solid var(--border);
             z-index: 100;
         }
-
         .nav-item {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
+            font-weight: 500;
             cursor: pointer;
             opacity: 0.4;
-            color: white;
-            text-decoration: none;
+            color: var(--t);
             flex-direction: column;
             gap: 4px;
             transition: all 0.2s;
-            text-transform: uppercase;
+        }
+        .nav-item .nav-icon { font-size: 20px; }
+        .nav-item.active {
+            opacity: 1;
+            color: var(--p);
+        }
+        .nav-item.active .nav-dot {
+            width: 4px;
+            height: 4px;
+            background: var(--p);
+            border-radius: 50%;
+            margin-top: 2px;
         }
 
-        .nav-item .icon { font-size: 20px; }
-        .nav-item.active { opacity: 1; color: var(--p); }
-        .nav-item.active .icon { filter: drop-shadow(0 0 6px rgba(0,255,136,0.6)); }
+        /* ── AUTH ── */
+        #authArea {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: var(--b);
+            padding: 20px;
+        }
+        .auth-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .auth-logo img { height: 60px; margin-bottom: 12px; }
+        .auth-logo-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--p);
+            letter-spacing: -0.5px;
+        }
+        .auth-logo-sub {
+            font-size: 12px;
+            color: var(--t2);
+            margin-top: 4px;
+        }
+        .auth-card {
+            background: var(--c);
+            border-radius: 20px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 360px;
+            border: 1px solid var(--border);
+        }
+        .auth-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--t);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .auth-link {
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--p);
+            margin-top: 16px;
+            font-weight: 500;
+        }
 
-        /* STATUS */
-        #qrcode { background: white; padding: 15px; width: fit-content; margin: 10px auto; border-radius: 10px; display: none; }
-        .status-badge { font-size: 12px; padding: 6px 14px; border-radius: 20px; display: inline-block; margin-bottom: 12px; font-weight: 700; letter-spacing: 0.05em; }
-        .status-on { background: rgba(0,255,136,0.08); color: var(--p); border: 1px solid rgba(0,255,136,0.3); }
-        .status-off { background: rgba(255,77,77,0.08); color: var(--danger); border: 1px solid rgba(255,77,77,0.3); }
+        /* ── STATUS BADGE ── */
+        .status-badge {
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .status-on {
+            background: rgba(0,200,83,0.12);
+            color: var(--p);
+            border: 1px solid rgba(0,200,83,0.3);
+        }
 
-        /* UPLOAD */
+        /* ── PROGRESS ── */
+        .prog-bg {
+            background: var(--c2);
+            border-radius: 10px;
+            height: 8px;
+            margin: 15px 0;
+            display: none;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .prog-fill {
+            background: linear-gradient(90deg, var(--p), var(--p2));
+            height: 100%;
+            width: 0%;
+            transition: 0.5s ease;
+            border-radius: 10px;
+        }
+
+        /* ── QR CODE ── */
+        #qrcode {
+            background: white;
+            padding: 14px;
+            width: fit-content;
+            margin: 12px auto;
+            border-radius: 12px;
+            display: none;
+        }
+
+        /* ── UPLOAD ── */
         .upload-label {
-            display: flex; align-items: center; gap: 10px;
-            background: var(--c2); border: 1px dashed rgba(255,255,255,0.15);
-            border-radius: 10px; padding: 12px; cursor: pointer;
-            margin-bottom: 10px; font-size: 13px; color: var(--t2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--c2);
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            padding: 13px 14px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: var(--t2);
             transition: border-color 0.2s;
         }
-        .upload-label:hover { border-color: rgba(0,255,136,0.3); }
+        .upload-label:hover { border-color: var(--p); color: var(--t); }
         .upload-label input { display: none; }
         #previewImg { max-width: 100%; border-radius: 10px; margin-bottom: 10px; display: none; }
 
-        /* DISPARADOR */
-        .btn-row { display: flex; gap: 8px; margin-top: 10px; }
-
-        .btn-action {
-            background: transparent; color: var(--p);
-            border: 1px solid rgba(0,255,136,0.3);
-            font-size: 12px; padding: 12px; font-weight: 700; letter-spacing: 0.06em;
-        }
-        .btn-action:hover { background: rgba(0,255,136,0.08); box-shadow: none; transform: none; }
-
-        .btn-danger-outline {
-            background: transparent; color: var(--danger);
-            border: 1px solid rgba(255,77,77,0.3);
-            font-size: 12px; padding: 12px; font-weight: 700; letter-spacing: 0.06em;
-        }
-        .btn-danger-outline:hover { background: rgba(255,77,77,0.08); box-shadow: none; transform: none; }
-
-        /* BOTÃO ESPELHO */
-        .btn-espelho {
-            background: transparent;
-            color: #00aaff;
-            border: 1px solid rgba(0,170,255,0.3);
-            font-size: 12px; padding: 12px; font-weight: 700; letter-spacing: 0.06em;
-            flex: 1;
-        }
-        .btn-espelho:hover { background: rgba(0,170,255,0.08); box-shadow: none; transform: none; }
-
-        /* PAINEL DISPARO */
-        #painelDisparo {
-            display: none; background: var(--c2);
-            border: 1px solid var(--border); border-radius: 14px;
-            padding: 18px; margin-top: 14px;
-        }
-
-        .disp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .disp-title { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--p); }
-        .disp-status-pill {
-            font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
-            background: rgba(0,255,136,0.1); color: var(--p); border: 1px solid rgba(0,255,136,0.2); letter-spacing: 0.05em;
-        }
-
-        .prog-total-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--t2); margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; }
-        .prog-total-bg { background: rgba(255,255,255,0.06); border-radius: 20px; height: 10px; overflow: hidden; margin-bottom: 16px; }
-        .prog-total-fill { height: 100%; background: linear-gradient(90deg, var(--p2), var(--p)); border-radius: 20px; width: 0%; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 12px rgba(0,255,136,0.4); }
-
-        .countdown-label { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--t2); margin-bottom: 6px; }
-        .countdown-timer { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: var(--warn); }
-        .countdown-bg { background: rgba(255,255,255,0.06); border-radius: 20px; height: 6px; overflow: hidden; margin-bottom: 16px; }
-        .countdown-fill { height: 100%; background: linear-gradient(90deg, #ff8800, var(--warn)); border-radius: 20px; width: 100%; transition: width 1s linear; }
-
-        .msg-preview { background: var(--b); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
-        .msg-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .msg-preview-title { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--t2); }
-        .msg-preview-status { font-size: 12px; }
-        .msg-preview-numero { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--p); font-weight: 700; margin-bottom: 6px; }
-        .msg-preview-texto { font-size: 13px; color: var(--t); line-height: 1.5; background: var(--c2); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 2px solid rgba(0,255,136,0.3); font-style: italic; }
-        .msg-preview-hora { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--t2); }
-        .msg-preview-data { font-size: 11px; color: var(--t2); margin-bottom: 4px; }
-
-        .logs-lista { max-height: 200px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0,255,136,0.2) transparent; }
-        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 8px; margin-bottom: 4px; background: var(--b); font-size: 11px; font-family: 'JetBrains Mono', monospace; animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        .log-num { color: var(--t2); }
-        .log-ok { color: var(--p); }
-        .log-err { color: var(--danger); }
-
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-        .stat-card { background: var(--c2); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid var(--border); }
-        .stat-num { font-size: 30px; font-weight: 800; color: var(--p); font-family: 'JetBrains Mono', monospace; }
-        .stat-label { font-size: 10px; opacity: 0.5; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
-        .taxa-bar-bg { background: rgba(255,255,255,0.06); border-radius: 10px; height: 10px; overflow: hidden; margin: 10px 0 5px; }
-        .taxa-bar-fill { background: linear-gradient(90deg, var(--p2), var(--p)); height: 100%; transition: 1s ease; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
-
-        .chat-container { display: flex; flex-direction: column; max-height: 420px; overflow-y: auto; padding: 5px; scrollbar-width: thin; scrollbar-color: rgba(0,255,136,0.2) transparent; }
-        .chat-msg { padding: 10px 14px; border-radius: 12px; margin: 5px 0; max-width: 85%; font-size: 13px; line-height: 1.5; }
-        .chat-msg.recebida { background: var(--c2); border-bottom-left-radius: 2px; }
-        .chat-msg.enviada { background: rgba(0,255,136,0.07); border: 1px solid rgba(0,255,136,0.15); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
-        .chat-de { font-size: 11px; font-weight: 700; color: var(--p); margin-bottom: 3px; font-family: 'JetBrains Mono', monospace; }
-        .chat-hora { font-size: 10px; opacity: 0.4; margin-top: 4px; text-align: right; font-family: 'JetBrains Mono', monospace; }
-        .chat-empty { text-align: center; opacity: 0.3; font-size: 13px; padding: 40px 0; }
-
-        #authArea { height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .auth-card { background: var(--c); border-radius: 20px; padding: 32px 28px; width: 340px; border: 1px solid var(--border); }
-        .auth-logo { text-align: center; margin-bottom: 28px; }
-        .auth-logo h2 { font-size: 24px; font-weight: 800; color: var(--p); letter-spacing: -0.02em; }
-        .auth-logo p { font-size: 12px; color: var(--t2); margin-top: 4px; letter-spacing: 0.08em; text-transform: uppercase; }
-        .label-field { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t2); margin-bottom: 6px; display: block; }
-        .link-text { text-align: center; cursor: pointer; font-size: 12px; color: var(--t2); margin-top: 14px; transition: color 0.2s; }
-        .link-text:hover { color: var(--p); }
-
-        .agendado-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,170,0,0.08); border: 1px solid rgba(255,170,0,0.3); color: var(--warn); border-radius: 20px; padding: 6px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
-        .pulse { width: 8px; height: 8px; background: var(--warn); border-radius: 50%; animation: pulse 1.2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
-        .pulse-green { width: 8px; height: 8px; background: var(--p); border-radius: 50%; display: inline-block; animation: pulse 1.2s infinite; margin-right: 6px; }
-
-        /* ═══════════════════════════════════════════════
-           MODAL ESPELHO WHATSAPP
-        ═══════════════════════════════════════════════ */
-        #modalEspelho {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(8px);
-            align-items: center;
-            justify-content: center;
+        /* ── STATS ── */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-card {
+            background: var(--c2);
+            border-radius: 12px;
             padding: 16px;
-        }
-        #modalEspelho.open { display: flex; }
-
-        .espelho-wrap {
-            width: 100%;
-            max-width: 480px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,255,136,0.15);
-            animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-        }
-
-        @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9) translateY(20px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        /* Barra de status do sistema (acima do WhatsApp) */
-        .espelho-header {
-            background: #111;
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .espelho-title {
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--p);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .espelho-close {
-            width: 28px; height: 28px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            cursor: pointer;
-            color: var(--t2);
-            font-size: 14px;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
-            flex-shrink: 0;
-        }
-        .espelho-close:hover { background: rgba(255,77,77,0.2); color: var(--danger); border-color: rgba(255,77,77,0.3); }
-
-        /* Barra de progresso no topo do modal */
-        .espelho-prog-bar {
-            height: 3px;
-            background: rgba(255,255,255,0.06);
-        }
-        .espelho-prog-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--p2), var(--p));
-            width: 0%;
-            transition: width 0.8s ease;
-            box-shadow: 0 0 8px rgba(0,255,136,0.6);
-        }
-
-        /* ─── WhatsApp Web simulado ─── */
-        .wpp-shell {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #0b141a;
-            overflow: hidden;
-        }
-
-        /* Topo do chat (header do contato) */
-        .wpp-top {
-            background: #202c33;
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-        .wpp-avatar {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #25d366, #128c7e);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-        .wpp-contact-info { flex: 1; }
-        .wpp-contact-name {
-            font-size: 15px;
-            font-weight: 600;
-            color: #e9edef;
-            font-family: -apple-system, 'Segoe UI', sans-serif;
-            letter-spacing: 0;
-        }
-        .wpp-contact-status {
-            font-size: 12px;
-            color: #8696a0;
-            font-family: -apple-system, 'Segoe UI', sans-serif;
-        }
-        .wpp-icons { display: flex; gap: 20px; color: #8696a0; font-size: 18px; }
-
-        /* Área de mensagens */
-        .wpp-messages {
-            flex: 1;
-            padding: 12px 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            min-height: 300px;
-            max-height: 380px;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.1) transparent;
-            /* Fundo com padrão WhatsApp */
-            background-color: #0b141a;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M0 0h60v60H0z' fill='%230b141a'/%3E%3Cpath d='M30 5 L55 25 L55 45 L30 55 L5 45 L5 25 Z' stroke='rgba(255,255,255,0.02)' fill='none' stroke-width='0.5'/%3E%3C/svg%3E");
-        }
-
-        /* Balão de data */
-        .wpp-date-sep {
             text-align: center;
-            margin: 8px 0;
+            border: 1px solid var(--border);
         }
-        .wpp-date-pill {
-            display: inline-block;
-            background: #182229;
-            border-radius: 8px;
-            padding: 5px 12px;
-            font-size: 12px;
-            color: #8696a0;
-            font-family: -apple-system, 'Segoe UI', sans-serif;
-        }
+        .stat-num { font-size: 30px; font-weight: 700; color: var(--p); }
+        .stat-label { font-size: 11px; color: var(--t2); margin-top: 4px; font-weight: 500; }
+        .taxa-bar-bg { background: var(--c2); border-radius: 10px; height: 8px; overflow: hidden; margin: 10px 0 4px; }
+        .taxa-bar-fill { background: linear-gradient(90deg, var(--p), var(--p2)); height: 100%; transition: 1s ease; border-radius: 10px; }
 
-        /* Balões enviados */
-        .wpp-bubble {
-            max-width: 75%;
-            align-self: flex-end;
-            background: #005c4b;
-            border-radius: 8px 8px 2px 8px;
-            padding: 8px 12px 22px;
-            position: relative;
-            font-family: -apple-system, 'Segoe UI', sans-serif;
-            font-size: 14px;
-            color: #e9edef;
-            line-height: 1.45;
-            animation: bubbleIn 0.25s ease;
-            word-break: break-word;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
+        /* ── CHAT ── */
+        .chat-container { display: flex; flex-direction: column; max-height: 420px; overflow-y: auto; padding: 5px; gap: 4px; }
+        .chat-msg { padding: 10px 13px; border-radius: 12px; max-width: 85%; font-size: 13px; line-height: 1.5; }
+        .chat-msg.recebida { background: var(--c2); align-self: flex-start; border-bottom-left-radius: 3px; }
+        .chat-msg.enviada { background: rgba(0,200,83,0.12); border: 1px solid rgba(0,200,83,0.2); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 3px; }
+        .chat-de { font-size: 11px; font-weight: 600; color: var(--p); margin-bottom: 3px; }
+        .chat-hora { font-size: 10px; color: var(--t2); margin-top: 4px; text-align: right; }
+        .chat-empty { text-align: center; color: var(--t2); font-size: 13px; padding: 40px 0; }
 
-        @keyframes bubbleIn {
-            from { opacity: 0; transform: scale(0.9) translateY(8px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
+        /* ── TEMA VISUAL ── */
+        .tema-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .tema-item { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--t2); font-weight: 500; }
+        .tema-item input[type=color] { width: 100%; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--c2); cursor: pointer; padding: 4px; }
+        .tema-preview { background: var(--c2); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 15px; border: 1px solid var(--border); }
+        .tema-preview-titulo { font-size: 18px; font-weight: 700; color: var(--p); margin-bottom: 4px; }
+        .tema-preview-sub { font-size: 11px; color: var(--t2); }
 
-        .wpp-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: 0; right: -8px;
-            width: 0; height: 0;
-            border-style: solid;
-            border-width: 0 0 10px 10px;
-            border-color: transparent transparent #005c4b transparent;
-        }
+        /* ── PROGRESS TEXT ── */
+        #progTxt { text-align: center; font-size: 12px; color: var(--p); margin-top: 6px; font-weight: 500; }
 
-        .wpp-bubble-time {
-            position: absolute;
-            bottom: 4px; right: 8px;
-            font-size: 11px;
-            color: rgba(255,255,255,0.45);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* Ícone de check duplo */
-        .wpp-check { color: #53bdeb; font-size: 13px; }
-        .wpp-check.pending { color: rgba(255,255,255,0.4); }
-
-        /* Balão com imagem */
-        .wpp-bubble-img {
-            max-width: 75%;
-            align-self: flex-end;
-            background: #005c4b;
-            border-radius: 8px 8px 2px 8px;
-            overflow: hidden;
-            position: relative;
-            animation: bubbleIn 0.25s ease;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-        .wpp-bubble-img img {
-            width: 100%;
-            display: block;
-            max-height: 200px;
-            object-fit: cover;
-        }
-        .wpp-bubble-img .caption {
-            padding: 6px 12px 22px;
-            font-family: -apple-system, 'Segoe UI', sans-serif;
-            font-size: 14px;
-            color: #e9edef;
-        }
-        .wpp-bubble-img .wpp-bubble-time {
-            position: absolute;
-            bottom: 4px; right: 8px;
-        }
-        .wpp-bubble-img::after {
-            content: '';
-            position: absolute;
-            bottom: 0; right: -8px;
-            width: 0; height: 0;
-            border-style: solid;
-            border-width: 0 0 10px 10px;
-            border-color: transparent transparent #005c4b transparent;
-        }
-
-        /* Indicador "digitando" */
-        .wpp-typing {
-            align-self: flex-start;
-            background: #202c33;
-            border-radius: 8px 8px 8px 2px;
-            padding: 10px 14px;
-            display: none;
-            align-items: center;
-            gap: 4px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-        .wpp-typing.show { display: flex; }
-        .wpp-typing-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: #8696a0;
-            animation: typingDot 1.2s infinite;
-        }
-        .wpp-typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .wpp-typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typingDot {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-            30% { transform: translateY(-5px); opacity: 1; }
-        }
-
-        /* Indicador de anexo sendo enviado */
-        .wpp-attach-preview {
-            align-self: flex-end;
-            background: #005c4b;
-            border-radius: 8px;
-            padding: 12px;
-            display: none;
-            align-items: center;
-            gap: 10px;
-            max-width: 75%;
-            opacity: 0.6;
-            animation: attachPulse 1s infinite alternate;
-        }
-        .wpp-attach-preview.show { display: flex; }
-        @keyframes attachPulse { from { opacity: 0.4; } to { opacity: 0.8; } }
-        .wpp-attach-icon { font-size: 24px; }
-        .wpp-attach-info { font-family: -apple-system, 'Segoe UI', sans-serif; font-size: 12px; color: #e9edef; }
-        .wpp-attach-name { font-weight: 600; margin-bottom: 2px; }
-        .wpp-attach-status { color: rgba(255,255,255,0.5); font-size: 11px; }
-
-        /* Barra de input simulada */
-        .wpp-input-area {
-            background: #202c33;
-            padding: 10px 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-top: 1px solid rgba(255,255,255,0.04);
-        }
-        .wpp-input-icon { color: #8696a0; font-size: 22px; cursor: default; }
-        .wpp-input-box {
-            flex: 1;
-            background: #2a3942;
-            border-radius: 24px;
-            padding: 10px 16px;
-            font-size: 15px;
-            color: #e9edef;
-            font-family: -apple-system, 'Segoe UI', sans-serif;
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .wpp-input-text {
-            flex: 1;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        .wpp-cursor {
-            display: inline-block;
-            width: 2px;
-            height: 16px;
-            background: #e9edef;
-            margin-left: 1px;
-            animation: blink 0.8s infinite;
-            vertical-align: middle;
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        .wpp-send-btn {
-            width: 44px; height: 44px;
-            background: #00a884;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: white;
-            font-size: 20px;
-            flex-shrink: 0;
-            transition: background 0.2s;
-            cursor: default;
-            border: none;
-            padding: 0;
-            box-shadow: none;
-            transform: none;
-        }
-        .wpp-send-btn.sending { background: #128c7e; animation: sendPulse 0.3s ease; }
-        @keyframes sendPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-
-        /* Rodapé do modal com info de progresso */
-        .espelho-footer {
-            background: #111;
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            gap: 12px;
-        }
-        .espelho-stat {
-            text-align: center;
-            flex: 1;
-        }
-        .espelho-stat-num {
-            font-size: 18px;
-            font-weight: 800;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--p);
-        }
-        .espelho-stat-label {
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--t2);
-            margin-top: 1px;
-        }
-        .espelho-stat-divider {
-            width: 1px;
-            height: 30px;
-            background: rgba(255,255,255,0.06);
-        }
-
-        /* Countdown no footer */
-        .espelho-countdown {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--warn);
-            font-weight: 700;
-        }
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <!-- AUTH -->
     <div id="authArea">
+        <div class="auth-logo">
+            <img src="https://moneyautomatico.online/img/logo_money.png" onerror="this.style.display='none'">
+            <div class="auth-logo-name">Money Automático</div>
+            <div class="auth-logo-sub">Sistema de Automação Pro</div>
+        </div>
         <div class="auth-card">
-            <div class="auth-logo">
-                <h2>Money Partner</h2>
-                <p>Dashboard Pro 2026</p>
-            </div>
             <div id="boxL">
-                <label class="label-field">E-mail</label>
-                <input id="lEmail" placeholder="seu@email.com" type="email">
-                <label class="label-field">Senha</label>
-                <input id="lPass" type="password" placeholder="••••••••">
-                <button onclick="login()">ENTRAR NO PAINEL</button>
-                <p onclick="showR(true)" class="link-text">Criar nova conta →</p>
+                <div class="auth-title">Entrar no Painel</div>
+                <input id="lEmail" placeholder="Seu E-mail" type="email">
+                <input id="lPass" type="password" placeholder="Sua Senha">
+                <button onclick="login()">ACESSAR O PAINEL</button>
+                <div class="auth-link" onclick="showR(true)">Criar Nova Conta</div>
             </div>
             <div id="boxR" style="display:none">
-                <label class="label-field">Nome</label>
-                <input id="rName" placeholder="Seu nome completo">
-                <label class="label-field">E-mail</label>
-                <input id="rEmail" placeholder="seu@email.com" type="email">
-                <label class="label-field">Senha</label>
-                <input id="rPass" type="password" placeholder="••••••••">
-                <button onclick="register()">CRIAR CONTA</button>
-                <p onclick="showR(false)" class="link-text">← Voltar ao login</p>
+                <div class="auth-title">Criar Conta</div>
+                <input id="rName" placeholder="Seu Nome">
+                <input id="rEmail" placeholder="Seu E-mail" type="email">
+                <input id="rPass" type="password" placeholder="Definir Senha">
+                <button onclick="register()">CADASTRAR</button>
+                <div class="auth-link" onclick="showR(false)">Voltar ao Login</div>
             </div>
         </div>
     </div>
@@ -671,118 +372,55 @@
     <!-- DASHBOARD -->
     <div id="dashArea" style="display:none">
 
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-logo">
+                <img src="https://moneyautomatico.online/img/logo_money.png" onerror="this.style.display='none'">
+                <span class="header-logo-text" id="headerNome">Money Automático</span>
+            </div>
+            <span class="header-badge">🟢 PRO</span>
+        </div>
+
         <!-- TAB 1: Monitor -->
         <div id="tab1" class="tab active">
             <div class="card">
                 <h3>⚙️ Treinamento da IA</h3>
-                <label class="label-field">Saudação Inicial</label>
-                <textarea id="iaT" rows="2" placeholder="Ex: Olá! Seja bem-vindo..."></textarea>
-                <label class="label-field">Base de Conhecimento</label>
-                <textarea id="baseT" rows="5" placeholder="Instruções para a IA responder..."></textarea>
-                <button onclick="save()">ATUALIZAR INTELIGÊNCIA</button>
+                <textarea id="iaT" rows="2" placeholder="Saudação Inicial (ex: Olá! Sou assistente do Money Automático...)"></textarea>
+                <textarea id="baseT" rows="4" placeholder="Base de Conhecimento (script de vendas, produto, preços...)"></textarea>
+                <button onclick="save()">ATUALIZAR IA</button>
             </div>
             <div class="card" style="text-align:center">
-                <h3>📱 Monitor de Conexão WhatsApp</h3>
+                <h3>📱 Monitor de Conexão</h3>
                 <div id="statusZap" class="status-badge status-on">Verificando...</div>
                 <div id="qrcode"></div>
-                <button onclick="logoutApp()" style="margin-top:20px; background:transparent; color:var(--t2); border:1px solid rgba(255,255,255,0.1); font-size:12px; padding:10px; box-shadow:none; transform:none">Sair do Sistema</button>
+                <button onclick="logoutApp()" style="margin-top:16px; background:transparent; color:var(--t2); border:1px solid var(--border); font-size:12px; padding:10px; font-weight:500">Sair do Sistema</button>
             </div>
         </div>
 
-        <!-- TAB 2: Disparador -->
+        <!-- TAB 2: Disparo -->
         <div id="tab2" class="tab">
             <div class="card">
-                <h3>🚀 Disparador Inteligente</h3>
-
-                <label class="label-field">Números (um por linha, com 55...)</label>
-                <textarea id="numM" rows="5" placeholder="5511999999999&#10;5521888888888"></textarea>
-
-                <label class="label-field">Mensagem (use {Olá|Oi} para variações)</label>
-                <textarea id="msgM" rows="3" placeholder="{Oi|Olá|Hey} tudo bem? Tenho uma oportunidade incrível para você!"></textarea>
-
+                <h3>🚀 Disparo Inteligente</h3>
+                <textarea id="numM" rows="5" placeholder="Números (um por linha com 55DDD...)&#10;5511999999999&#10;5521988888888"></textarea>
+                <textarea id="msgM" rows="3" placeholder="Mensagem com variações: {Oi|Olá|Ei} tudo bem?"></textarea>
                 <label class="upload-label">
                     <input type="file" id="imgInput" accept="image/*" onchange="carregarImagem(this)">
                     🖼️ <span id="imgLabel">Adicionar imagem (opcional)</span>
                 </label>
                 <img id="previewImg" />
-
-                <label class="label-field">Intervalo entre envios (segundos)</label>
-                <input type="number" id="intM" value="30" min="5">
-
-                <label class="label-field">⏰ Agendar para (deixe vazio para enviar agora)</label>
+                <div style="font-size:12px; color:var(--t2); margin-bottom:6px; font-weight:500">Intervalo entre envios (segundos)</div>
+                <input type="number" id="intM" value="30">
+                <div style="font-size:12px; color:var(--t2); margin-bottom:6px; font-weight:500">⏰ Agendar para (deixe vazio para enviar agora)</div>
                 <input type="datetime-local" id="agendarEm">
-
-                <button onclick="disparar()" id="btnDisparar">▶ INICIAR DISPARO</button>
-
-                <!-- Painel de status do disparo -->
-                <div id="painelDisparo">
-                    <div class="disp-header">
-                        <span class="disp-title">📡 Status do Disparo</span>
-                        <span class="disp-status-pill" id="dispStatusPill">INICIANDO</span>
-                    </div>
-
-                    <div class="prog-total-label">
-                        <span>Progresso geral</span>
-                        <span id="progContador" style="font-weight:700; color:var(--p)">0 / 0</span>
-                    </div>
-                    <div class="prog-total-bg">
-                        <div class="prog-total-fill" id="progTotalFill"></div>
-                    </div>
-
-                    <div id="countdownArea" style="display:none">
-                        <div class="countdown-label">
-                            <span>⏱ Próximo envio em</span>
-                            <span class="countdown-timer" id="countdownNum">--</span>
-                        </div>
-                        <div class="countdown-bg">
-                            <div class="countdown-fill" id="countdownFill"></div>
-                        </div>
-                    </div>
-
-                    <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap">
-                        <div style="flex:1; background:var(--b); border-radius:8px; padding:10px; border:1px solid var(--border); font-size:11px;">
-                            <div style="color:var(--t2); margin-bottom:2px; text-transform:uppercase; letter-spacing:0.05em; font-size:10px;">Iniciado em</div>
-                            <div id="dispDataInicio" style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--t)">--</div>
-                        </div>
-                        <div style="flex:1; background:var(--b); border-radius:8px; padding:10px; border:1px solid var(--border); font-size:11px;">
-                            <div style="color:var(--t2); margin-bottom:2px; text-transform:uppercase; letter-spacing:0.05em; font-size:10px;">Sucesso / Erros</div>
-                            <div id="dispSucessoErro" style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--t)">-- / --</div>
-                        </div>
-                    </div>
-
-                    <div class="msg-preview" id="msgPreviewBox" style="display:none">
-                        <div class="msg-preview-header">
-                            <span class="msg-preview-title">📨 Última Mensagem</span>
-                            <span class="msg-preview-status" id="msgPreviewStatus">✅</span>
-                        </div>
-                        <div class="msg-preview-numero" id="msgPreviewNumero">—</div>
-                        <div class="msg-preview-data" id="msgPreviewData">—</div>
-                        <div class="msg-preview-texto" id="msgPreviewTexto">—</div>
-                        <div class="msg-preview-hora" id="msgPreviewHora">—</div>
-                    </div>
-
-                    <!-- Botões parar/pausar/ESPELHO -->
-                    <div class="btn-row">
-                        <button class="btn-action" onclick="pausar()" id="btnPausar">⏸ PAUSAR</button>
-                        <button class="btn-espelho" onclick="abrirEspelho()">👁 ESPELHO</button>
-                        <button class="btn-danger-outline" onclick="cancelar()" id="btnCancelar">⛔ PARAR</button>
-                    </div>
+                <button onclick="disparar()">INICIAR DISPARO</button>
+                <div class="btn-row">
+                    <button class="btn-sec" onclick="pausar()" id="btnPausar" style="display:none">⏸️ Pausar</button>
+                    <button class="btn-danger" onclick="cancelar()" id="btnCancelar" style="display:none">⛔ Cancelar</button>
                 </div>
-
-                <div id="agendadoBadge" style="display:none; text-align:center; margin-top:12px;">
-                    <div class="agendado-badge">
-                        <div class="pulse"></div>
-                        <span id="agendadoTxt">AGUARDANDO HORÁRIO AGENDADO</span>
-                    </div>
-                </div>
+                <div id="progBar" class="prog-bg"><div id="progFill" class="prog-fill"></div></div>
+                <div id="progTxt"></div>
             </div>
-
-            <div class="card">
-                <h3>📋 Log de Envios</h3>
-                <div class="logs-lista" id="logsLista">
-                    <div style="text-align:center; color:var(--t2); font-size:12px; padding:20px 0; opacity:0.5">Os logs aparecerão aqui durante o disparo</div>
-                </div>
-            </div>
+            <div id="logs" class="card" style="font-size:11px; max-height:200px; overflow-y:auto; color:var(--t2)"></div>
         </div>
 
         <!-- TAB 3: Chats -->
@@ -790,7 +428,7 @@
             <div class="card">
                 <h3>💬 Conversas em Tempo Real</h3>
                 <div id="chatContainer" class="chat-container">
-                    <div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui em tempo real.</div>
+                    <div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui.</div>
                 </div>
             </div>
         </div>
@@ -798,142 +436,106 @@
         <!-- TAB 4: Stats -->
         <div id="tab4" class="tab">
             <div class="card">
-                <h3>📊 Estatísticas</h3>
+                <h3>📊 Dashboard</h3>
                 <div class="stats-grid">
-                    <div class="stat-card"><div class="stat-num" id="stTotal">—</div><div class="stat-label">Total Enviado</div></div>
-                    <div class="stat-card"><div class="stat-num" id="stTaxa" style="color:var(--p)">—</div><div class="stat-label">Taxa de Sucesso</div></div>
-                    <div class="stat-card"><div class="stat-num" id="stSucesso" style="color:#00ff88">—</div><div class="stat-label">Sucessos</div></div>
-                    <div class="stat-card"><div class="stat-num" id="stErro" style="color:#ff4d4d">—</div><div class="stat-label">Erros</div></div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stTotal">—</div>
+                        <div class="stat-label">Total Enviado</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stTaxa">—</div>
+                        <div class="stat-label">Taxa de Sucesso</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stSucesso" style="color:#00c853">—</div>
+                        <div class="stat-label">Sucessos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stErro" style="color:#ff4444">—</div>
+                        <div class="stat-label">Erros</div>
+                    </div>
                 </div>
-                <div style="font-size:11px; color:var(--t2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Taxa de entrega</div>
+                <div style="font-size:12px; color:var(--t2); margin-bottom:4px; font-weight:500">Taxa de entrega</div>
                 <div class="taxa-bar-bg"><div class="taxa-bar-fill" id="taxaBar" style="width:0%"></div></div>
-                <div id="taxaPct" style="text-align:right; font-size:12px; color:var(--p); font-family:'JetBrains Mono',monospace; margin-top:4px">0%</div>
+                <div id="taxaPct" style="text-align:right; font-size:12px; color:var(--p); font-weight:600">0%</div>
             </div>
         </div>
 
+        <!-- TAB 5: Visual -->
+        <div id="tab5" class="tab">
+            <div class="card">
+                <h3>🎨 Personalizar Visual</h3>
+                <div class="tema-preview">
+                    <div class="tema-preview-titulo" id="prevNome">Money Automático</div>
+                    <div class="tema-preview-sub">Prévia em tempo real</div>
+                </div>
+                <div class="tema-grid">
+                    <div class="tema-item">
+                        🟢 Cor Principal
+                        <input type="color" id="tCorP" value="#00c853" oninput="previewTema()">
+                    </div>
+                    <div class="tema-item">
+                        🌑 Cor de Fundo
+                        <input type="color" id="tCorB" value="#0a0a0a" oninput="previewTema()">
+                    </div>
+                    <div class="tema-item">
+                        🃏 Cor dos Cards
+                        <input type="color" id="tCorC" value="#141414" oninput="previewTema()">
+                    </div>
+                    <div class="tema-item">
+                        📝 Cor do Texto
+                        <input type="color" id="tCorT" value="#f0f0f0" oninput="previewTema()">
+                    </div>
+                </div>
+                <div style="font-size:12px; color:var(--t2); margin-bottom:6px; font-weight:500">Nome do Sistema</div>
+                <input id="tNome" placeholder="Money Automático" oninput="previewTema()">
+                <div style="font-size:12px; color:var(--t2); margin-bottom:6px; font-weight:500">Fonte</div>
+                <select id="tFonte" onchange="previewTema()">
+                    <option value="'Inter', sans-serif">Inter (padrão)</option>
+                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                    <option value="'Roboto', sans-serif">Roboto</option>
+                    <option value="'Poppins', sans-serif">Poppins</option>
+                    <option value="monospace">Monospace</option>
+                </select>
+                <button onclick="salvarTema()">💾 SALVAR TEMA</button>
+                <button onclick="resetarTema()" style="margin-top:8px" class="btn-sec">↩️ Restaurar Padrão</button>
+            </div>
+        </div>
+
+        <!-- NAV -->
         <nav>
-            <div class="nav-item active" onclick="tab('tab1', this)"><span class="icon">⚙️</span><span>Monitor</span></div>
-            <div class="nav-item" onclick="tab('tab2', this)"><span class="icon">🚀</span><span>Enviar</span></div>
-            <div class="nav-item" onclick="tab('tab3', this)"><span class="icon">💬</span><span>Chats</span></div>
-            <div class="nav-item" onclick="tab('tab4', this)"><span class="icon">📊</span><span>Stats</span></div>
+            <div class="nav-item active" onclick="tab('tab1', this)">
+                <span class="nav-icon">⚙️</span>
+                <span>Monitor</span>
+                <div class="nav-dot"></div>
+            </div>
+            <div class="nav-item" onclick="tab('tab2', this)">
+                <span class="nav-icon">🚀</span>
+                <span>Enviar</span>
+                <div class="nav-dot" style="display:none"></div>
+            </div>
+            <div class="nav-item" onclick="tab('tab3', this)">
+                <span class="nav-icon">💬</span>
+                <span>Chats</span>
+                <div class="nav-dot" style="display:none"></div>
+            </div>
+            <div class="nav-item" onclick="tab('tab4', this)">
+                <span class="nav-icon">📊</span>
+                <span>Stats</span>
+                <div class="nav-dot" style="display:none"></div>
+            </div>
+            <div class="nav-item" onclick="tab('tab5', this)">
+                <span class="nav-icon">🎨</span>
+                <span>Visual</span>
+                <div class="nav-dot" style="display:none"></div>
+            </div>
         </nav>
     </div>
 
-    <!-- ═══════════════════════════════════════════
-         MODAL ESPELHO WHATSAPP
-    ═══════════════════════════════════════════ -->
-    <div id="modalEspelho">
-        <div class="espelho-wrap">
-
-            <!-- Header do modal -->
-            <div class="espelho-header">
-                <div class="espelho-title">
-                    <span class="pulse-green"></span>
-                    ESPELHO AO VIVO
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span id="espelhoStatusPill" style="font-size:10px; color:var(--t2); font-family:'JetBrains Mono',monospace;">aguardando...</span>
-                    <div class="espelho-close" onclick="fecharEspelho()">✕</div>
-                </div>
-            </div>
-
-            <!-- Barra de progresso -->
-            <div class="espelho-prog-bar">
-                <div class="espelho-prog-fill" id="espelhoProgFill"></div>
-            </div>
-
-            <!-- Shell do WhatsApp simulado -->
-            <div class="wpp-shell">
-
-                <!-- Topo do contato -->
-                <div class="wpp-top">
-                    <div class="wpp-avatar" id="wppAvatar">👤</div>
-                    <div class="wpp-contact-info">
-                        <div class="wpp-contact-name" id="wppContactName">Aguardando...</div>
-                        <div class="wpp-contact-status" id="wppContactStatus">online</div>
-                    </div>
-                    <div class="wpp-icons">
-                        <span>🔍</span>
-                        <span>⋮</span>
-                    </div>
-                </div>
-
-                <!-- Mensagens -->
-                <div class="wpp-messages" id="wppMessages">
-                    <div class="wpp-date-sep">
-                        <span class="wpp-date-pill" id="wppDatePill">HOJE</span>
-                    </div>
-
-                    <!-- Indicador de anexo -->
-                    <div class="wpp-attach-preview" id="wppAttach">
-                        <div class="wpp-attach-icon">🖼️</div>
-                        <div class="wpp-attach-info">
-                            <div class="wpp-attach-name" id="wppAttachName">imagem.jpg</div>
-                            <div class="wpp-attach-status">⬆️ Enviando anexo...</div>
-                        </div>
-                    </div>
-
-                    <!-- Indicador digitando -->
-                    <div class="wpp-typing" id="wppTyping">
-                        <div class="wpp-typing-dot"></div>
-                        <div class="wpp-typing-dot"></div>
-                        <div class="wpp-typing-dot"></div>
-                    </div>
-                </div>
-
-                <!-- Barra de input simulada -->
-                <div class="wpp-input-area">
-                    <span class="wpp-input-icon">😊</span>
-                    <div class="wpp-input-box">
-                        <span class="wpp-input-text" id="wppInputText"></span>
-                        <span class="wpp-cursor" id="wppCursor"></span>
-                    </div>
-                    <span class="wpp-input-icon">📎</span>
-                    <button class="wpp-send-btn" id="wppSendBtn">➤</button>
-                </div>
-            </div>
-
-            <!-- Footer com stats -->
-            <div class="espelho-footer">
-                <div class="espelho-stat">
-                    <div class="espelho-stat-num" id="espNAtual">0</div>
-                    <div class="espelho-stat-label">Atual</div>
-                </div>
-                <div class="espelho-stat-divider"></div>
-                <div class="espelho-stat">
-                    <div class="espelho-stat-num" id="espNTotal">0</div>
-                    <div class="espelho-stat-label">Total</div>
-                </div>
-                <div class="espelho-stat-divider"></div>
-                <div class="espelho-stat">
-                    <div class="espelho-stat-num" style="color:#00ff88" id="espOk">0</div>
-                    <div class="espelho-stat-label">Enviados</div>
-                </div>
-                <div class="espelho-stat-divider"></div>
-                <div class="espelho-stat">
-                    <div class="espelho-stat-num" style="color:#ff4d4d" id="espErr">0</div>
-                    <div class="espelho-stat-label">Erros</div>
-                </div>
-                <div class="espelho-stat-divider"></div>
-                <div class="espelho-countdown" id="espCountdown">
-                    <span>⏱</span>
-                    <span id="espCountdownNum">--</span>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
     <script>
-        // ─── QR Code ───
         const qrBox = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
+        function showR(s){ boxL.style.display=s?'none':'block'; boxR.style.display=s?'block':'none'; }
 
-        function showR(s) {
-            boxL.style.display = s ? 'none' : 'block';
-            boxR.style.display = s ? 'block' : 'none';
-        }
-
-        // ─── Som de conexão ───
         let statusAnterior = "";
         function tocarSom() {
             try {
@@ -949,7 +551,6 @@
             } catch(e) {}
         }
 
-        // ─── Imagem ───
         let imagemBase64 = null, imagemMime = null, imagemNome = null;
         function carregarImagem(input) {
             const file = input.files[0];
@@ -968,250 +569,114 @@
             reader.readAsDataURL(file);
         }
 
-        // ─── Auth ───
-        async function register() {
+        async function register(){
             const r = await fetch("/register", { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:rName.value, email:rEmail.value, password:rPass.value}) });
-            if (r.ok) { alert("Cadastro realizado!"); showR(false); }
-            else alert("Erro ao cadastrar.");
+            if(r.ok) { alert("✅ Cadastro realizado!"); showR(false); } else alert("Erro ao cadastrar.");
         }
 
-        async function login() {
+        async function login(){
             const r = await fetch("/login", { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:lEmail.value, password:lPass.value}) });
-            if (r.ok) {
-                const d = await r.json();
-                localStorage.setItem("tk", d.token);
-                localStorage.setItem("u", JSON.stringify(d.user));
-                location.reload();
-            } else alert("E-mail ou senha incorretos.");
+            if(r.ok) { const d = await r.json(); localStorage.setItem("tk", d.token); localStorage.setItem("u", JSON.stringify(d.user)); location.reload(); }
+            else alert("E-mail ou senha incorretos.");
         }
 
-        // ─── Countdown controller ───
-        let countdownInterval = null;
-        let ultimoIntervalo = 30;
-        let ultimoLog = null;
-
-        function iniciarCountdown(segundos) {
-            clearInterval(countdownInterval);
-            const area = document.getElementById('countdownArea');
-            const fill = document.getElementById('countdownFill');
-            const num  = document.getElementById('countdownNum');
-            area.style.display = 'block';
-            let restante = segundos;
-            fill.style.transition = 'none';
-            fill.style.width = '100%';
-            setTimeout(() => {
-                fill.style.transition = `width ${segundos}s linear`;
-                fill.style.width = '0%';
-            }, 50);
-            num.innerText = restante + 's';
-            countdownInterval = setInterval(() => {
-                restante--;
-                if (restante <= 0) { clearInterval(countdownInterval); num.innerText = '0s'; return; }
-                num.innerText = restante + 's';
-                // Atualiza countdown no espelho também
-                document.getElementById('espCountdownNum').innerText = restante + 's';
-            }, 1000);
-        }
-
-        function pararCountdown() {
-            clearInterval(countdownInterval);
-            document.getElementById('countdownArea').style.display = 'none';
-            document.getElementById('espCountdownNum').innerText = '--';
-        }
-
-        // ─── Atualizar painel de disparo ───
-        function atualizarPainelDisparo(p, logs) {
-            const painel  = document.getElementById('painelDisparo');
-            const pill    = document.getElementById('dispStatusPill');
-            const agBadge = document.getElementById('agendadoBadge');
-
-            if (p.status === 'idle') {
-                painel.style.display = 'none';
-                agBadge.style.display = 'none';
-                pararCountdown();
-                return;
-            }
-
-            painel.style.display = 'block';
-
-            const pillMap = {
-                'rodando':    '<span class="pulse-green"></span>ENVIANDO',
-                'pausado':    '⏸ PAUSADO',
-                'agendado':   '⏰ AGENDADO',
-                'finalizado': '✅ CONCLUÍDO',
-                'cancelado':  '⛔ CANCELADO',
-            };
-            pill.innerHTML = pillMap[p.pausado ? 'pausado' : p.status] || p.status.toUpperCase();
-            agBadge.style.display = (p.status === 'agendado') ? 'block' : 'none';
-
-            const pct = p.total > 0 ? Math.round((p.atual / p.total) * 100) : 0;
-            document.getElementById('progTotalFill').style.width = pct + '%';
-            document.getElementById('progContador').innerText = `${p.atual} / ${p.total} — ${pct}%`;
-
-            if (p.stats) document.getElementById('dispSucessoErro').innerText = `${p.stats.sucesso} / ${p.stats.erro}`;
-            document.getElementById('btnPausar').innerHTML = p.pausado ? '▶ RETOMAR' : '⏸ PAUSAR';
-
-            if (p.status === 'rodando' && !p.pausado && p.atual < p.total) {
-                if (logs && logs.length > 0) {
-                    const ultimo = logs[logs.length - 1];
-                    if (!ultimoLog || ultimoLog.numero !== ultimo.numero) {
-                        ultimoLog = ultimo;
-                        iniciarCountdown(ultimoIntervalo);
-
-                        const box = document.getElementById('msgPreviewBox');
-                        box.style.display = 'block';
-                        document.getElementById('msgPreviewNumero').innerText = '📱 ' + ultimo.numero;
-                        document.getElementById('msgPreviewStatus').innerText = ultimo.status.includes('✅') ? '✅' : '❌';
-                        const textoEnviado = document.getElementById('msgM').value || '—';
-                        document.getElementById('msgPreviewTexto').innerText = textoEnviado;
-                        const agora = new Date();
-                        document.getElementById('msgPreviewData').innerText =
-                            agora.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
-                        document.getElementById('msgPreviewHora').innerText =
-                            '🕐 ' + agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-
-                        // ── Atualiza o Espelho ──
-                        atualizarEspelhoComEnvio(ultimo, textoEnviado, p);
-                    }
-                }
-            } else if (p.status !== 'rodando' || p.pausado) {
-                pararCountdown();
-            }
-
-            if (p.status === 'finalizado' || p.status === 'cancelado') {
-                pararCountdown();
-                document.getElementById('countdownArea').style.display = 'none';
-                if (espelhoAberto) atualizarEspelhoStatus(p.status);
-            }
-
-            // Atualiza stats do espelho
-            if (espelhoAberto && p.stats) {
-                document.getElementById('espNAtual').innerText = p.atual;
-                document.getElementById('espNTotal').innerText = p.total;
-                document.getElementById('espOk').innerText     = p.stats.sucesso;
-                document.getElementById('espErr').innerText    = p.stats.erro;
-                document.getElementById('espelhoProgFill').style.width = pct + '%';
-            }
-        }
-
-        // ─── Logs ───
-        function renderLogs(logs) {
-            const lista = document.getElementById('logsLista');
-            if (!logs || !logs.length) return;
-            lista.innerHTML = logs.slice(-50).reverse().map(x => {
-                const ok = x.status.includes('✅');
-                return `<div class="log-item"><span class="log-num">+${x.numero}</span><span class="${ok ? 'log-ok' : 'log-err'}">${x.status}</span></div>`;
-            }).join('');
-        }
-
-        // ─── Init dashboard ───
-        if (localStorage.getItem("tk")) {
-            authArea.style.display = 'none';
-            dashArea.style.display = 'block';
+        if(localStorage.getItem("tk")){
+            authArea.style.display='none'; dashArea.style.display='block';
             const u = JSON.parse(localStorage.getItem("u"));
-            iaT.value   = u.iaResumo || '';
-            baseT.value = u.baseAprendizado || '';
-
-            document.getElementById('dispDataInicio').innerText =
-                new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+            iaT.value = u.iaResumo || ''; baseT.value = u.baseAprendizado || '';
 
             setInterval(async () => {
-                try {
-                    const r = await fetch("/sync", { headers:{"Authorization": localStorage.getItem("tk")} });
-                    const d = await r.json();
+                const r = await fetch("/sync", { headers:{"Authorization": localStorage.getItem("tk")} });
+                const d = await r.json();
 
-                    if (d.status === "READY" && statusAnterior !== "READY") tocarSom();
-                    statusAnterior = d.status;
+                if(d.status === "READY" && statusAnterior !== "READY") tocarSom();
+                statusAnterior = d.status;
 
-                    if (d.status === "READY") {
-                        statusZap.className = 'status-badge status-on';
-                        statusZap.innerHTML = '<span class="pulse-green"></span>ONLINE E BLINDADO';
-                        qrcode.style.display = 'none';
-                    } else if (d.status.length > 50) {
-                        statusZap.className = 'status-badge status-off';
-                        statusZap.innerText = '⏳ AGUARDANDO LEITURA QR';
-                        qrcode.style.display = 'block';
-                        qrBox.makeCode(d.status);
-                    } else {
-                        statusZap.className = 'status-badge status-off';
-                        statusZap.innerText = '❌ DESCONECTADO';
-                        qrcode.style.display = 'none';
+                if(d.status === "READY") {
+                    statusZap.innerText = "✅ ONLINE E BLINDADO";
+                    statusZap.className = "status-badge status-on";
+                    qrcode.style.display='none';
+                } else if(d.status && d.status.length > 50) {
+                    statusZap.innerText = "⏳ AGUARDANDO LEITURA QR";
+                    statusZap.className = "status-badge";
+                    statusZap.style.background = "rgba(255,200,0,0.1)";
+                    statusZap.style.color = "#ffc800";
+                    statusZap.style.border = "1px solid rgba(255,200,0,0.3)";
+                    qrcode.style.display='block';
+                    qrBox.makeCode(d.status);
+                } else {
+                    statusZap.innerText = "❌ DESCONECTADO";
+                    statusZap.className = "status-badge";
+                    statusZap.style.background = "rgba(255,68,68,0.1)";
+                    statusZap.style.color = "#ff4444";
+                    statusZap.style.border = "1px solid rgba(255,68,68,0.3)";
+                    qrcode.style.display='none';
+                }
+
+                if(document.getElementById('tab2').classList.contains('active')) {
+                    const pr = await fetch("/progresso", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    const p = await pr.json();
+
+                    const rodando = p.status === 'rodando' || p.status === 'agendado';
+                    document.getElementById('btnPausar').style.display = rodando ? 'block' : 'none';
+                    document.getElementById('btnCancelar').style.display = rodando ? 'block' : 'none';
+
+                    if(p.status === 'rodando') {
+                        progBar.style.display='block';
+                        progFill.style.width = (p.atual/p.total*100)+'%';
+                        progTxt.innerText = `Enviando ${p.atual} de ${p.total}`;
+                        document.getElementById('btnPausar').innerText = p.pausado ? '▶️ Retomar' : '⏸️ Pausar';
+                    } else if(p.status === 'agendado') {
+                        progTxt.innerText = "⏰ Aguardando horário agendado...";
+                    } else if(p.status === 'finalizado') {
+                        progTxt.innerText = "✅ Campanha Concluída!";
+                    } else if(p.status === 'cancelado') {
+                        progTxt.innerText = "⛔ Campanha Cancelada.";
                     }
 
-                    const pr   = await fetch("/progresso", { headers:{"Authorization": localStorage.getItem("tk")} });
-                    const p    = await pr.json();
-                    ultimoIntervalo = parseInt(document.getElementById('intM').value) || 30;
-
-                    const l    = await fetch("/logs-envio", { headers:{"Authorization": localStorage.getItem("tk")} });
+                    const l = await fetch("/logs-envio", { headers:{"Authorization": localStorage.getItem("tk")} });
                     const logs = await l.json();
+                    document.getElementById('logs').innerHTML = logs.map(x => `<div style="padding:5px 0; border-bottom:1px solid var(--border)">${x.numero}: ${x.status}</div>`).join('');
+                }
 
-                    const st = await fetch("/stats", { headers:{"Authorization": localStorage.getItem("tk")} });
-                    p.stats  = await st.json();
+                if(document.getElementById('tab3').classList.contains('active')) carregarChats();
+                if(document.getElementById('tab4').classList.contains('active')) carregarStats();
 
-                    atualizarPainelDisparo(p, logs);
-                    renderLogs(logs);
-
-                    if (document.getElementById('tab3').classList.contains('active')) carregarChats();
-                    if (document.getElementById('tab4').classList.contains('active')) carregarStats();
-
-                } catch(e) {}
-            }, 4000);
+            }, 5000);
         }
 
-        // ─── Disparar ───
-        async function disparar() {
+        async function disparar(){
             const body = {
-                numeros:   numM.value,
-                mensagem:  msgM.value,
+                numeros: numM.value,
+                mensagem: msgM.value,
                 intervalo: intM.value,
                 agendarEm: document.getElementById('agendarEm').value || null
             };
-            if (imagemBase64) {
-                body.imagemBase64 = imagemBase64;
-                body.imagemMime   = imagemMime;
-                body.imagemNome   = imagemNome;
-            }
-
-            const r = await fetch("/disparar", {
-                method: 'POST',
-                headers: { 'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk") },
-                body: JSON.stringify(body)
-            });
+            if(imagemBase64) { body.imagemBase64 = imagemBase64; body.imagemMime = imagemMime; body.imagemNome = imagemNome; }
+            const r = await fetch("/disparar", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify(body) });
             const d = await r.json();
-
-            if (d.msg) {
-                document.getElementById('painelDisparo').style.display = 'block';
-                document.getElementById('dispDataInicio').innerText =
-                    new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-                ultimoLog = null;
-                resetarEspelho();
-            } else {
-                alert(d.error || 'Erro ao iniciar disparo.');
-            }
+            if(d.msg) { progBar.style.display='block'; } else { alert(d.error); }
         }
 
-        async function pausar() {
+        async function pausar(){
             const r = await fetch("/pausar", { method:'POST', headers:{'Authorization':localStorage.getItem("tk")} });
             const d = await r.json();
-            document.getElementById('btnPausar').innerHTML = d.pausado ? '▶ RETOMAR' : '⏸ PAUSAR';
-            if (d.pausado) { pararCountdown(); if (espelhoAberto) document.getElementById('espelhoStatusPill').innerText = '⏸ PAUSADO'; }
+            document.getElementById('btnPausar').innerText = d.pausado ? '▶️ Retomar' : '⏸️ Pausar';
         }
 
-        async function cancelar() {
-            if (!confirm("Confirma cancelar o disparo em andamento?")) return;
+        async function cancelar(){
+            if(!confirm("Cancelar o disparo em andamento?")) return;
             await fetch("/cancelar", { method:'POST', headers:{'Authorization':localStorage.getItem("tk")} });
-            pararCountdown();
-            document.getElementById('dispStatusPill').innerText = '⛔ CANCELADO';
+            document.getElementById('btnPausar').style.display='none';
+            document.getElementById('btnCancelar').style.display='none';
+            progTxt.innerText = "⛔ Campanha Cancelada.";
         }
 
-        async function carregarChats() {
-            const r    = await fetch("/chats", { headers:{"Authorization": localStorage.getItem("tk")} });
+        async function carregarChats(){
+            const r = await fetch("/chats", { headers:{"Authorization": localStorage.getItem("tk")} });
             const msgs = await r.json();
             const container = document.getElementById('chatContainer');
-            if (!msgs.length) {
-                container.innerHTML = '<div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui em tempo real.</div>';
-                return;
-            }
+            if(!msgs.length){ container.innerHTML = '<div class="chat-empty">Nenhuma conversa ainda.<br>As mensagens aparecerão aqui.</div>'; return; }
             container.innerHTML = msgs.map(m => `
                 <div class="chat-msg ${m.tipo}">
                     <div class="chat-de">${m.tipo === 'recebida' ? '👤 ' + m.de : '🤖 IA'}</div>
@@ -1222,219 +687,105 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        async function carregarStats() {
+        async function carregarStats(){
             const r = await fetch("/stats", { headers:{"Authorization": localStorage.getItem("tk")} });
             const s = await r.json();
-            document.getElementById('stTotal').innerText   = s.total  || 0;
-            document.getElementById('stSucesso').innerText = s.sucesso || 0;
-            document.getElementById('stErro').innerText    = s.erro   || 0;
-            document.getElementById('stTaxa').innerText    = (s.taxa  || 0) + '%';
-            document.getElementById('taxaBar').style.width = (s.taxa  || 0) + '%';
-            document.getElementById('taxaPct').innerText   = (s.taxa  || 0) + '%';
+            document.getElementById('stTotal').innerText   = s.total   || 0;
+            document.getElementById('stSucesso').innerText = s.sucesso  || 0;
+            document.getElementById('stErro').innerText    = s.erro     || 0;
+            document.getElementById('stTaxa').innerText    = (s.taxa || 0) + '%';
+            document.getElementById('taxaBar').style.width = (s.taxa || 0) + '%';
+            document.getElementById('taxaPct').innerText   = (s.taxa || 0) + '%';
         }
 
-        async function save() {
-            await fetch("/save-config", {
-                method: 'POST',
-                headers: { 'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk") },
-                body: JSON.stringify({ iaResumo:iaT.value, baseAprendizado:baseT.value })
-            });
-            alert("Inteligência Atualizada!");
+        async function save(){
+            await fetch("/save-config", { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':localStorage.getItem("tk")}, body:JSON.stringify({iaResumo:iaT.value, baseAprendizado:baseT.value}) });
+            alert("✅ Inteligência Atualizada!");
         }
 
-        function tab(t, el) {
+        function tab(t, el){
             document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
             document.getElementById(t).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(x => {
+                x.classList.remove('active');
+                const dot = x.querySelector('.nav-dot');
+                if(dot) dot.style.display = 'none';
+            });
             el.classList.add('active');
-            if (t === 'tab3') carregarChats();
-            if (t === 'tab4') carregarStats();
+            const dot = el.querySelector('.nav-dot');
+            if(dot) dot.style.display = 'block';
+            if(t === 'tab3') carregarChats();
+            if(t === 'tab4') carregarStats();
         }
 
         function logoutApp() { localStorage.clear(); location.reload(); }
 
-        // ═══════════════════════════════════════════════
-        // ESPELHO WHATSAPP — LÓGICA COMPLETA
-        // ═══════════════════════════════════════════════
-        let espelhoAberto = false;
-        let digitandoTimeout = null;
-        let borbulhasEspelho = []; // histórico de balões no espelho
-
-        function abrirEspelho() {
-            document.getElementById('modalEspelho').classList.add('open');
-            espelhoAberto = true;
-            // Atualiza data
-            const hoje = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
-            document.getElementById('wppDatePill').innerText = hoje.toUpperCase();
+        // ─── TEMA VISUAL ───
+        async function carregarTema() {
+            try {
+                const r = await fetch('/tema');
+                const t = await r.json();
+                if (!t || !t.corPrimaria) return;
+                aplicarTema(t);
+                if(t.corPrimaria) document.getElementById('tCorP').value = t.corPrimaria;
+                if(t.corFundo)    document.getElementById('tCorB').value = t.corFundo;
+                if(t.corCard)     document.getElementById('tCorC').value = t.corCard;
+                if(t.corTexto)    document.getElementById('tCorT').value = t.corTexto;
+                if(t.nomeApp)     document.getElementById('tNome').value = t.nomeApp;
+                if(t.fonteBody)   document.getElementById('tFonte').value = t.fonteBody;
+            } catch(e) {}
         }
 
-        function fecharEspelho() {
-            document.getElementById('modalEspelho').classList.remove('open');
-            espelhoAberto = false;
-        }
-
-        // Fecha o modal clicando fora
-        document.getElementById('modalEspelho').addEventListener('click', function(e) {
-            if (e.target === this) fecharEspelho();
-        });
-
-        function resetarEspelho() {
-            borbulhasEspelho = [];
-            const msgs = document.getElementById('wppMessages');
-            // Remove balões antigos (mantém data e typing e attach)
-            msgs.querySelectorAll('.wpp-bubble, .wpp-bubble-img').forEach(el => el.remove());
-            document.getElementById('wppTyping').classList.remove('show');
-            document.getElementById('wppAttach').classList.remove('show');
-            document.getElementById('wppInputText').innerText = '';
-            document.getElementById('wppContactName').innerText = 'Iniciando...';
-            document.getElementById('wppContactStatus').innerText = 'online';
-            document.getElementById('espelhoStatusPill').innerText = '🟢 rodando';
-            document.getElementById('espNAtual').innerText = '0';
-            document.getElementById('espNTotal').innerText = '0';
-            document.getElementById('espOk').innerText = '0';
-            document.getElementById('espErr').innerText = '0';
-            document.getElementById('espelhoProgFill').style.width = '0%';
-        }
-
-        function atualizarEspelhoStatus(status) {
-            const pill = document.getElementById('espelhoStatusPill');
-            if (status === 'finalizado') pill.innerText = '✅ CONCLUÍDO';
-            else if (status === 'cancelado') pill.innerText = '⛔ CANCELADO';
-            else if (status === 'pausado') pill.innerText = '⏸ PAUSADO';
-        }
-
-        // Anima a digitação caractere por caractere no input simulado
-        function animarDigitacao(texto, callback) {
-            const el = document.getElementById('wppInputText');
-            el.innerText = '';
-            document.getElementById('wppCursor').style.display = 'inline-block';
-            let i = 0;
-            // Velocidade de digitação: simula humano (20-60ms por caractere)
-            function digitarChar() {
-                if (i < texto.length) {
-                    el.innerText += texto[i];
-                    i++;
-                    // Scroll da área de input
-                    const delay = Math.random() * 40 + 20;
-                    digitandoTimeout = setTimeout(digitarChar, delay);
-                } else {
-                    // Terminou de digitar — simula envio
-                    setTimeout(() => {
-                        document.getElementById('wppCursor').style.display = 'none';
-                        animarEnvio(texto, callback);
-                    }, 300);
-                }
+        function aplicarTema(t) {
+            const r = document.documentElement.style;
+            if(t.corPrimaria) r.setProperty('--p', t.corPrimaria);
+            if(t.corFundo)    r.setProperty('--b', t.corFundo);
+            if(t.corCard)     r.setProperty('--c', t.corCard);
+            if(t.corTexto)    r.setProperty('--t', t.corTexto);
+            if(t.nomeApp) {
+                document.title = t.nomeApp + ' | Painel Pro';
+                const h = document.getElementById('headerNome');
+                if(h) h.innerText = t.nomeApp;
             }
-            digitarChar();
+            if(t.fonteBody) document.body.style.fontFamily = t.fonteBody;
         }
 
-        // Anima o botão de enviar e cria o balão
-        function animarEnvio(texto, callback) {
-            const sendBtn = document.getElementById('wppSendBtn');
-            sendBtn.classList.add('sending');
-            document.getElementById('wppInputText').innerText = '';
-            setTimeout(() => {
-                sendBtn.classList.remove('sending');
-                if (callback) callback();
-            }, 400);
+        function previewTema() {
+            const t = lerInputsTema();
+            aplicarTema(t);
+            document.getElementById('prevNome').innerText = t.nomeApp || 'Money Automático';
         }
 
-        // Cria um balão de mensagem no espelho
-        function criarBolha(texto, hora, status, comImagem) {
-            const msgs = document.getElementById('wppMessages');
-            let el;
-
-            if (comImagem && imagemBase64) {
-                // Balão com imagem
-                el = document.createElement('div');
-                el.className = 'wpp-bubble-img';
-                const checkClass = status === 'ok' ? 'wpp-check' : 'wpp-check pending';
-                el.innerHTML = `
-                    <img src="data:${imagemMime};base64,${imagemBase64}" alt="imagem">
-                    ${texto ? `<div class="caption">${texto}</div>` : ''}
-                    <div class="wpp-bubble-time">
-                        ${hora} <span class="${checkClass}">✓✓</span>
-                    </div>
-                `;
-            } else {
-                // Balão de texto
-                el = document.createElement('div');
-                el.className = 'wpp-bubble';
-                const checkClass = status === 'ok' ? 'wpp-check' : 'wpp-check pending';
-                el.innerHTML = `
-                    ${texto}
-                    <div class="wpp-bubble-time">
-                        ${hora} <span class="${checkClass}">✓✓</span>
-                    </div>
-                `;
-            }
-
-            // Insere antes do typing indicator
-            const typing = document.getElementById('wppTyping');
-            msgs.insertBefore(el, typing);
-
-            // Scroll para o final
-            setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 100);
-            return el;
+        function lerInputsTema() {
+            return {
+                corPrimaria: document.getElementById('tCorP').value,
+                corFundo:    document.getElementById('tCorB').value,
+                corCard:     document.getElementById('tCorC').value,
+                corTexto:    document.getElementById('tCorT').value,
+                nomeApp:     document.getElementById('tNome').value,
+                fonteBody:   document.getElementById('tFonte').value,
+            };
         }
 
-        // Função principal chamada quando um envio acontece
-        function atualizarEspelhoComEnvio(log, textoOriginal, progresso) {
-            if (!espelhoAberto) return;
-
-            const numero = log.numero;
-            const ok     = log.status.includes('✅');
-            const hora   = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-
-            // Atualiza o nome do contato no topo
-            document.getElementById('wppContactName').innerText = '+' + numero;
-            document.getElementById('wppContactStatus').innerText = 'online';
-
-            // Gera emoji aleatório para o avatar (simula foto do contato)
-            const emojis = ['👤','🙂','😊','👨','👩','🧑','👱','🧔'];
-            document.getElementById('wppAvatar').innerText = emojis[Math.floor(Math.random() * emojis.length)];
-
-            // Status pill
-            document.getElementById('espelhoStatusPill').innerText = `🟢 ${progresso.atual}/${progresso.total}`;
-
-            // Resolve variações {Oi|Olá} no texto para mostrar o texto real
-            const textoReal = textoOriginal.replace(/\{([^}]+)\}/g, (_, ops) => {
-                const opcoes = ops.split('|');
-                return opcoes[Math.floor(Math.random() * opcoes.length)];
-            });
-
-            // Sequência de animação
-            const typing = document.getElementById('wppTyping');
-            const attach = document.getElementById('wppAttach');
-
-            // 1) Se tem imagem, mostra preview do anexo
-            if (imagemBase64 && imagemNome) {
-                attach.classList.add('show');
-                document.getElementById('wppAttachName').innerText = imagemNome;
-                msgs_scroll();
-            }
-
-            // 2) Depois de um momento, mostra digitando
-            setTimeout(() => {
-                attach.classList.remove('show');
-                typing.classList.add('show');
-                msgs_scroll();
-            }, imagemBase64 ? 800 : 0);
-
-            // 3) Anima digitação no input
-            setTimeout(() => {
-                typing.classList.remove('show');
-                animarDigitacao(textoReal, () => {
-                    // 4) Cria o balão depois do envio
-                    criarBolha(textoReal, hora, ok ? 'ok' : 'err', !!imagemBase64);
-                });
-            }, imagemBase64 ? 1600 : 400);
+        async function salvarTema() {
+            const t = lerInputsTema();
+            await fetch('/tema', { method:'POST', headers:{'Content-Type':'application/json','Authorization':localStorage.getItem('tk')}, body:JSON.stringify(t) });
+            alert('✅ Tema salvo com sucesso!');
         }
 
-        function msgs_scroll() {
-            const msgs = document.getElementById('wppMessages');
-            setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
+        function resetarTema() {
+            const p = { corPrimaria:'#00c853', corFundo:'#0a0a0a', corCard:'#141414', corTexto:'#f0f0f0', nomeApp:'Money Automático', fonteBody:"'Inter', sans-serif" };
+            aplicarTema(p);
+            document.getElementById('tCorP').value  = p.corPrimaria;
+            document.getElementById('tCorB').value  = p.corFundo;
+            document.getElementById('tCorC').value  = p.corCard;
+            document.getElementById('tCorT').value  = p.corTexto;
+            document.getElementById('tNome').value  = p.nomeApp;
+            document.getElementById('tFonte').value = p.fonteBody;
+            document.getElementById('prevNome').innerText = p.nomeApp;
         }
+
+        carregarTema();
     </script>
 </body>
 </html>
